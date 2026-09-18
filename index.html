@@ -64,7 +64,7 @@
 
   <main class="max-w-4xl mx-auto px-4 mt-6">
 
-    <!-- ================= TAB 1: OVERVIEW (หน้าเดียวจบ) ================= -->
+    <!-- ================= TAB 1: OVERVIEW ================= -->
     <div id="tab-overview" class="space-y-6">
       
       <!-- สรุปยอดภาพรวม -->
@@ -75,20 +75,23 @@
           <div class="text-3xl font-extrabold text-white" id="dashPerPerson">0 <span class="text-sm text-emerald-400 font-normal">บ./คน</span></div>
         </div>
         <!-- กองกลาง -->
-        <div class="bg-indigo-950/20 border border-indigo-500/20 rounded-3xl p-5 shadow-xl">
+        <div class="bg-indigo-950/20 border border-indigo-500/20 rounded-3xl p-5 shadow-xl flex flex-col justify-between">
           <div class="flex justify-between items-start">
             <div>
-              <div class="text-indigo-400 font-medium text-sm mb-1">💎 กองกลางคงเหลือ</div>
+              <div class="text-indigo-400 font-medium text-sm mb-1">💎 กองกลางคงเหลือสุทธิ</div>
               <div class="text-3xl font-extrabold text-indigo-300" id="dashFundBalance">0 <span class="text-sm font-normal">บาท</span></div>
             </div>
             <div class="text-xs text-slate-400 text-right">
-              <div>สมทบ <span id="fundPerPersonRate">0</span> บ./คน</div>
+              <div>เป้าหมาย <span id="fundPerPersonRate">0</span> บ./คน</div>
             </div>
+          </div>
+          <div class="text-[10px] text-slate-500 mt-2">
+            คำนวณจาก: ยอดยกมา + ยอดที่เพื่อนโอนเข้ามาจริง - ยอดเบิกซื้อของ
           </div>
         </div>
       </div>
 
-      <!-- สมาชิกและการชำระเงิน (รวมทุกอย่างไว้ที่นี่) -->
+      <!-- สมาชิกและการชำระเงิน -->
       <div class="space-y-4">
         <div class="flex justify-between items-center px-1">
           <h2 class="font-semibold text-lg text-slate-200">ตรวจสอบสถานะการจ่ายเงิน (รายบุคคล)</h2>
@@ -170,12 +173,18 @@
 
         <!-- ตั้งค่าระบบ -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-          <h2 class="text-lg font-bold text-slate-200 border-b border-slate-800 pb-2">⚙️ 4. ตั้งค่าระบบ</h2>
+          <h2 class="text-lg font-bold text-slate-200 border-b border-slate-800 pb-2">⚙️ 4. ตั้งค่าระบบ & กองกลาง</h2>
           
-          <label class="block text-[11px] text-slate-400 mt-2 mb-1">ยอดเก็บกองกลาง/คน/เดือน (บาท)</label>
-          <div class="flex gap-2 mb-4">
-            <input type="number" id="setFundRate" class="flex-1 bg-slate-800 rounded-lg p-2 text-xs">
-            <button onclick="saveSettings()" class="bg-slate-700 px-3 rounded-lg text-xs">บันทึก</button>
+          <div class="space-y-2 mb-4">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">เงินกองกลางยกมาตอนแรก (บาท)</label>
+              <input type="number" id="setInitialFund" class="w-full bg-slate-800 rounded-lg p-2 text-xs" placeholder="เช่น 0 หรือ 500">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">เป้าหมายเก็บกองกลาง/คน/เดือน (บาท)</label>
+              <input type="number" id="setFundRate" class="w-full bg-slate-800 rounded-lg p-2 text-xs">
+            </div>
+            <button onclick="saveSettings()" class="w-full bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium">บันทึกการตั้งค่าเงิน</button>
           </div>
 
           <div class="pt-4 border-t border-slate-800">
@@ -207,9 +216,9 @@
 
     // App State
     let currentMonth = new Date().toISOString().slice(0, 7);
-    let members = {}, allMonthsData = {}, advances = {}, settings = { fundRate: 500, defaultRent: 12000 };
+    let members = {}, allMonthsData = {}, advances = {}, settings = { fundRate: 500, initialFund: 0, defaultRent: 12000 };
     
-    // Upload Target Config { memberId, paymentType, expectedAmt, targetAdvId }
+    // Upload Target Config
     let currentUploadConfig = null; 
     let currentGallerySlips = [], currentGalleryIndex = 0;
     let chartInstance = null;
@@ -234,6 +243,7 @@
     db.ref('settings').on('value', snap => {
       if (snap.exists()) settings = { ...settings, ...snap.val() };
       document.getElementById('setFundRate').value = settings.fundRate;
+      document.getElementById('setInitialFund').value = settings.initialFund || 0;
       document.getElementById('fundPerPersonRate').innerText = settings.fundRate;
       calculateAndRender();
     });
@@ -252,7 +262,7 @@
       advances = snap.val() || {}; calculateAndRender(); renderAdminAdvances();
     });
 
-    // Board Auto-Save Realtime
+    // Board Auto-Save
     const boardTextArea = document.getElementById('houseBoardText');
     let boardTimeout = null;
     db.ref('board/content').on('value', snap => {
@@ -292,12 +302,21 @@
       // Overview Headers
       document.getElementById('dashPerPerson').innerHTML = `${houseBillPerPerson.toLocaleString()} <span class="text-sm text-emerald-400 font-normal">บ./คน</span>`;
       
-      let totalFundIn = 0, totalFundOut = 0;
+      // Calculate REAL Fund Balance (ยอดยกมา + ยอดที่โอนจริงทั้งหมด - เบิกจ่ายทั้งหมด)
+      let totalFundPaidIn = Number(settings.initialFund) || 0; 
+      let totalFundOut = 0;
+      
       Object.keys(allMonthsData).forEach(mth => {
-        totalFundIn += (Number(settings.fundRate) * (allMonthsData[mth].activeCountAtTime || activeCount));
-        if (allMonthsData[mth].fundExpenses) Object.values(allMonthsData[mth].fundExpenses).forEach(e => totalFundOut += Number(e.amount));
+        // นับเฉพาะเงินที่เพื่อนโอนเข้ากองกลางมาจริงๆ
+        if (allMonthsData[mth].fundPayments) {
+          Object.values(allMonthsData[mth].fundPayments).forEach(p => totalFundPaidIn += Number(p.paidAmount || 0));
+        }
+        // นับรายจ่ายที่ถูกหักจากกองกลาง
+        if (allMonthsData[mth].fundExpenses) {
+          Object.values(allMonthsData[mth].fundExpenses).forEach(e => totalFundOut += Number(e.amount || 0));
+        }
       });
-      document.getElementById('dashFundBalance').innerHTML = `${(totalFundIn - totalFundOut).toLocaleString()} <span class="text-sm">บาท</span>`;
+      document.getElementById('dashFundBalance').innerHTML = `${(totalFundPaidIn - totalFundOut).toLocaleString()} <span class="text-sm">บาท</span>`;
 
       // Render Admin Fund List
       const fAdmin = document.getElementById('fundExpenseAdminList'); fAdmin.innerHTML = '';
@@ -310,7 +329,7 @@
       renderPersonalCards(houseBillPerPerson, fundPerPerson, activeCount, curData.payments || {}, curData.fundPayments || {});
     }
 
-    // THE SUPER CARD RENDERER (ALL IN ONE PLACE)
+    // THE SUPER CARD RENDERER
     function renderPersonalCards(houseBillAmt, fundAmt, totalActiveCount, housePayObj, fundPayObj) {
       const container = document.getElementById('overviewMembersCards');
       container.innerHTML = '';
@@ -352,17 +371,13 @@
         // --- 3. Advance Debt Data (Multi-Payer Logic) ---
         let advanceHtml = '';
         Object.entries(advances).forEach(([advId, adv]) => {
-          const payers = adv.payers || []; // Array of member IDs who paid
+          const payers = adv.payers || [];
           if (!payers.includes(mId)) { 
-            // Person did not pay this advance, so they owe their share
             const debtAmt = Math.round(adv.amount / totalActiveCount);
             const aData = adv.payments?.[mId] || { paidAmount: 0, slips: [] };
             const aPaid = Number(aData.paidAmount);
             const aSlips = aData.slips ? (Array.isArray(aData.slips) ? aData.slips : Object.values(aData.slips)) : [];
-            
-            // Build string of payer names
             const payerNames = payers.map(pid => members[pid]?.name || '?').join(', ');
-            
             const aStatus = aPaid >= debtAmt ? `<span class="text-emerald-400">✓ คืนแล้ว</span>` : (aPaid > 0 ? `<span class="text-amber-400">ขาด ${debtAmt - aPaid} ฿</span>` : `<span class="text-slate-400">ค้าง ${debtAmt} ฿</span>`);
 
             advanceHtml += `
@@ -395,7 +410,7 @@
       });
     }
 
-    // SLIP UPLOAD SYSTEM (Tesseract OCR & ImgBB)
+    // SLIP UPLOAD SYSTEM
     function triggerUploadSlip(memberId, paymentType, expectedAmt, targetAdvId = null) {
       currentUploadConfig = { memberId, paymentType, expectedAmt: expectedAmt > 0 ? expectedAmt : 0, targetAdvId };
       document.getElementById('slipInput').click();
@@ -466,7 +481,7 @@
       }
     }
 
-    // GALLERY VIEWER (ปัดดูรูปสลิป)
+    // GALLERY VIEWER
     function openGallery(slips, nameStr) {
       currentGallerySlips = slips; currentGalleryIndex = 0;
       document.getElementById('modalSlipTitle').innerText = nameStr;
@@ -483,7 +498,7 @@
     function changeSlipView(dir) { currentGalleryIndex += dir; updateGalleryUI(); }
     function closeSlipModal() { document.getElementById('slipModal').classList.add('hidden'); }
 
-    // Admin & Advances Logic
+    // Admin Functions
     function updateDropdowns() {
       let fundOpts = '<option value="">เลือกเพื่อน...</option>';
       let advChecks = '';
@@ -545,7 +560,10 @@
     }
 
     function saveSettings() {
-      db.ref('settings').update({fundRate: Number(document.getElementById('setFundRate').value)}).then(()=>alert("บันทึกการตั้งค่ากองกลางเรียบร้อย"));
+      db.ref('settings').update({
+        fundRate: Number(document.getElementById('setFundRate').value),
+        initialFund: Number(document.getElementById('setInitialFund').value)
+      }).then(()=>alert("บันทึกการตั้งค่ากองกลางเรียบร้อย"));
     }
 
     // Chart.js - Analytics Trend
