@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>House Trak-su - ระบบบริหารค่าใช้จ่ายบ้านแชร์</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Kanit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { font-family: 'Kanit', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen pb-16 antialiased">
+
+  <!-- Navbar -->
+  <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-30">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-amber-500/10 text-amber-500 rounded-xl border border-amber-500/20">
+          <i data-lucide="home" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg text-white leading-tight">House Trak-su</h1>
+          <p class="text-xs text-slate-400">ระบบกองกลาง & แชร์บิลประจำเดือน</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="sync-status" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          เชื่อมต่อแล้ว
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 mt-6 space-y-6">
+
+    <!-- Card ยอดสรุปตัวเลขหลัก -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+        <div class="flex items-center justify-between text-slate-400 mb-1">
+          <span class="text-sm font-medium">ค่าใช้จ่ายรวมเดือนนี้</span>
+          <i data-lucide="receipt" class="w-4 h-4 text-slate-400"></i>
+        </div>
+        <div class="text-2xl font-bold text-white" id="stat-total-expense">0 ฿</div>
+        <div class="text-xs text-slate-400 mt-1" id="stat-subtext-expense">รวมทุกรายการบิล</div>
+        <div class="absolute -right-2 -bottom-2 w-16 h-16 bg-blue-500/5 rounded-full blur-xl pointer-events-none"></div>
+      </div>
+
+      <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+        <div class="flex items-center justify-between text-slate-400 mb-1">
+          <span class="text-sm font-medium">ผู้หารในเดือนนี้</span>
+          <i data-lucide="users" class="w-4 h-4 text-slate-400"></i>
+        </div>
+        <div class="text-2xl font-bold text-white" id="stat-active-members">0 คน</div>
+        <div class="text-xs text-slate-400 mt-1" id="stat-subtext-members">สมาชิกทั้งหมด 0 คน</div>
+      </div>
+
+      <div class="bg-gradient-to-br from-amber-500/20 via-amber-600/10 to-transparent border border-amber-500/30 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+        <div class="flex items-center justify-between text-amber-300 mb-1">
+          <span class="text-sm font-medium">ยอดจ่ายต่อคน (เฉลี่ย)</span>
+          <i data-lucide="calculator" class="w-4 h-4 text-amber-400"></i>
+        </div>
+        <div class="text-3xl font-extrabold text-amber-400" id="stat-split-amount">0 ฿</div>
+        <div class="text-xs text-amber-300/70 mt-1">หารเฉพาะคนที่เปิดใช้งาน</div>
+      </div>
+
+      <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+        <div class="flex items-center justify-between text-slate-400 mb-1">
+          <span class="text-sm font-medium">สถานะเก็บเงิน</span>
+          <i data-lucide="check-circle-2" class="w-4 h-4 text-slate-400"></i>
+        </div>
+        <div class="text-2xl font-bold text-white" id="stat-paid-progress">0 / 0</div>
+        <div class="w-full bg-slate-700 h-2 rounded-full mt-2 overflow-hidden">
+          <div id="stat-paid-bar" class="bg-emerald-500 h-full w-0 transition-all duration-300"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- แถบควบคุมหลัก: 2 คอลัมน์ (ฝั่งฟอร์มคำนวณบิล + ฝั่งรายชื่อสมาชิก) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- ด้านซ้าย: การตั้งค่ายอดบิลเดือนนี้ (7 cols) -->
+      <section class="lg:col-span-7 bg-slate-800/60 border border-slate-700/70 rounded-2xl p-5 shadow-sm space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-700/60">
+          <div class="flex items-center gap-2">
+            <i data-lucide="file-text" class="w-5 h-5 text-amber-400"></i>
+            <h2 class="text-base font-semibold text-white">บันทึกค่าใช้จ่ายเดือนนี้</h2>
+          </div>
+          <span class="text-xs text-slate-400">ระบบบันทึกอัตโนมัติ Realtime</span>
+        </div>
+
+        <form id="bills-form" class="space-y-4">
+          <!-- ค่าเช่าบ้าน & ค่าเน็ต -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">🏠 ค่าเช่าบ้าน (บาท)</label>
+              <input type="number" id="input-rent" min="0" step="any" placeholder="เช่น 12000"
+                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-amber-500 text-sm transition" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">📶 ค่าอินเทอร์เน็ต / ส่วนกลาง (บาท)</label>
+              <input type="number" id="input-internet" min="0" step="any" placeholder="เช่น 600"
+                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-amber-500 text-sm transition" />
+            </div>
+          </div>
+
+          <!-- ค่าไฟฟ้า (คำนวณจากหน่วย หรือกรอกยอดตรง) -->
+          <div class="bg-slate-900/60 border border-slate-700/60 rounded-xl p-3.5 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-amber-400 flex items-center gap-1.5">
+                <i data-lucide="zap" class="w-4 h-4"></i> ค่าไฟฟ้า
+              </span>
+              <div class="flex items-center gap-2 text-xs text-slate-400">
+                <label class="cursor-pointer flex items-center gap-1">
+                  <input type="radio" name="electric_mode" value="units" checked class="accent-amber-500" id="mode-units"> คิดตามหน่วย
+                </label>
+                <label class="cursor-pointer flex items-center gap-1">
+                  <input type="radio" name="electric_mode" value="direct" class="accent-amber-500" id="mode-direct"> กรอกยอดรวม
+                </label>
+              </div>
+            </div>
+
+            <!-- กล่องคิดตามหน่วย -->
+            <div id="elec-units-box" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">จำนวนหน่วยที่ใช้ (ยูนิต)</label>
+                <input type="number" id="input-elec-units" min="0" step="any" placeholder="เช่น 240"
+                  class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-amber-500" />
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">อัตราค่าไฟต่อหน่วย (บาท)</label>
+                <input type="number" id="input-elec-rate" min="0" step="any" placeholder="เช่น 7"
+                  class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-amber-500" />
+              </div>
+            </div>
+
+            <!-- กล่องกรอกยอดตรง -->
+            <div id="elec-direct-box" class="hidden">
+              <label class="block text-[11px] text-slate-400 mb-1">ยอดค่าไฟตามบิลทั้งหมด (บาท)</label>
+              <input type="number" id="input-elec-total-direct" min="0" step="any" placeholder="เช่น 1850"
+                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-amber-500" />
+            </div>
+
+            <div class="text-right text-xs text-slate-300">
+              ค่าไฟรวม: <span id="label-elec-sum" class="font-semibold text-amber-400">0</span> บาท
+            </div>
+          </div>
+
+          <!-- ค่าน้ำ & เงินกองกลางของใช้ในบ้าน -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">💧 ค่าน้ำประปา (บาท)</label>
+              <input type="number" id="input-water" min="0" step="any" placeholder="เช่น 250"
+                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-amber-500 text-sm transition" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">🛒 เงินสมทบกองกลาง/คน (บาท)</label>
+              <input type="number" id="input-fund-per-person" min="0" step="any" placeholder="เช่น 300"
+                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-amber-500 text-sm transition" />
+            </div>
+          </div>
+
+          <div class="pt-2 flex justify-end">
+            <button type="button" id="btn-save-bills"
+              class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-xl text-sm transition inline-flex items-center gap-2 shadow-lg shadow-amber-500/20">
+              <i data-lucide="save" class="w-4 h-4"></i>
+              บันทึกข้อมูลบิล
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ด้านขวา: จัดการสมาชิก (5 cols) -->
+      <section class="lg:col-span-5 bg-slate-800/60 border border-slate-700/70 rounded-2xl p-5 shadow-sm space-y-4 flex flex-col">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-700/60">
+          <div class="flex items-center gap-2">
+            <i data-lucide="user-check" class="w-5 h-5 text-amber-400"></i>
+            <h2 class="text-base font-semibold text-white">สมาชิก & การชำระเงิน</h2>
+          </div>
+          <span class="text-xs text-slate-400" id="member-active-tag">เลือกใครหารบ้าง</span>
+        </div>
+
+        <!-- ฟอร์มเพิ่มเพื่อน -->
+        <div class="flex gap-2">
+          <input type="text" id="new-member-name" placeholder="ใส่ชื่อเพื่อนที่จะเพิ่ม..."
+            class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition" />
+          <button id="btn-add-member"
+            class="px-3.5 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-sm font-medium transition inline-flex items-center gap-1.5">
+            <i data-lucide="user-plus" class="w-4 h-4"></i> เพิ่ม
+          </button>
+        </div>
+
+        <!-- รายการสมาชิก -->
+        <div id="members-list" class="space-y-2 flex-1 overflow-y-auto max-h-[350px] pr-1">
+          <div class="text-center py-6 text-slate-500 text-sm">กำลังโหลดรายชื่อ...</div>
+        </div>
+
+        <div class="p-3 bg-slate-900/70 rounded-xl border border-slate-800 text-xs text-slate-400 leading-relaxed">
+          💡 <strong class="text-slate-300">วิธีใช้งาน:</strong>
+          <ul class="list-disc list-inside mt-1 space-y-0.5">
+            <li>ติ๊กเครื่องหมายถูกหน้าชื่อ = อยู่หารบิลเดือนนี้</li>
+            <li>กดปุ่มสถานะสีเทาเพื่อเปลี่ยนเป็น <span class="text-emerald-400">จ่ายแล้ว</span></li>
+            <li>เพิ่มเพื่อนใหม่ได้ตลอดเวลา ตัวหารจะปรับให้อัตโนมัติ</li>
+          </ul>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- บิลสรุปรายละเอียดส่งให้เพื่อนในไลน์ -->
+    <section class="bg-slate-800/40 border border-slate-800 rounded-2xl p-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <div>
+          <h3 class="text-base font-semibold text-white flex items-center gap-2">
+            <i data-lucide="clipboard-list" class="w-5 h-5 text-amber-400"></i>
+            ข้อความสรุปสำหรับส่งในกลุ่ม LINE
+          </h3>
+          <p class="text-xs text-slate-400">กดคัดลอกข้อความด้านล่างแล้วส่งเข้ากลุ่มได้เลย</p>
+        </div>
+        <button id="btn-copy-summary"
+          class="px-4 py-2 bg-slate-700 hover:bg-slate-600 active:scale-95 text-white rounded-xl text-xs font-medium transition inline-flex items-center justify-center gap-1.5">
+          <i data-lucide="copy" class="w-4 h-4"></i> คัดลอกข้อความ
+        </button>
+      </div>
+      <textarea id="summary-text-box" readonly rows="6"
+        class="w-full bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 text-xs sm:text-sm text-slate-300 font-mono focus:outline-none resize-none"></textarea>
+    </section>
+
+  </main>
+
+  <!-- Firebase Modular SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import { getDatabase, ref, set, get, update, onValue, push, remove } 
+      from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+
+    // กำหนดค่า Firebase Config ตามโปรเจกต์ House Trak-su
+    const firebaseConfig = {
+      apiKey: "AIzaSyDlNydFNfQGkKZ71EaQn2RDI_SRqEHsxpg",
+      authDomain: "house-trak-su.firebaseapp.com",
+      databaseURL: "https://house-trak-su-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "house-trak-su",
+      storageBucket: "house-trak-su.firebasestorage.app",
+      messagingSenderId: "88981883976",
+      appId: "1:88981883976:web:8a0d34417768fcc014dc7d",
+      measurementId: "G-Q4ERD2YLNG"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // State ในตัวแอป
+    let currentBills = {
+      rent: 0,
+      internet: 0,
+      elec_mode: 'units',
+      elec_units: 0,
+      elec_rate: 7,
+      elec_total: 0,
+      water: 0,
+      fund_per_person: 0
+    };
+    let membersData = {};
+
+    // Elements
+    const inputRent = document.getElementById('input-rent');
+    const inputInternet = document.getElementById('input-internet');
+    const inputElecUnits = document.getElementById('input-elec-units');
+    const inputElecRate = document.getElementById('input-elec-rate');
+    const inputElecTotalDirect = document.getElementById('input-elec-total-direct');
+    const inputWater = document.getElementById('input-water');
+    const inputFundPerPerson = document.getElementById('input-fund-per-person');
+    const modeUnits = document.getElementById('mode-units');
+    const modeDirect = document.getElementById('mode-direct');
+    const elecUnitsBox = document.getElementById('elec-units-box');
+    const elecDirectBox = document.getElementById('elec-direct-box');
+    const labelElecSum = document.getElementById('label-elec-sum');
+    const membersListEl = document.getElementById('members-list');
+    const summaryTextBox = document.getElementById('summary-text-box');
+
+    // สลับโหมดคำนวณค่าไฟ
+    modeUnits.addEventListener('change', () => toggleElecMode('units'));
+    modeDirect.addEventListener('change', () => toggleElecMode('direct'));
+
+    function toggleElecMode(mode) {
+      if (mode === 'units') {
+        elecUnitsBox.classList.remove('hidden');
+        elecDirectBox.classList.add('hidden');
+      } else {
+        elecUnitsBox.classList.add('hidden');
+        elecDirectBox.classList.remove('hidden');
+      }
+      recalculateAll();
+    }
+
+    // ฟังการเปลี่ยนแปลงของ Input ในฟอร์มเพื่อแสดงตัวเลขทันที
+    [inputRent, inputInternet, inputElecUnits, inputElecRate, inputElecTotalDirect, inputWater, inputFundPerPerson].forEach(input => {
+      input.addEventListener('input', recalculateAll);
+    });
+
+    // ฟังข้อมูล Realtime จาก Firebase
+    const billsRef = ref(db, 'bills');
+    const membersRef = ref(db, 'members');
+
+    onValue(billsRef, (snapshot) => {
+      const val = snapshot.val();
+      if (val) {
+        currentBills = { ...currentBills, ...val };
+        inputRent.value = currentBills.rent || '';
+        inputInternet.value = currentBills.internet || '';
+        inputWater.value = currentBills.water || '';
+        inputFundPerPerson.value = currentBills.fund_per_person || '';
+
+        if (currentBills.elec_mode === 'direct') {
+          modeDirect.checked = true;
+          inputElecTotalDirect.value = currentBills.elec_total || '';
+          toggleElecMode('direct');
+        } else {
+          modeUnits.checked = true;
+          inputElecUnits.value = currentBills.elec_units || '';
+          inputElecRate.value = currentBills.elec_rate || 7;
+          toggleElecMode('units');
+        }
+      }
+      recalculateAll();
+    });
+
+    onValue(membersRef, (snapshot) => {
+      membersData = snapshot.val() || {};
+      
+      // ถ้ายังไม่มีสมาชิกเลย ใส่สมาชิกเริ่มต้นให้ 4 คน
+      if (Object.keys(membersData).length === 0) {
+        initDefaultMembers();
+        return;
+      }
+      renderMembers();
+      recalculateAll();
+    });
+
+    function initDefaultMembers() {
+      const defaults = ["ฉัน (แอดมิน)", "เพื่อน 1", "เพื่อน 2", "เพื่อน 3"];
+      defaults.forEach(name => {
+        push(membersRef, {
+          name: name,
+          active: true,
+          paid: false
+        });
+      });
+    }
+
+    // ฟังก์ชันคำนวณยอดทั้งหมด
+    function recalculateAll() {
+      const rent = parseFloat(inputRent.value) || 0;
+      const internet = parseFloat(inputInternet.value) || 0;
+      const water = parseFloat(inputWater.value) || 0;
+      const fundPerPerson = parseFloat(inputFundPerPerson.value) || 0;
+
+      let elecTotal = 0;
+      if (modeUnits.checked) {
+        const units = parseFloat(inputElecUnits.value) || 0;
+        const rate = parseFloat(inputElecRate.value) || 0;
+        elecTotal = units * rate;
+      } else {
+        elecTotal = parseFloat(inputElecTotalDirect.value) || 0;
+      }
+      labelElecSum.textContent = elecTotal.toLocaleString('th-TH');
+
+      // นับจำนวนคนที่ active
+      const memberKeys = Object.keys(membersData);
+      const totalMembersCount = memberKeys.length;
+      const activeMembers = memberKeys.filter(k => membersData[k].active);
+      const activeCount = activeMembers.length;
+
+      // รวมค่าใช้จ่ายส่วนกลาง (ค่าเช่า + ค่าเน็ต + ค่าไฟ + ค่าน้ำ)
+      const sharedExpenseTotal = rent + internet + elecTotal + water;
+      const totalFundSum = fundPerPerson * activeCount;
+      const grandTotal = sharedExpenseTotal + totalFundSum;
+
+      // คำนวณต่อคน
+      const perPerson = activeCount > 0 ? (sharedExpenseTotal / activeCount) + fundPerPerson : 0;
+
+      // อัปเดตการ์ด Dashboard
+      document.getElementById('stat-total-expense').textContent = grandTotal.toLocaleString('th-TH', { maximumFractionDigits: 0 }) + ' ฿';
+      document.getElementById('stat-active-members').textContent = activeCount + ' คน';
+      document.getElementById('stat-subtext-members').textContent = `จากสมาชิกทั้งหมด ${totalMembersCount} คน`;
+      document.getElementById('stat-split-amount').textContent = Math.round(perPerson).toLocaleString('th-TH') + ' ฿';
+
+      // นับคนจ่ายแล้ว
+      const paidCount = activeMembers.filter(k => membersData[k].paid).length;
+      document.getElementById('stat-paid-progress').textContent = `${paidCount} / ${activeCount}`;
+      const pct = activeCount > 0 ? (paidCount / activeCount) * 100 : 0;
+      document.getElementById('stat-paid-bar').style.width = pct + '%';
+
+      // สร้างข้อความสรุปสำหรับส่ง LINE
+      generateSummaryText(rent, internet, elecTotal, water, fundPerPerson, activeCount, perPerson, paidCount);
+    }
+
+    // วาดรายการสมาชิก
+    function renderMembers() {
+      membersListEl.innerHTML = '';
+      const keys = Object.keys(membersData);
+
+      if (keys.length === 0) {
+        membersListEl.innerHTML = '<div class="text-center py-6 text-slate-500 text-sm">ยังไม่มีสมาชิก</div>';
+        return;
+      }
+
+      keys.forEach(id => {
+        const m = membersData[id];
+        const row = document.createElement('div');
+        row.className = `flex items-center justify-between p-3 rounded-xl border transition ${
+          m.active 
+            ? 'bg-slate-900/80 border-slate-700/80' 
+            : 'bg-slate-950/40 border-slate-800/40 opacity-60'
+        }`;
+
+        row.innerHTML = `
+          <div class="flex items-center gap-3">
+            <input type="checkbox" ${m.active ? 'checked' : ''} 
+              class="w-4 h-4 rounded border-slate-700 text-amber-500 focus:ring-0 accent-amber-500 cursor-pointer"
+              title="เปิด/ปิด การร่วมหารเดือนนี้" />
+            <div>
+              <div class="text-sm font-medium ${m.active ? 'text-white' : 'text-slate-500 line-through'}">${m.name}</div>
+              <div class="text-[11px] ${m.active ? 'text-slate-400' : 'text-slate-600'}">${m.active ? 'ร่วมหารบิล' : 'ไม่ได้อยู่หาร'}</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="btn-toggle-paid px-3 py-1 rounded-lg text-xs font-medium border transition ${
+              m.paid 
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20' 
+                : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'
+            }">
+              ${m.paid ? '✓ จ่ายแล้ว' : 'ยังไม่จ่าย'}
+            </button>
+            <button class="btn-delete-member p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition" title="ลบชื่อ">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        `;
+
+        // สลับสถานะ active
+        row.querySelector('input[type="checkbox"]').addEventListener('change', (e) => {
+          update(ref(db, `members/${id}`), { active: e.target.checked });
+        });
+
+        // สลับสถานะ paid
+        row.querySelector('.btn-toggle-paid').addEventListener('click', () => {
+          update(ref(db, `members/${id}`), { paid: !m.paid });
+        });
+
+        // ลบสมาชิก
+        row.querySelector('.btn-delete-member').addEventListener('click', () => {
+          if (confirm(`ต้องการลบ "${m.name}" ออกจากระบบใช่หรือไม่?`)) {
+            remove(ref(db, `members/${id}`));
+          }
+        });
+
+        membersListEl.appendChild(row);
+      });
+
+      lucide.createIcons();
+    }
+
+    // ปุ่มบันทึกบิล
+    document.getElementById('btn-save-bills').addEventListener('click', () => {
+      const elecTotalDirect = parseFloat(inputElecTotalDirect.value) || 0;
+      const elecUnits = parseFloat(inputElecUnits.value) || 0;
+      const elecRate = parseFloat(inputElecRate.value) || 0;
+      const elecTotal = modeUnits.checked ? (elecUnits * rate) : elecTotalDirect;
+
+      const payload = {
+        rent: parseFloat(inputRent.value) || 0,
+        internet: parseFloat(inputInternet.value) || 0,
+        elec_mode: modeUnits.checked ? 'units' : 'direct',
+        elec_units: elecUnits,
+        elec_rate: elecRate,
+        elec_total: modeUnits.checked ? (elecUnits * elecRate) : elecTotalDirect,
+        water: parseFloat(inputWater.value) || 0,
+        fund_per_person: parseFloat(inputFundPerPerson.value) || 0,
+        updated_at: new Date().toISOString()
+      };
+
+      set(billsRef, payload).then(() => {
+        alert("บันทึกข้อมูลบิลเรียบร้อยแล้ว!");
+      }).catch(err => {
+        alert("เกิดข้อผิดพลาด: " + err.message);
+      });
+    });
+
+    // ปุ่มเพิ่มสมาชิกใหม่
+    document.getElementById('btn-add-member').addEventListener('click', () => {
+      const nameInput = document.getElementById('new-member-name');
+      const name = nameInput.value.trim();
+      if (!name) return;
+
+      push(membersRef, {
+        name: name,
+        active: true,
+        paid: false
+      }).then(() => {
+        nameInput.value = '';
+      });
+    });
+
+    // สรุปข้อความ LINE
+    function generateSummaryText(rent, net, elec, water, fund, count, perPerson, paidCount) {
+      if (count === 0) {
+        summaryTextBox.value = "ไม่มีสมาชิกที่เปิดใช้งานในเดือนนี้";
+        return;
+      }
+
+      const activeNames = Object.keys(membersData)
+        .filter(k => membersData[k].active)
+        .map(k => `${membersData[k].name} (${membersData[k].paid ? 'จ่ายแล้ว ✅' : 'รอโอน ⏳'})`)
+        .join("\n- ");
+
+      const text = `📢 สรุปค่าใช้จ่ายบ้านแชร์ประจำเดือน 🏠
+──────────────────────
+• ค่าเช่าบ้าน: ${rent.toLocaleString()} บ.
+• ค่าไฟ: ${elec.toLocaleString()} บ.
+• ค่าน้ำ: ${water.toLocaleString()} บ.
+• อินเทอร์เน็ต/ส่วนกลาง: ${net.toLocaleString()} บ.
+• เงินกองกลางของใช้: ${fund.toLocaleString()} บ./คน
+──────────────────────
+👥 ผู้หารทั้งหมด: ${count} คน
+💰 ตกคนละ: ${Math.round(perPerson).toLocaleString()} บาท
+
+รายชื่อสมาชิก (${paidCount}/${count}):
+- ${activeNames}
+──────────────────────
+โอนแล้วแจ้งสลิปในกลุ่มได้เลยครับ 🙏`;
+
+      summaryTextBox.value = text;
+    }
+
+    // ปุ่มคัดลอกข้อความ
+    document.getElementById('btn-copy-summary').addEventListener('click', () => {
+      summaryTextBox.select();
+      navigator.clipboard.writeText(summaryTextBox.value).then(() => {
+        alert("คัดลอกข้อความสรุปเรียบร้อยแล้ว!");
+      });
+    });
+
+    // เริ่มต้น render icons
+    lucide.createIcons();
+  </script>
+</body>
+</html>
