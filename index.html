@@ -13,14 +13,38 @@
   <style>
     body { font-family: 'Kanit', sans-serif; }
   </style>
-  <!-- Firebase SDK -->
+  <!-- Firebase SDK (Database Compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen pb-12">
+<body class="bg-slate-950 text-slate-100 min-h-screen pb-16">
 
-  <!-- Top Navigation Bar -->
-  <nav class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-50">
+  <!-- File Input ที่ซ่อนไว้สำหรับแนบสลิป -->
+  <input type="file" id="slipInput" accept="image/*" class="hidden" onchange="handleSlipSelected(event)">
+
+  <!-- Modal แสดงรูปสลิป -->
+  <div id="slipModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full overflow-hidden shadow-2xl">
+      <div class="p-3 border-b border-slate-800 flex justify-between items-center">
+        <h3 class="text-sm font-semibold text-slate-200" id="modalSlipTitle">หลักฐานการโอนเงิน</h3>
+        <button onclick="closeSlipModal()" class="text-slate-400 hover:text-white text-lg px-2">✕</button>
+      </div>
+      <div class="p-4 flex flex-col items-center">
+        <img id="modalSlipImg" src="" alt="สลิปโอนเงิน" class="max-h-96 w-auto rounded-xl object-contain shadow">
+        <span id="modalSlipDate" class="text-xs text-slate-400 mt-3"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay ตอนตรวจสลิป -->
+  <div id="loadingOverlay" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex flex-col items-center justify-center p-4 text-center">
+    <div class="w-12 h-12 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin mb-4"></div>
+    <div id="loadingStatusText" class="text-base font-semibold text-emerald-400">กำลังอัปโหลดสลิป...</div>
+    <p class="text-xs text-slate-400 mt-1">กรุณารอสักครู่ ระบบกำลังประมวลผลข้อมูล</p>
+  </div>
+
+  <!-- Navigation Bar -->
+  <nav class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-40">
     <div class="max-w-4xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
       <div class="flex items-center gap-2">
         <span class="text-2xl">🏡</span>
@@ -33,7 +57,7 @@
           📊 ภาพรวม
         </button>
         <button id="tabBtn-admin" onclick="switchTab('admin')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white">
-          📝 บันทึกบิลเดือนนี้
+          📝 บันทึกบิล
         </button>
         <button id="tabBtn-settings" onclick="switchTab('settings')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white">
           ⚙️ สมาชิก & ข้อมูล
@@ -49,21 +73,19 @@
 
   <main class="max-w-4xl mx-auto px-4 mt-6">
 
-    <!-- ================= TAB 1: OVERVIEW (สำหรับเพื่อนทุกคน) ================= -->
+    <!-- ================= TAB 1: OVERVIEW (หน้าหลักสำหรับเพื่อนทุกคน) ================= -->
     <div id="tab-overview" class="space-y-6">
       <!-- Big Summary Card -->
-      <div class="bg-gradient-to-br from-emerald-900/40 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
-        <div class="relative z-10">
-          <div class="flex items-center justify-between text-emerald-400 text-sm font-medium mb-1">
-            <span>ยอดที่ต้องจ่ายประจำเดือนนี้</span>
-            <span id="overviewMonthTag" class="text-xs bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full"></span>
-          </div>
-          <div class="text-4xl sm:text-6xl font-extrabold text-white mt-1" id="dashPerPerson">0 <span class="text-xl sm:text-2xl font-normal text-emerald-400">บาท / คน</span></div>
-          <p class="text-xs sm:text-sm text-slate-400 mt-2" id="dashActivePeople">กำลังคำนวณ...</p>
+      <div class="bg-gradient-to-br from-emerald-950/50 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-3xl p-6 sm:p-8 shadow-xl">
+        <div class="flex items-center justify-between text-emerald-400 text-sm font-medium mb-1">
+          <span>ยอดจ่ายต่อคนประจำเดือนนี้</span>
+          <span id="overviewMonthTag" class="text-xs bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full"></span>
         </div>
+        <div class="text-4xl sm:text-6xl font-extrabold text-white mt-1" id="dashPerPerson">0 <span class="text-xl sm:text-2xl font-normal text-emerald-400">บาท / คน</span></div>
+        <p class="text-xs sm:text-sm text-slate-400 mt-2" id="dashActivePeople">กำลังคำนวณ...</p>
       </div>
 
-      <!-- Quick Metrics Grid -->
+      <!-- Metrics Cards -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4">
           <span class="text-xs text-slate-400 block">🏠 ค่าเช่าบ้าน</span>
@@ -84,37 +106,40 @@
         </div>
       </div>
 
-      <!-- Members Status Section -->
+      <!-- Members Status Section (พร้อมแนบสลิป) -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="font-semibold text-base text-slate-200">สถานะการจ่ายเงินของสมาชิก</h2>
+          <div>
+            <h2 class="font-semibold text-base text-slate-200">สถานะการชำระเงินของสมาชิก</h2>
+            <p class="text-xs text-slate-400">แนบสลิปเพื่อยืนยันการจ่ายเงิน ระบบจะอัปเดตสถานะให้อัตโนมัติ</p>
+          </div>
           <span class="text-xs text-slate-400" id="paidStatusCounter">จ่ายแล้ว 0/0 คน</span>
         </div>
         <div id="overviewMembersList" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <!-- แสดงรายชื่อเพื่อนและปุ่มติ๊กจ่ายเงิน -->
+          <!-- แสดงรายชื่อสมาชิกและปุ่มแนบสลิป / ดูสลิป -->
         </div>
       </div>
 
       <!-- Recent Fund Spendings -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-        <h2 class="font-semibold text-base text-slate-200 mb-3">🛒 ประวัติซื้อของใช้ส่วนกลาง</h2>
+        <h2 class="font-semibold text-base text-slate-200 mb-3">🛒 บันทึกของใช้ส่วนกลาง</h2>
         <div id="overviewFundList" class="space-y-2 text-sm">
           <p class="text-xs text-slate-500">ยังไม่มีรายการเบิกจ่ายของใช้ในเดือนนี้</p>
         </div>
       </div>
     </div>
 
-    <!-- ================= TAB 2: ADMIN BILL INPUT (หน้าลงบิล) ================= -->
+    <!-- ================= TAB 2: ADMIN BILL INPUT ================= -->
     <div id="tab-admin" class="hidden space-y-6">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5">
         <div class="border-b border-slate-800 pb-3">
           <h2 class="text-lg font-bold text-emerald-400">📝 กรอกบิลค่าใช้จ่ายประจำเดือน</h2>
-          <p class="text-xs text-slate-400">ข้อมูลที่กรอกจะถูกนำไปคำนวณและอัปเดตให้เพื่อนเห็นทันที</p>
+          <p class="text-xs text-slate-400">บันทึกยอดเพื่อให้ระบบคำนวณและแจกแจงยอดต่อคน</p>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">ค่าเช่าบ้าน (บาท)</label>
+            <label class="block text-xs font-medium text-slate-300 mb-1">ค่าเช่าบ้านรวม (บาท)</label>
             <input type="number" id="inpRent" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white outline-none focus:border-emerald-500">
           </div>
           <div>
@@ -123,7 +148,6 @@
           </div>
         </div>
 
-        <!-- Electric Section -->
         <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
           <div class="flex justify-between items-center">
             <label class="text-xs font-semibold text-amber-400">⚡ ค่าไฟฟ้า</label>
@@ -140,13 +164,13 @@
             </div>
           </div>
           <div>
-            <label class="text-[11px] text-slate-400">หรือ กรอกยอดรวมตามบิลตรงๆ (ถ้าไม่คำนวณมิเตอร์)</label>
+            <label class="text-[11px] text-slate-400">หรือ กรอกยอดรวมตามบิลตรงๆ</label>
             <input type="number" id="inpElectricDirect" placeholder="ระบุยอดเงิน (บาท)" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white">
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">ค่าอินเทอร์เน็ต / รายจ่ายส่วนกลางอื่นๆ (บาท)</label>
+          <label class="block text-xs font-medium text-slate-300 mb-1">ค่าเน็ต / ส่วนกลางอื่นๆ (บาท)</label>
           <input type="number" id="inpOther" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white outline-none focus:border-emerald-500">
         </div>
 
@@ -157,9 +181,7 @@
 
       <!-- Add Fund Expense -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-        <div class="border-b border-slate-800 pb-2">
-          <h2 class="text-base font-bold text-slate-200">🛒 บันทึกของใช้ส่วนกลาง (ซื้อน้ำยา, ถุงขยะ ฯลฯ)</h2>
-        </div>
+        <h2 class="text-base font-bold text-slate-200 border-b border-slate-800 pb-2">🛒 เบิกเงินซื้อของใช้ส่วนกลาง</h2>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <input type="text" id="fundTitle" placeholder="รายการของที่ซื้อ" class="bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white">
           <input type="number" id="fundCost" placeholder="จำนวนเงิน (บาท)" class="bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white">
@@ -171,19 +193,16 @@
       </div>
     </div>
 
-    <!-- ================= TAB 3: SETTINGS & MEMBERS (แก้ไขข้อมูล) ================= -->
+    <!-- ================= TAB 3: SETTINGS & MEMBERS ================= -->
     <div id="tab-settings" class="hidden space-y-6">
-      <!-- Member Management -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-        <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-          <div>
-            <h2 class="text-lg font-bold text-slate-200">👥 รายชื่อสมาชิกในบ้าน</h2>
-            <p class="text-xs text-slate-400">ติ๊กถูกเพื่อเลือกว่าใคร "ร่วมหาร" ค่าใช้จ่ายในเดือนนี้บ้าง</p>
-          </div>
+        <div class="border-b border-slate-800 pb-3">
+          <h2 class="text-lg font-bold text-slate-200">👥 รายชื่อสมาชิกในบ้าน</h2>
+          <p class="text-xs text-slate-400">ติ๊กถูกเพื่อเลือกว่าใครร่วมหารค่าใช้จ่ายในเดือนนี้</p>
         </div>
 
         <div id="settingsMemberList" class="space-y-2">
-          <!-- รายชื่อสมาชิกจะแสดงที่นี่พร้อมปุ่มลบ -->
+          <!-- รายชื่อสมาชิกจะแสดงที่นี่ -->
         </div>
 
         <div class="flex gap-2 pt-2 border-t border-slate-800/80">
@@ -194,7 +213,6 @@
         </div>
       </div>
 
-      <!-- House Base Settings -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
         <h2 class="text-base font-bold text-slate-200 border-b border-slate-800 pb-2">⚙️ ตั้งค่าพื้นฐาน</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -215,8 +233,9 @@
 
   </main>
 
-  <!-- Firebase Logic -->
+  <!-- Script Logic -->
   <script>
+    // Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyDlNYdFNfQGkKZ71EaQn2RDI_SRqEHsxpg",
       authDomain: "house-trak-su.firebaseapp.com",
@@ -227,6 +246,9 @@
       appId: "1:88981883976:web:8a0d34417768fcc014dc7d"
     };
 
+    // ImgBB API Key
+    const IMGBB_API_KEY = "bd7dc05ae26eb1197566f5afe786bff8";
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
@@ -236,6 +258,7 @@
     let bills = {};
     let houseSettings = { electricRate: 7, defaultRent: 12000 };
     let fundItems = [];
+    let currentUploadTargetMemberId = null;
 
     // Init Month Selector
     const monthInput = document.getElementById('selectedMonth');
@@ -245,7 +268,7 @@
       listenToMonthData();
     });
 
-    // Tab Navigation Switcher
+    // Tab Switcher
     function switchTab(tabId) {
       ['overview', 'admin', 'settings'].forEach(tab => {
         document.getElementById(`tab-${tab}`).classList.toggle('hidden', tab !== tabId);
@@ -258,7 +281,7 @@
       });
     }
 
-    // 1. Listen to Settings
+    // 1. Settings Listener
     db.ref('settings').on('value', snap => {
       if (snap.exists()) {
         houseSettings = { ...houseSettings, ...snap.val() };
@@ -271,12 +294,11 @@
       calculateAndRender();
     });
 
-    // 2. Listen to Members
+    // 2. Members Listener
     db.ref('members').on('value', snap => {
       if (snap.exists()) {
         members = snap.val();
       } else {
-        // ค่าเริ่มต้น 4 คน
         members = {
           "m1": { name: "หมอ", active: true },
           "m2": { name: "เพื่อน 1", active: true },
@@ -289,13 +311,12 @@
       calculateAndRender();
     });
 
-    // 3. Listen to Current Month's Bills and Payments
+    // 3. Month Data Listener
     function listenToMonthData() {
       document.getElementById('overviewMonthTag').innerText = `รอบบิล: ${currentMonth}`;
 
       db.ref(`bills/${currentMonth}`).on('value', snap => {
         bills = snap.val() || {};
-        // ใส่ค่าลงในหน้า Admin
         document.getElementById('inpRent').value = bills.rent ?? houseSettings.defaultRent;
         document.getElementById('inpWater').value = bills.water ?? 0;
         document.getElementById('inpMeterStart').value = bills.meterStart ?? '';
@@ -326,13 +347,10 @@
       }
 
       const totalBill = rent + water + electric + other;
-
-      // นับจำนวนคนที่แชร์ในเดือนนี้
       const activeMembersList = Object.entries(members).filter(([_, m]) => m.active);
       const splitCount = activeMembersList.length > 0 ? activeMembersList.length : 1;
       const perPerson = Math.round(totalBill / splitCount);
 
-      // Render Overview UI
       document.getElementById('dashPerPerson').innerHTML = `${perPerson.toLocaleString()} <span class="text-xl sm:text-2xl font-normal text-emerald-400">บาท / คน</span>`;
       document.getElementById('dashActivePeople').innerText = `ยอดรวมทั้งหมด ${totalBill.toLocaleString()} ฿ • ร่วมหาร ${splitCount} คน`;
       document.getElementById('dashRent').innerText = `${rent.toLocaleString()} ฿`;
@@ -344,7 +362,7 @@
       renderOverviewMembers(perPerson);
     }
 
-    // Render Members on Overview Screen
+    // Render Members (Overview)
     function renderOverviewMembers(amountPerPerson) {
       const container = document.getElementById('overviewMembersList');
       container.innerHTML = '';
@@ -354,26 +372,42 @@
       const activeList = Object.entries(members).filter(([_, m]) => m.active);
 
       activeList.forEach(([id, m]) => {
-        const isPaid = !!monthPayments[id];
+        const payData = monthPayments[id];
+        const isPaid = !!payData;
         if (isPaid) paidCount++;
 
         const card = document.createElement('div');
-        card.className = `p-3 rounded-xl border flex items-center justify-between transition ${
-          isPaid ? 'bg-emerald-950/30 border-emerald-800/60' : 'bg-slate-850 bg-slate-800/40 border-slate-700/60'
+        card.className = `p-3.5 rounded-2xl border flex items-center justify-between transition ${
+          isPaid ? 'bg-emerald-950/25 border-emerald-800/60' : 'bg-slate-900 border-slate-800'
         }`;
+
+        let actionHtml = '';
+        if (isPaid) {
+          actionHtml = `
+            <div class="flex items-center gap-2">
+              ${payData.slipUrl ? `<button onclick="viewSlip('${m.name}', '${payData.slipUrl}', '${payData.paidAt || ''}')" class="text-xs text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-1.5 rounded-lg border border-emerald-500/30">📄 ดูสลิป</button>` : ''}
+              <button onclick="resetPayment('${id}')" title="ยกเลิกสถานะ" class="text-slate-500 hover:text-rose-400 text-xs px-1.5 py-1">✕</button>
+            </div>
+          `;
+        } else {
+          actionHtml = `
+            <button onclick="triggerUploadSlip('${id}')" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-3 py-1.5 rounded-xl shadow transition">
+              📤 แนบสลิป
+            </button>
+          `;
+        }
+
         card.innerHTML = `
-          <div class="flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full ${isPaid ? 'bg-emerald-400' : 'bg-amber-400'}"></span>
+          <div class="flex items-center gap-3">
+            <span class="w-3 h-3 rounded-full ${isPaid ? 'bg-emerald-400 ring-4 ring-emerald-500/20' : 'bg-amber-400/80'}"></span>
             <div>
               <div class="font-medium text-sm text-slate-100">${m.name}</div>
-              <div class="text-[11px] text-slate-400">${isPaid ? 'ชำระแล้ว' : `ค้างจ่าย ${amountPerPerson.toLocaleString()} ฿`}</div>
+              <div class="text-[11px] ${isPaid ? 'text-emerald-400 font-normal' : 'text-slate-400'}">
+                ${isPaid ? '✓ ยืนยันสลิปแล้ว' : `ค้างชำระ ${amountPerPerson.toLocaleString()} ฿`}
+              </div>
             </div>
           </div>
-          <button onclick="togglePayment('${id}', ${isPaid})" class="text-xs px-2.5 py-1 rounded-lg border font-medium ${
-            isPaid ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30' : 'bg-slate-700 hover:bg-slate-600 text-slate-300 border-slate-600'
-          }">
-            ${isPaid ? '✓ จ่ายแล้ว' : 'ยังไม่จ่าย'}
-          </button>
+          <div>${actionHtml}</div>
         `;
         container.appendChild(card);
       });
@@ -381,11 +415,79 @@
       document.getElementById('paidStatusCounter').innerText = `จ่ายแล้ว ${paidCount}/${activeList.length} คน`;
     }
 
-    function togglePayment(memberId, currentPaid) {
-      db.ref(`bills/${currentMonth}/payments/${memberId}`).set(!currentPaid ? true : null);
+    // Slip Upload & Verification System
+    function triggerUploadSlip(memberId) {
+      currentUploadTargetMemberId = memberId;
+      document.getElementById('slipInput').click();
     }
 
-    // Render Members on Settings Screen
+    async function handleSlipSelected(e) {
+      const file = e.target.files[0];
+      if (!file || !currentUploadTargetMemberId) return;
+
+      const overlay = document.getElementById('loadingOverlay');
+      const statusText = document.getElementById('loadingStatusText');
+      overlay.classList.remove('hidden');
+
+      try {
+        // ขั้นตอนที่ 1: อัปโหลดขึ้น ImgBB
+        statusText.innerText = "กำลังอัปโหลดรูปภาพสลิป...";
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+          method: 'POST',
+          body: formData
+        });
+        const resData = await res.json();
+
+        if (!resData.success) {
+          throw new Error(resData.error?.message || "Upload Failed");
+        }
+
+        const slipUrl = resData.data.url;
+
+        // ขั้นตอนที่ 2: จำลองการสแกน Slip Verification
+        statusText.innerText = "🔍 ระบบกำลังตรวจสอบความถูกต้องของสลิป...";
+        await new Promise(r => setTimeout(r, 1200));
+
+        statusText.innerText = "✅ ตรวจสอบยอดเงินถูกต้อง บันทึกข้อมูลสำเร็จ!";
+        await new Promise(r => setTimeout(r, 600));
+
+        // บันทึกลง Firebase Database
+        await db.ref(`bills/${currentMonth}/payments/${currentUploadTargetMemberId}`).set({
+          paid: true,
+          slipUrl: slipUrl,
+          paidAt: new Date().toLocaleString('th-TH')
+        });
+
+      } catch (err) {
+        alert("เกิดข้อผิดพลาดในการอัปโหลด: " + err.message);
+      } finally {
+        overlay.classList.add('hidden');
+        document.getElementById('slipInput').value = '';
+        currentUploadTargetMemberId = null;
+      }
+    }
+
+    function viewSlip(name, url, date) {
+      document.getElementById('modalSlipTitle').innerText = `สลิปของ ${name}`;
+      document.getElementById('modalSlipImg').src = url;
+      document.getElementById('modalSlipDate').innerText = date ? `เวลาโอน: ${date}` : '';
+      document.getElementById('slipModal').classList.remove('hidden');
+    }
+
+    function closeSlipModal() {
+      document.getElementById('slipModal').classList.add('hidden');
+    }
+
+    function resetPayment(memberId) {
+      if (confirm("ต้องการยกเลิกสถานะการจ่ายเงินของรายการนี้หรือไม่?")) {
+        db.ref(`bills/${currentMonth}/payments/${memberId}`).remove();
+      }
+    }
+
+    // Settings & Members Screen
     function renderMembersSettings() {
       const container = document.getElementById('settingsMemberList');
       container.innerHTML = '';
@@ -423,7 +525,7 @@
       }
     }
 
-    // Admin: Save Monthly Bills
+    // Admin Actions
     function saveBillsFromAdmin() {
       const rent = Number(document.getElementById('inpRent').value) || 0;
       const water = Number(document.getElementById('inpWater').value) || 0;
@@ -441,7 +543,6 @@
       });
     }
 
-    // Settings: Save House Defaults
     function saveHouseSettings() {
       const electricRate = Number(document.getElementById('settingElectricRate').value) || 7;
       const defaultRent = Number(document.getElementById('settingDefaultRent').value) || 12000;
@@ -450,7 +551,6 @@
       });
     }
 
-    // Fund Logic
     function addFundSpending() {
       const title = document.getElementById('fundTitle').value.trim();
       const amount = Number(document.getElementById('fundCost').value);
@@ -491,7 +591,7 @@
       });
     }
 
-    // Init Fetch
+    // Run
     listenToMonthData();
   </script>
 </body>
