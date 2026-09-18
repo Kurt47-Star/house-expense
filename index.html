@@ -20,13 +20,14 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen pb-16">
 
-  <!-- Overlays สำหรับสแกนสลิปและดูรูป -->
+  <!-- Overlays -->
   <input type="file" id="slipInput" accept="image/*" class="hidden" onchange="handleSlipSelected(event)">
   <div id="loadingOverlay" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex flex-col items-center justify-center p-4 text-center">
     <div class="w-12 h-12 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin mb-4"></div>
     <div id="loadingStatusText" class="text-base font-semibold text-emerald-400">กำลังประมวลผล...</div>
   </div>
 
+  <!-- Modal ดูสลิป -->
   <div id="slipModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl relative flex flex-col">
       <div class="p-3 border-b border-slate-800 flex justify-between items-center">
@@ -52,10 +53,10 @@
         <span class="font-bold text-lg text-emerald-400">บ้านพักเรา</span>
       </div>
       <div class="flex items-center bg-slate-800/80 p-1 rounded-xl border border-slate-700/60 text-sm overflow-x-auto w-full sm:w-auto">
-        <button id="tabBtn-overview" onclick="switchTab('overview')" class="px-3 py-1.5 rounded-lg font-medium transition bg-emerald-600 text-white whitespace-nowrap">📊 เช็กสถานะการจ่ายเงิน</button>
+        <button id="tabBtn-overview" onclick="switchTab('overview')" class="px-3 py-1.5 rounded-lg font-medium transition bg-emerald-600 text-white whitespace-nowrap">📊 เช็กสถานะบิลทั้งหมด</button>
         <button id="tabBtn-board" onclick="switchTab('board')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white whitespace-nowrap">📌 บอร์ดบ้าน</button>
         <button id="tabBtn-analytics" onclick="switchTab('analytics')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white whitespace-nowrap">📈 สถิติ</button>
-        <button id="tabBtn-admin" onclick="switchTab('admin')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white whitespace-nowrap">📝 ลงบิล & ข้อมูล</button>
+        <button id="tabBtn-admin" onclick="switchTab('admin')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white whitespace-nowrap">📝 ลงข้อมูล & ตั้งค่า</button>
       </div>
       <input type="month" id="selectedMonth" class="bg-slate-800 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 outline-none w-full sm:w-auto">
     </div>
@@ -68,10 +69,12 @@
       
       <!-- สรุปยอดภาพรวม -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- บิลบ้าน -->
         <div class="bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-3xl p-5 shadow-xl">
-          <div class="text-emerald-400 font-medium text-sm mb-1">🏠 ค่าเช่าบ้านเดือนนี้</div>
+          <div class="text-emerald-400 font-medium text-sm mb-1">🏠 ค่าเช่าบ้าน/น้ำ/ไฟ เดือนนี้</div>
           <div class="text-3xl font-extrabold text-white" id="dashPerPerson">0 <span class="text-sm text-emerald-400 font-normal">บ./คน</span></div>
         </div>
+        <!-- กองกลาง -->
         <div class="bg-indigo-950/20 border border-indigo-500/20 rounded-3xl p-5 shadow-xl">
           <div class="flex justify-between items-start">
             <div>
@@ -103,7 +106,7 @@
           <h2 class="text-lg font-bold text-purple-400">📌 บอร์ดประกาศ & กฎประจำบ้าน</h2>
           <span class="text-xs text-slate-500" id="boardSaveStatus">บันทึกอัตโนมัติ</span>
         </div>
-        <textarea id="houseBoardText" class="w-full flex-1 bg-slate-800/80 border border-slate-700 rounded-xl p-4 text-sm text-slate-200 resize-none outline-none focus:ring-1 focus:ring-purple-500 shadow-inner" placeholder="พิมพ์ข้อความที่นี่..."></textarea>
+        <textarea id="houseBoardText" class="w-full flex-1 bg-slate-800/80 border border-slate-700 rounded-xl p-4 text-sm text-slate-200 resize-none outline-none focus:ring-1 focus:ring-purple-500 shadow-inner" placeholder="พิมพ์ข้อความที่นี่... (ข้อมูลจะเซฟให้ทุกคนเห็นทันที)"></textarea>
       </div>
     </div>
 
@@ -120,7 +123,7 @@
       
       <!-- ลงบิลประจำเดือน -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-        <h2 class="text-lg font-bold text-emerald-400 border-b border-slate-800 pb-2">📝 กรอกบิลค่าบ้านประจำเดือน</h2>
+        <h2 class="text-lg font-bold text-emerald-400 border-b border-slate-800 pb-2">📝 1. ลงบิลค่าบ้านประจำเดือน</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div><label class="block text-xs mb-1">ค่าเช่าบ้านรวม</label><input type="number" id="inpRent" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm"></div>
           <div><label class="block text-xs mb-1">ค่าน้ำประปา</label><input type="number" id="inpWater" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm"></div>
@@ -130,16 +133,21 @@
         <button onclick="saveBillsFromAdmin()" class="w-full bg-emerald-600 py-2.5 rounded-xl transition font-medium">บันทึกยอดบิลค่าบ้าน</button>
       </div>
 
-      <!-- บันทึกสำรองจ่ายก้อนใหญ่ (เงินแรกเข้า / ซื้อของใช้แพง) -->
+      <!-- บันทึกสำรองจ่ายก้อนใหญ่ (เลือกคนจ่ายได้หลายคน) -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-        <h2 class="text-lg font-bold text-amber-400 border-b border-slate-800 pb-2">💸 บันทึกรายการเพื่อนสำรองจ่ายแทน</h2>
-        <p class="text-[11px] text-slate-400">เมื่อบันทึกแล้ว ระบบจะนำยอดนี้ไปหารแบ่งให้เพื่อนคนอื่นจ่ายคืนผู้สำรองจ่ายโดยอัตโนมัติ</p>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <input type="text" id="advTitle" placeholder="เช่น ค่าประกันบ้าน, ซื้อเครื่องซักผ้า" class="bg-slate-800 rounded-lg p-2 text-xs">
-          <input type="number" id="advAmount" placeholder="ยอดเงินรวมทั้งหมด (บาท)" class="bg-slate-800 rounded-lg p-2 text-xs">
-          <select id="advPayer" class="bg-slate-800 rounded-lg p-2 text-xs text-slate-300"></select>
+        <h2 class="text-lg font-bold text-amber-400 border-b border-slate-800 pb-2">💸 2. บันทึกสำรองจ่าย (เลือกได้หลายคน)</h2>
+        <p class="text-[11px] text-slate-400">สำหรับของชิ้นใหญ่ หรือค่าประกันบ้าน ที่มีคนออกเงินไปก่อน ระบบจะคำนวณยอดที่คนอื่นต้องใช้หนี้คืนให้</p>
+        <div class="space-y-3">
+          <input type="text" id="advTitle" placeholder="เช่น ค่าประกันบ้าน, ซื้อตู้เย็น" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm">
+          <input type="number" id="advAmount" placeholder="ยอดเงินรวมทั้งหมด (บาท)" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm">
+          <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
+            <label class="block text-xs text-slate-300 mb-2">ใครเป็นคนออกเงินก้อนนี้บ้าง? (ติ๊กได้มากกว่า 1 คน)</label>
+            <div id="advPayerCheckboxes" class="flex flex-wrap gap-3">
+              <!-- Checkboxes จะโผล่ที่นี่ -->
+            </div>
+          </div>
         </div>
-        <button onclick="addAdvancePayment()" class="bg-amber-600 hover:bg-amber-500 w-full py-2 rounded-xl text-sm transition font-medium">เพิ่มรายการสำรองจ่าย</button>
+        <button onclick="addAdvancePayment()" class="bg-amber-600 hover:bg-amber-500 w-full py-2.5 rounded-xl text-sm transition font-medium">บันทึกรายการสำรองจ่าย</button>
         
         <!-- รายการสำรองจ่ายที่บันทึกแล้ว -->
         <div id="advanceAdminList" class="space-y-2 mt-4 pt-4 border-t border-slate-800"></div>
@@ -150,7 +158,7 @@
         
         <!-- ซื้อของหักกองกลาง -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-          <h2 class="text-lg font-bold text-indigo-400 border-b border-slate-800 pb-2">🛒 ซื้อของใช้เข้าบ้าน (หักจากกองกลาง)</h2>
+          <h2 class="text-lg font-bold text-indigo-400 border-b border-slate-800 pb-2">🛒 3. ซื้อของหักจากกองกลาง</h2>
           <div class="space-y-3">
             <input type="text" id="fundItemName" placeholder="ชื่อของที่ซื้อ (เช่น ทิชชู่)" class="w-full bg-slate-800 rounded-lg p-2 text-xs">
             <input type="number" id="fundItemCost" placeholder="ราคา (บาท)" class="w-full bg-slate-800 rounded-lg p-2 text-xs">
@@ -162,17 +170,20 @@
 
         <!-- ตั้งค่าระบบ -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-          <h2 class="text-lg font-bold text-slate-200 border-b border-slate-800 pb-2">⚙️ ตั้งค่าสมาชิก & ยอดกองกลาง</h2>
-          <div id="settingsMemberList" class="space-y-2 mb-2"></div>
-          <div class="flex gap-2">
-            <input type="text" id="newMemberName" placeholder="ชื่อเพื่อนใหม่" class="flex-1 bg-slate-800 rounded-lg px-2 text-xs">
-            <button onclick="addNewMember()" class="bg-emerald-600 px-3 py-1 rounded-lg text-xs">+ เพิ่ม</button>
+          <h2 class="text-lg font-bold text-slate-200 border-b border-slate-800 pb-2">⚙️ 4. ตั้งค่าระบบ</h2>
+          
+          <label class="block text-[11px] text-slate-400 mt-2 mb-1">ยอดเก็บกองกลาง/คน/เดือน (บาท)</label>
+          <div class="flex gap-2 mb-4">
+            <input type="number" id="setFundRate" class="flex-1 bg-slate-800 rounded-lg p-2 text-xs">
+            <button onclick="saveSettings()" class="bg-slate-700 px-3 rounded-lg text-xs">บันทึก</button>
           </div>
-          <div class="pt-4 mt-2 border-t border-slate-800">
-            <label class="block text-[11px] text-slate-400 mb-1">เก็บกองกลางเดือนละ (บาท/คน)</label>
+
+          <div class="pt-4 border-t border-slate-800">
+            <label class="block text-[11px] text-slate-400 mb-2">จัดการสมาชิก</label>
+            <div id="settingsMemberList" class="space-y-2 mb-3"></div>
             <div class="flex gap-2">
-              <input type="number" id="setFundRate" class="flex-1 bg-slate-800 rounded-lg p-2 text-xs">
-              <button onclick="saveSettings()" class="bg-slate-700 px-3 rounded-lg text-xs">บันทึก</button>
+              <input type="text" id="newMemberName" placeholder="ชื่อเพื่อนใหม่" class="flex-1 bg-slate-800 rounded-lg px-2 text-xs">
+              <button onclick="addNewMember()" class="bg-emerald-600 px-3 py-1 rounded-lg text-xs">+ เพิ่ม</button>
             </div>
           </div>
         </div>
@@ -198,12 +209,12 @@
     let currentMonth = new Date().toISOString().slice(0, 7);
     let members = {}, allMonthsData = {}, advances = {}, settings = { fundRate: 500, defaultRent: 12000 };
     
-    // Upload Target State { memberId, paymentType, expectedAmount, targetAdvId }
+    // Upload Target Config { memberId, paymentType, expectedAmt, targetAdvId }
     let currentUploadConfig = null; 
     let currentGallerySlips = [], currentGalleryIndex = 0;
     let chartInstance = null;
 
-    // Initialization
+    // Initialize UI
     document.getElementById('selectedMonth').value = currentMonth;
     document.getElementById('selectedMonth').addEventListener('change', (e) => {
       currentMonth = e.target.value; listenToCurrentMonth();
@@ -219,7 +230,7 @@
       if (tabId === 'analytics') renderChart();
     }
 
-    // Database Listeners
+    // Connect to Database Real-time
     db.ref('settings').on('value', snap => {
       if (snap.exists()) settings = { ...settings, ...snap.val() };
       document.getElementById('setFundRate').value = settings.fundRate;
@@ -241,6 +252,7 @@
       advances = snap.val() || {}; calculateAndRender(); renderAdminAdvances();
     });
 
+    // Board Auto-Save Realtime
     const boardTextArea = document.getElementById('houseBoardText');
     let boardTimeout = null;
     db.ref('board/content').on('value', snap => {
@@ -257,7 +269,7 @@
       }, 1000);
     });
 
-    // Compute & Render
+    // Compute & Render Logic
     function listenToCurrentMonth() {
       const md = allMonthsData[currentMonth] || {};
       document.getElementById('inpRent').value = md.rent || settings.defaultRent;
@@ -291,14 +303,14 @@
       const fAdmin = document.getElementById('fundExpenseAdminList'); fAdmin.innerHTML = '';
       if(curData.fundExpenses) {
         Object.values(curData.fundExpenses).forEach(e => {
-          fAdmin.innerHTML += `<div class="flex justify-between border-b border-slate-800 py-1"><span>${e.name} (${e.buyer})</span><span class="text-rose-400">-${Number(e.amount).toLocaleString()}</span></div>`;
+          fAdmin.innerHTML += `<div class="flex justify-between border-b border-slate-800 py-1"><span>${e.name} <span class="text-slate-500">(${e.buyer})</span></span><span class="text-rose-400">-${Number(e.amount).toLocaleString()}</span></div>`;
         });
       }
 
       renderPersonalCards(houseBillPerPerson, fundPerPerson, activeCount, curData.payments || {}, curData.fundPayments || {});
     }
 
-    // THE SUPER CARD RENDERER
+    // THE SUPER CARD RENDERER (ALL IN ONE PLACE)
     function renderPersonalCards(houseBillAmt, fundAmt, totalActiveCount, housePayObj, fundPayObj) {
       const container = document.getElementById('overviewMembersCards');
       container.innerHTML = '';
@@ -313,7 +325,7 @@
         
         let houseSectionHtml = `
           <div class="flex justify-between items-center bg-slate-900/50 p-2.5 rounded-lg border border-slate-800">
-            <div><div class="text-[11px] text-slate-400">🏠 ค่าเช่าบ้าน/ค่าน้ำไฟ</div><div class="text-sm font-medium mt-0.5">${hStatus}</div></div>
+            <div><div class="text-[11px] text-slate-400">🏠 ค่าบ้าน/น้ำ/ไฟ</div><div class="text-sm font-medium mt-0.5">${hStatus}</div></div>
             <div class="flex flex-col gap-1 items-end">
               ${hSlips.length ? `<button onclick='openGallery(${JSON.stringify(hSlips)}, "${m.name} (ค่าบ้าน)")' class="text-[10px] text-blue-400 underline">ดูสลิป</button>` : ''}
               <button onclick="triggerUploadSlip('${mId}', 'house', ${houseBillAmt - hPaid})" class="text-[10px] bg-slate-700 hover:bg-slate-600 px-2 py-1.5 rounded text-white">+ แนบสลิป</button>
@@ -328,8 +340,8 @@
         const fStatus = fPaid >= fundAmt ? `<span class="text-indigo-400">✓ จ่ายครบ</span>` : (fPaid > 0 ? `<span class="text-indigo-300/70">ขาด ${fundAmt - fPaid} ฿</span>` : `<span class="text-slate-400">${fundAmt} ฿</span>`);
 
         let fundSectionHtml = `
-          <div class="flex justify-between items-center bg-indigo-950/20 p-2.5 rounded-lg border border-indigo-900/30">
-            <div><div class="text-[11px] text-indigo-400/80">💎 เงินสมทบกองกลาง</div><div class="text-sm font-medium mt-0.5">${fStatus}</div></div>
+          <div class="flex justify-between items-center bg-indigo-950/20 p-2.5 rounded-lg border border-indigo-900/30 mt-2">
+            <div><div class="text-[11px] text-indigo-400/80">💎 เงินกองกลาง</div><div class="text-sm font-medium mt-0.5">${fStatus}</div></div>
             <div class="flex flex-col gap-1 items-end">
               ${fSlips.length ? `<button onclick='openGallery(${JSON.stringify(fSlips)}, "${m.name} (กองกลาง)")' class="text-[10px] text-blue-400 underline">ดูสลิป</button>` : ''}
               <button onclick="triggerUploadSlip('${mId}', 'fund', ${fundAmt - fPaid})" class="text-[10px] bg-indigo-900/80 border border-indigo-700 hover:bg-indigo-700 px-2 py-1.5 rounded text-indigo-200">+ แนบสลิป</button>
@@ -337,23 +349,31 @@
           </div>
         `;
 
-        // --- 3. Advance Debt Data ---
+        // --- 3. Advance Debt Data (Multi-Payer Logic) ---
         let advanceHtml = '';
         Object.entries(advances).forEach(([advId, adv]) => {
-          if (adv.payerId !== mId) { // คนนี้ไม่ได้เป็นคนจ่าย ต้องใช้หนี้
+          const payers = adv.payers || []; // Array of member IDs who paid
+          if (!payers.includes(mId)) { 
+            // Person did not pay this advance, so they owe their share
             const debtAmt = Math.round(adv.amount / totalActiveCount);
             const aData = adv.payments?.[mId] || { paidAmount: 0, slips: [] };
             const aPaid = Number(aData.paidAmount);
             const aSlips = aData.slips ? (Array.isArray(aData.slips) ? aData.slips : Object.values(aData.slips)) : [];
-            const payerName = members[adv.payerId]?.name || 'ส่วนกลาง';
+            
+            // Build string of payer names
+            const payerNames = payers.map(pid => members[pid]?.name || '?').join(', ');
             
             const aStatus = aPaid >= debtAmt ? `<span class="text-emerald-400">✓ คืนแล้ว</span>` : (aPaid > 0 ? `<span class="text-amber-400">ขาด ${debtAmt - aPaid} ฿</span>` : `<span class="text-slate-400">ค้าง ${debtAmt} ฿</span>`);
 
             advanceHtml += `
               <div class="flex justify-between items-center bg-amber-950/20 p-2.5 rounded-lg border border-amber-900/30 mt-2">
-                <div><div class="text-[11px] text-amber-500/80">💸 คืนหนี้: ${adv.title} (ให้ ${payerName})</div><div class="text-sm font-medium mt-0.5">${aStatus}</div></div>
+                <div>
+                  <div class="text-[11px] text-amber-500/80">💸 คืนหนี้: ${adv.title}</div>
+                  <div class="text-[10px] text-slate-500">โอนคืนให้: ${payerNames}</div>
+                  <div class="text-sm font-medium mt-0.5">${aStatus}</div>
+                </div>
                 <div class="flex flex-col gap-1 items-end">
-                  ${aSlips.length ? `<button onclick='openGallery(${JSON.stringify(aSlips)}, "${m.name} (ใช้หนี้ ${payerName})")' class="text-[10px] text-blue-400 underline">ดูสลิป</button>` : ''}
+                  ${aSlips.length ? `<button onclick='openGallery(${JSON.stringify(aSlips)}, "${m.name} (ใช้หนี้ ${payerNames})")' class="text-[10px] text-blue-400 underline">ดูสลิป</button>` : ''}
                   <button onclick="triggerUploadSlip('${mId}', 'advance', ${debtAmt - aPaid}, '${advId}')" class="text-[10px] bg-amber-900/80 border border-amber-700 hover:bg-amber-700 px-2 py-1.5 rounded text-amber-200">+ แนบสลิป</button>
                 </div>
               </div>
@@ -361,10 +381,10 @@
           }
         });
 
-        // Assemble Card
+        // Assemble Final Card
         container.innerHTML += `
-          <div class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl flex flex-col gap-3">
-            <h3 class="text-base font-bold text-slate-200 border-b border-slate-700 pb-2 flex items-center gap-2">
+          <div class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl flex flex-col">
+            <h3 class="text-base font-bold text-slate-200 border-b border-slate-700 pb-2 mb-3 flex items-center gap-2">
               <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> ${m.name}
             </h3>
             ${houseSectionHtml}
@@ -375,7 +395,7 @@
       });
     }
 
-    // SLIP UPLOAD SYSTEM (Unified)
+    // SLIP UPLOAD SYSTEM (Tesseract OCR & ImgBB)
     function triggerUploadSlip(memberId, paymentType, expectedAmt, targetAdvId = null) {
       currentUploadConfig = { memberId, paymentType, expectedAmt: expectedAmt > 0 ? expectedAmt : 0, targetAdvId };
       document.getElementById('slipInput').click();
@@ -446,7 +466,7 @@
       }
     }
 
-    // GALLERY VIEWER
+    // GALLERY VIEWER (ปัดดูรูปสลิป)
     function openGallery(slips, nameStr) {
       currentGallerySlips = slips; currentGalleryIndex = 0;
       document.getElementById('modalSlipTitle').innerText = nameStr;
@@ -465,25 +485,38 @@
 
     // Admin & Advances Logic
     function updateDropdowns() {
-      let opts = '<option value="">เลือกเพื่อน...</option>';
-      Object.entries(members).forEach(([id, m]) => { if(m.active) opts += `<option value="${id}">${m.name}</option>`; });
-      document.getElementById('advPayer').innerHTML = opts; document.getElementById('fundBuyerSelect').innerHTML = opts;
+      let fundOpts = '<option value="">เลือกเพื่อน...</option>';
+      let advChecks = '';
+      Object.entries(members).forEach(([id, m]) => { 
+        if(m.active) {
+          fundOpts += `<option value="${id}">${m.name}</option>`; 
+          advChecks += `<label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="${id}" class="adv-payer-cb w-4 h-4 accent-amber-500"> ${m.name}</label>`;
+        }
+      });
+      document.getElementById('advPayerCheckboxes').innerHTML = advChecks; 
+      document.getElementById('fundBuyerSelect').innerHTML = fundOpts;
     }
 
     function addAdvancePayment() {
       const title = document.getElementById('advTitle').value.trim();
       const amt = Number(document.getElementById('advAmount').value);
-      const payerId = document.getElementById('advPayer').value;
-      if (!title || !amt || !payerId) return alert("กรอกข้อมูลให้ครบ");
-      db.ref(`advances`).push({ title, amount: amt, payerId, date: new Date().toLocaleDateString('th-TH') });
+      
+      const cbs = document.querySelectorAll('.adv-payer-cb:checked');
+      const payers = Array.from(cbs).map(cb => cb.value);
+
+      if (!title || !amt || payers.length === 0) return alert("กรุณากรอกข้อมูลให้ครบ และเลือกผู้ที่ออกเงินไปก่อนอย่างน้อย 1 คน");
+      
+      db.ref(`advances`).push({ title, amount: amt, payers, date: new Date().toLocaleDateString('th-TH') });
       document.getElementById('advTitle').value = ''; document.getElementById('advAmount').value = '';
+      cbs.forEach(cb => cb.checked = false);
     }
 
     function renderAdminAdvances() {
       const div = document.getElementById('advanceAdminList'); div.innerHTML = '';
       Object.entries(advances).forEach(([advId, adv]) => {
-        const payerName = members[adv.payerId]?.name || '?';
-        div.innerHTML += `<div class="flex justify-between items-center text-xs bg-slate-800 p-2 rounded"><div>${adv.title} <span class="text-emerald-400">(${payerName} จ่าย)</span></div><div class="flex items-center gap-3"><span class="text-amber-400">${adv.amount} ฿</span><button onclick="db.ref('advances/${advId}').remove()" class="text-rose-400 hover:underline">ลบ</button></div></div>`;
+        const payers = adv.payers || [];
+        const payerNames = payers.map(pid => members[pid]?.name || '?').join(', ');
+        div.innerHTML += `<div class="flex justify-between items-center text-xs bg-slate-800 p-2 rounded"><div>${adv.title} <span class="text-emerald-400">(จ่ายโดย ${payerNames})</span></div><div class="flex items-center gap-3"><span class="text-amber-400">${adv.amount.toLocaleString()} ฿</span><button onclick="db.ref('advances/${advId}').remove()" class="text-rose-400 hover:underline">ลบ</button></div></div>`;
       });
     }
 
@@ -512,10 +545,10 @@
     }
 
     function saveSettings() {
-      db.ref('settings').update({fundRate: Number(document.getElementById('setFundRate').value)}).then(()=>alert("บันทึกแล้ว"));
+      db.ref('settings').update({fundRate: Number(document.getElementById('setFundRate').value)}).then(()=>alert("บันทึกการตั้งค่ากองกลางเรียบร้อย"));
     }
 
-    // Chart.js
+    // Chart.js - Analytics Trend
     function renderChart() {
       if (chartInstance) chartInstance.destroy();
       const ctx = document.getElementById('expenseChart').getContext('2d');
