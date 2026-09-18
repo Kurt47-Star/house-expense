@@ -12,37 +12,40 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>body { font-family: 'Kanit', sans-serif; }</style>
   
-  <!-- Firebase SDK -->
+  <!-- Firebase & Tesseract & Chart.js -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  
-  <!-- Tesseract.js สำหรับ AI สแกนสลิป (OCR) -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen pb-16">
 
-  <!-- File Input -->
+  <!-- File Input & Overlays -->
   <input type="file" id="slipInput" accept="image/*" class="hidden" onchange="handleSlipSelected(event)">
+  
+  <div id="loadingOverlay" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex flex-col items-center justify-center p-4 text-center">
+    <div class="w-12 h-12 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin mb-4"></div>
+    <div id="loadingStatusText" class="text-base font-semibold text-emerald-400">กำลังเตรียมระบบ...</div>
+  </div>
 
-  <!-- Modal แสดงสลิป -->
-  <div id="slipModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full overflow-hidden shadow-2xl">
+  <!-- Modal ดูสลิปแบบ Gallery (ปัดดูได้หลายรูป) -->
+  <div id="slipModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl relative">
       <div class="p-3 border-b border-slate-800 flex justify-between items-center">
         <h3 class="text-sm font-semibold text-slate-200" id="modalSlipTitle">หลักฐานการโอนเงิน</h3>
         <button onclick="closeSlipModal()" class="text-slate-400 hover:text-white text-lg px-2">✕</button>
       </div>
-      <div class="p-4 flex flex-col items-center">
-        <img id="modalSlipImg" src="" alt="สลิป" class="max-h-96 w-auto rounded-xl object-contain shadow">
-        <span id="modalSlipDate" class="text-xs text-slate-400 mt-3"></span>
+      <div class="p-4 flex flex-col items-center relative h-96">
+        <div id="slipGalleryContainer" class="w-full h-full flex items-center justify-center relative overflow-hidden">
+          <img id="modalSlipImg" src="" class="max-h-80 w-auto rounded-xl object-contain shadow">
+        </div>
+        <!-- ปุ่มเลื่อนดูรูป -->
+        <button id="btnPrevSlip" onclick="changeSlipView(-1)" class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 p-2 rounded-full hidden">◀</button>
+        <button id="btnNextSlip" onclick="changeSlipView(1)" class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 p-2 rounded-full hidden">▶</button>
+        
+        <span id="modalSlipCount" class="text-xs text-amber-400 mt-2 font-medium"></span>
       </div>
     </div>
-  </div>
-
-  <!-- Loading Overlay -->
-  <div id="loadingOverlay" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex flex-col items-center justify-center p-4 text-center">
-    <div class="w-12 h-12 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin mb-4"></div>
-    <div id="loadingStatusText" class="text-base font-semibold text-emerald-400">กำลังเตรียมระบบ...</div>
-    <p class="text-xs text-slate-400 mt-2 max-w-xs">AI กำลังอ่านข้อมูล หากเป็นการเปิดใช้งานครั้งแรกอาจใช้เวลาโหลดข้อมูลภาษา 5-10 วินาที</p>
   </div>
 
   <!-- Navigation -->
@@ -52,12 +55,13 @@
         <span class="text-2xl">🏡</span>
         <span class="font-bold text-lg text-emerald-400">บ้านพักเรา</span>
       </div>
-      <div class="flex items-center bg-slate-800/80 p-1 rounded-xl border border-slate-700/60 text-sm">
-        <button id="tabBtn-overview" onclick="switchTab('overview')" class="px-3 py-1.5 rounded-lg font-medium transition bg-emerald-600 text-white">📊 ภาพรวม</button>
-        <button id="tabBtn-admin" onclick="switchTab('admin')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white">📝 บันทึกบิล</button>
-        <button id="tabBtn-settings" onclick="switchTab('settings')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white">⚙️ ตั้งค่า</button>
+      <div class="flex items-center bg-slate-800/80 p-1 rounded-xl border border-slate-700/60 text-sm overflow-x-auto w-full sm:w-auto">
+        <button id="tabBtn-overview" onclick="switchTab('overview')" class="px-3 py-1.5 rounded-lg font-medium transition bg-emerald-600 text-white whitespace-nowrap">📊 บิล & กองกลาง</button>
+        <button id="tabBtn-analytics" onclick="switchTab('analytics')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white whitespace-nowrap">📈 สถิติย้อนหลัง</button>
+        <button id="tabBtn-admin" onclick="switchTab('admin')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white whitespace-nowrap">📝 ลงบิล</button>
+        <button id="tabBtn-settings" onclick="switchTab('settings')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white whitespace-nowrap">⚙️ ตั้งค่า</button>
       </div>
-      <input type="month" id="selectedMonth" class="bg-slate-800 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-emerald-500">
+      <input type="month" id="selectedMonth" class="bg-slate-800 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 outline-none">
     </div>
   </nav>
 
@@ -65,59 +69,111 @@
 
     <!-- ================= TAB 1: OVERVIEW ================= -->
     <div id="tab-overview" class="space-y-6">
-      <div class="bg-gradient-to-br from-emerald-950/50 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-3xl p-6 sm:p-8 shadow-xl">
-        <div class="flex items-center justify-between text-emerald-400 text-sm font-medium mb-1">
-          <span>ยอดจ่ายต่อคนประจำเดือนนี้</span>
-          <span id="overviewMonthTag" class="text-xs bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full"></span>
+      
+      <!-- ก้อนที่ 1: บิลค่าบ้าน -->
+      <div class="bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+        <div class="flex justify-between items-center text-sm mb-2">
+          <span class="text-emerald-400 font-medium">บิลค่าบ้านเดือนนี้ (ไม่รวมกองกลาง)</span>
+          <span id="overviewMonthTag" class="text-xs bg-slate-800 px-2 py-0.5 rounded text-slate-300"></span>
         </div>
-        <div class="text-4xl sm:text-6xl font-extrabold text-white mt-1" id="dashPerPerson">0 <span class="text-xl sm:text-2xl font-normal text-emerald-400">บาท / คน</span></div>
-        <p class="text-xs sm:text-sm text-slate-400 mt-2" id="dashActivePeople">กำลังคำนวณ...</p>
+        <div class="text-4xl sm:text-5xl font-extrabold text-white" id="dashPerPerson">0 <span class="text-lg text-emerald-400 font-normal">บ./คน</span></div>
+        <div class="text-xs text-slate-400 mt-2 flex gap-4">
+          <span id="dashRent">ค่าเช่า 0</span>
+          <span id="dashElectric" class="text-amber-400/80">ค่าไฟ 0</span>
+          <span id="dashWater" class="text-cyan-400/80">ค่าน้ำ 0</span>
+        </div>
       </div>
 
+      <!-- ก้อนที่ 2: เงินกองกลาง (Common Fund) -->
+      <div class="bg-indigo-950/20 border border-indigo-500/20 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+        <h2 class="text-indigo-400 font-medium text-sm mb-2">💎 เงินกองกลาง (สมทบเดือนละ <span id="fundPerPersonRate">0</span> บ./คน)</h2>
+        <div class="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
+          <div>
+            <div class="text-sm text-slate-400 mb-1">ยอดรวมกองกลางคงเหลือ</div>
+            <div class="text-4xl font-extrabold text-indigo-300" id="dashFundBalance">0 <span class="text-lg font-normal">บาท</span></div>
+          </div>
+          <div class="text-xs text-slate-400 text-right">
+            <div>สมทบเดือนนี้: +<span id="dashFundIn">0</span> ฿</div>
+            <div>ใช้จ่ายไป: <span class="text-rose-400">-<span id="dashFundOut">0</span> ฿</span></div>
+          </div>
+        </div>
+        
+        <!-- รายการเบิกของใช้ส่วนกลาง -->
+        <div class="mt-4 pt-4 border-t border-indigo-900/30">
+          <h3 class="text-xs font-semibold text-slate-300 mb-2">🛒 ประวัติซื้อของใช้ส่วนกลางเดือนนี้</h3>
+          <div id="fundExpenseList" class="space-y-2 max-h-32 overflow-y-auto pr-1">
+            <!-- รายการของใช้จะแสดงที่นี่ -->
+          </div>
+        </div>
+      </div>
+
+      <!-- สมาชิกและสลิป -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
         <div class="flex justify-between items-center mb-4">
-          <div>
-            <h2 class="font-semibold text-base text-slate-200">สถานะการชำระเงิน (สแกนสลิปอัตโนมัติ)</h2>
-          </div>
-          <span class="text-xs text-slate-400" id="paidStatusCounter">จ่ายครบ 0/0 คน</span>
+          <h2 class="font-semibold text-slate-200">สถานะการชำระเงิน (รวมค่าบ้าน + กองกลาง)</h2>
         </div>
         <div id="overviewMembersList" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <!-- ข้อมูลสมาชิกและการจ่ายเงิน -->
+          <!-- การจ่ายเงินสมาชิก -->
         </div>
       </div>
     </div>
 
-    <!-- ================= TAB 2: ADMIN ================= -->
+    <!-- ================= TAB 2: ANALYTICS (กราฟย้อนหลัง) ================= -->
+    <div id="tab-analytics" class="hidden space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+        <h2 class="font-semibold text-slate-200 mb-4">📈 เปรียบเทียบค่าใช้จ่ายผันแปรย้อนหลัง (ค่าน้ำ, ค่าไฟ, ของใช้ส่วนกลาง)</h2>
+        <div class="w-full h-72">
+          <canvas id="expenseChart"></canvas>
+        </div>
+        <p class="text-xs text-slate-400 mt-4 text-center">กราฟดึงข้อมูลจากทุกเดือนที่มีการบันทึกในระบบ เพื่อดูเทรนด์การใช้เงิน</p>
+      </div>
+    </div>
+
+    <!-- ================= TAB 3: ADMIN (ลงบิล & เบิกกองกลาง) ================= -->
     <div id="tab-admin" class="hidden space-y-6">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5">
-        <h2 class="text-lg font-bold text-emerald-400 border-b border-slate-800 pb-2">📝 กรอกบิลค่าใช้จ่ายประจำเดือน</h2>
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <h2 class="text-lg font-bold text-emerald-400 border-b border-slate-800 pb-2">📝 กรอกบิลค่าบ้านประจำเดือน</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div><label class="block text-xs mb-1">ค่าเช่าบ้านรวม (บาท)</label><input type="number" id="inpRent" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm"></div>
-          <div><label class="block text-xs mb-1">ค่าน้ำประปา (บาท)</label><input type="number" id="inpWater" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm"></div>
-          <div><label class="block text-xs mb-1">ค่าไฟฟ้า (บาท)</label><input type="number" id="inpElectricDirect" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm"></div>
-          <div><label class="block text-xs mb-1">ค่าส่วนกลางอื่นๆ (บาท)</label><input type="number" id="inpOther" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm"></div>
+          <div><label class="block text-xs mb-1">ค่าเช่าบ้านรวม</label><input type="number" id="inpRent" class="w-full bg-slate-800 border-slate-700 rounded-lg p-2.5 text-sm"></div>
+          <div><label class="block text-xs mb-1">ค่าน้ำประปา</label><input type="number" id="inpWater" class="w-full bg-slate-800 border-slate-700 rounded-lg p-2.5 text-sm"></div>
+          <div><label class="block text-xs mb-1 text-amber-400">ค่าไฟฟ้า (บาท)</label><input type="number" id="inpElectricDirect" class="w-full bg-slate-800 border-slate-700 rounded-lg p-2.5 text-sm"></div>
+          <div><label class="block text-xs mb-1">ค่าเน็ต/อื่นๆ</label><input type="number" id="inpOther" class="w-full bg-slate-800 border-slate-700 rounded-lg p-2.5 text-sm"></div>
         </div>
-        <button onclick="saveBillsFromAdmin()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded-xl transition">💾 บันทึกยอดรอบบิลนี้</button>
+        <button onclick="saveBillsFromAdmin()" class="w-full bg-emerald-600 py-2.5 rounded-xl transition font-medium">บันทึกยอดบิล</button>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <h2 class="text-lg font-bold text-indigo-400 border-b border-slate-800 pb-2">🛒 เบิกเงินซื้อของส่วนกลาง (หักจากกองกลาง)</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <input type="text" id="fundItemName" placeholder="ชื่อของที่ซื้อ" class="bg-slate-800 rounded-lg p-2 text-xs">
+          <input type="number" id="fundItemCost" placeholder="ราคา (บาท)" class="bg-slate-800 rounded-lg p-2 text-xs">
+          <select id="fundBuyerSelect" class="bg-slate-800 rounded-lg p-2 text-xs text-slate-300">
+            <!-- คนซื้อ -->
+          </select>
+        </div>
+        <button onclick="addFundExpense()" class="bg-indigo-600 hover:bg-indigo-500 w-full py-2 rounded-xl text-sm transition">บันทึกรายการเบิก</button>
       </div>
     </div>
 
-    <!-- ================= TAB 3: SETTINGS ================= -->
+    <!-- ================= TAB 4: SETTINGS ================= -->
     <div id="tab-settings" class="hidden space-y-6">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-        <h2 class="text-lg font-bold text-slate-200 border-b border-slate-800 pb-2">👥 สมาชิก & ข้อมูลสแกนสลิป</h2>
-        <p class="text-xs text-amber-400 bg-amber-400/10 p-2 rounded border border-amber-400/20">
-          💡 ระบุ <b>"ชื่อบัญชีธนาคาร"</b> ของแต่ละคน เพื่อให้ AI สแกนว่าสลิปโอนเงินตรงกับชื่อคนโอนหรือไม่ (เช่น วัชรพงษ์)
-        </p>
-        
-        <div id="settingsMemberList" class="space-y-3 mt-4">
-          <!-- รายชื่อและการตั้งค่าบัญชี -->
-        </div>
-
-        <div class="flex gap-2 pt-4 border-t border-slate-800/80">
-          <input type="text" id="newMemberName" placeholder="ชื่อเล่นเพื่อน" class="w-1/3 bg-slate-800 border border-slate-700 rounded-lg px-2 text-xs">
-          <input type="text" id="newMemberBank" placeholder="ชื่อบัญชีธนาคาร (เว้นได้)" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2 text-xs">
+        <h2 class="text-lg font-bold text-slate-200 border-b border-slate-800 pb-2">👥 สมาชิก & บัญชี</h2>
+        <div id="settingsMemberList" class="space-y-3"></div>
+        <div class="flex gap-2 pt-2 border-t border-slate-800/80">
+          <input type="text" id="newMemberName" placeholder="ชื่อเล่น" class="w-1/3 bg-slate-800 rounded-lg px-2 text-xs">
+          <input type="text" id="newMemberBank" placeholder="ชื่อบนสลิป" class="flex-1 bg-slate-800 rounded-lg px-2 text-xs">
           <button onclick="addNewMember()" class="bg-emerald-600 px-3 py-1.5 rounded-lg text-xs">+ เพิ่ม</button>
         </div>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <h2 class="text-lg font-bold text-slate-200 border-b border-slate-800 pb-2">⚙️ ตั้งค่าเงิน</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div><label class="block text-xs text-slate-400 mb-1">ยอดสมทบกองกลางต่อคน/เดือน</label><input type="number" id="setFundRate" class="w-full bg-slate-800 rounded-lg p-2 text-xs"></div>
+          <div><label class="block text-xs text-slate-400 mb-1">ค่าเช่าบ้านตั้งต้น</label><input type="number" id="setDefRent" class="w-full bg-slate-800 rounded-lg p-2 text-xs"></div>
+        </div>
+        <button onclick="saveSettings()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-lg text-xs">บันทึก</button>
       </div>
     </div>
 
@@ -138,120 +194,185 @@
     let currentMonth = new Date().toISOString().slice(0, 7);
     let members = {};
     let bills = {};
-    let currentRequiredAmount = 0;
+    let allMonthsData = {};
+    let settings = { fundRate: 500, defaultRent: 12000 };
     let currentUploadTarget = null;
+    
+    // Gallery State
+    let currentGallerySlips = [];
+    let currentGalleryIndex = 0;
+    
+    let chartInstance = null;
 
     document.getElementById('selectedMonth').value = currentMonth;
     document.getElementById('selectedMonth').addEventListener('change', (e) => {
       currentMonth = e.target.value;
-      listenToMonthData();
+      listenToCurrentMonth();
     });
 
     function switchTab(tabId) {
-      ['overview', 'admin', 'settings'].forEach(tab => {
+      ['overview', 'analytics', 'admin', 'settings'].forEach(tab => {
         document.getElementById(`tab-${tab}`).classList.toggle('hidden', tab !== tabId);
         document.getElementById(`tabBtn-${tab}`).className = tab === tabId 
           ? "px-3 py-1.5 rounded-lg font-medium transition bg-emerald-600 text-white" 
           : "px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white";
       });
+      if (tabId === 'analytics') renderChart();
     }
 
-    db.ref('members').on('value', snap => {
-      if (snap.exists()) members = snap.val();
-      else {
-        members = {
-          "m1": { name: "หมอ", bankName: "วัชรพงษ์", active: true },
-          "m2": { name: "เพื่อน 1", bankName: "", active: true }
-        };
-        db.ref('members').set(members);
-      }
-      renderMembersSettings();
+    // Load Settings
+    db.ref('settings').on('value', snap => {
+      if (snap.exists()) settings = { ...settings, ...snap.val() };
+      document.getElementById('setFundRate').value = settings.fundRate;
+      document.getElementById('setDefRent').value = settings.defaultRent;
+      document.getElementById('fundPerPersonRate').innerText = settings.fundRate;
       calculateAndRender();
     });
 
-    function listenToMonthData() {
-      document.getElementById('overviewMonthTag').innerText = `รอบบิล: ${currentMonth}`;
-      db.ref(`bills/${currentMonth}`).on('value', snap => {
-        bills = snap.val() || {};
-        document.getElementById('inpRent').value = bills.rent || '';
-        document.getElementById('inpWater').value = bills.water || '';
-        document.getElementById('inpElectricDirect').value = bills.electricDirect || '';
-        document.getElementById('inpOther').value = bills.other || '';
-        calculateAndRender();
-      });
+    // Load Members
+    db.ref('members').on('value', snap => {
+      if (snap.exists()) members = snap.val();
+      renderMembersSettings();
+      updateBuyerSelect();
+      calculateAndRender();
+    });
+
+    // Load All Data (For Analytics & Total Fund)
+    db.ref('bills').on('value', snap => {
+      allMonthsData = snap.val() || {};
+      calculateAndRender();
+      if (!document.getElementById('tab-analytics').classList.contains('hidden')) renderChart();
+    });
+
+    function listenToCurrentMonth() {
+      document.getElementById('overviewMonthTag').innerText = currentMonth;
+      const monthData = allMonthsData[currentMonth] || {};
+      
+      document.getElementById('inpRent').value = monthData.rent || settings.defaultRent;
+      document.getElementById('inpWater').value = monthData.water || '';
+      document.getElementById('inpElectricDirect').value = monthData.electricDirect || '';
+      document.getElementById('inpOther').value = monthData.other || '';
+      
+      calculateAndRender();
     }
 
+    // MAIN CALCULATIONS
     function calculateAndRender() {
-      const rent = Number(bills.rent) || 0;
-      const water = Number(bills.water) || 0;
-      const electric = Number(bills.electricDirect) || 0;
-      const other = Number(bills.other) || 0;
+      const activeCount = Object.values(members).filter(m => m.active).length || 1;
+      
+      // Calculate Current Month Bill
+      const curData = allMonthsData[currentMonth] || {};
+      const rent = Number(curData.rent) || 0;
+      const water = Number(curData.water) || 0;
+      const electric = Number(curData.electricDirect) || 0;
+      const other = Number(curData.other) || 0;
 
       const totalBill = rent + water + electric + other;
-      const activeList = Object.entries(members).filter(([_, m]) => m.active);
-      const count = activeList.length > 0 ? activeList.length : 1;
-      
-      currentRequiredAmount = Math.round(totalBill / count);
+      const billPerPerson = Math.round(totalBill / activeCount);
+      const fundPerPerson = Number(settings.fundRate) || 0;
+      const totalRequiredPerPerson = billPerPerson + fundPerPerson;
 
-      document.getElementById('dashPerPerson').innerHTML = `${currentRequiredAmount.toLocaleString()} <span class="text-xl sm:text-2xl font-normal text-emerald-400">บาท / คน</span>`;
-      document.getElementById('dashActivePeople').innerText = `ยอดรวมทั้งหมด ${totalBill.toLocaleString()} ฿ • ร่วมหาร ${count} คน`;
-      
-      renderOverviewMembers();
-    }
+      // Update Bill UI
+      document.getElementById('dashPerPerson').innerHTML = `${billPerPerson.toLocaleString()} <span class="text-lg text-emerald-400 font-normal">บ./คน</span>`;
+      document.getElementById('dashRent').innerText = `บ้าน ${rent.toLocaleString()}`;
+      document.getElementById('dashElectric').innerText = `ไฟ ${electric.toLocaleString()}`;
+      document.getElementById('dashWater').innerText = `น้ำ ${water.toLocaleString()}`;
 
-    function renderOverviewMembers() {
-      const container = document.getElementById('overviewMembersList');
-      container.innerHTML = '';
-      const payments = bills.payments || {};
-      let fullyPaidCount = 0;
-      const activeList = Object.entries(members).filter(([_, m]) => m.active);
+      // Calculate Total Fund (All Time)
+      let totalFundIn = 0;
+      let totalFundOut = 0;
+      let currentMonthFundOut = 0;
 
-      activeList.forEach(([id, m]) => {
-        const payData = payments[id] || { paidAmount: 0 };
-        const paidAmount = Number(payData.paidAmount);
+      Object.keys(allMonthsData).forEach(mth => {
+        const mData = allMonthsData[mth];
+        const mCount = mData.activeCountAtTime || activeCount; // Approximate
         
-        let statusHtml = '';
-        let cardColor = 'bg-slate-900 border-slate-800';
-        let dotColor = 'bg-slate-600';
-
-        if (paidAmount >= currentRequiredAmount && currentRequiredAmount > 0) {
-          fullyPaidCount++;
-          cardColor = 'bg-emerald-950/30 border-emerald-800/60';
-          dotColor = 'bg-emerald-400 ring-4 ring-emerald-500/20';
-          statusHtml = `<div class="text-emerald-400 text-[11px]">✓ จ่ายครบแล้ว</div>`;
-        } else if (paidAmount > 0) {
-          cardColor = 'bg-amber-950/30 border-amber-800/60';
-          dotColor = 'bg-amber-400 ring-4 ring-amber-500/20';
-          statusHtml = `<div class="text-amber-400 text-[11px]">⚠️ จ่ายแล้ว ${paidAmount} ฿ (ขาด ${currentRequiredAmount - paidAmount} ฿)</div>`;
-        } else {
-          statusHtml = `<div class="text-slate-400 text-[11px]">รอการชำระ ${currentRequiredAmount} ฿</div>`;
+        // Income to fund (assume all fully paid for past months to fund, or calc actual)
+        // เพื่อความง่าย จะเอายอดสมทบ * จำนวนคน ของทุกเดือนเป็นเป้าตั้งต้น
+        totalFundIn += (Number(settings.fundRate) * mCount);
+        
+        // Expenses from fund
+        if (mData.fundExpenses) {
+          Object.values(mData.fundExpenses).forEach(exp => {
+            totalFundOut += Number(exp.amount);
+            if(mth === currentMonth) currentMonthFundOut += Number(exp.amount);
+          });
         }
-
-        const card = document.createElement('div');
-        card.className = `p-3.5 rounded-2xl border flex items-center justify-between transition ${cardColor}`;
-        card.innerHTML = `
-          <div class="flex items-center gap-3">
-            <span class="w-3 h-3 rounded-full ${dotColor}"></span>
-            <div>
-              <div class="font-medium text-sm text-slate-100">${m.name}</div>
-              ${statusHtml}
-            </div>
-          </div>
-          <div class="flex items-center gap-2">
-            ${payData.slipUrl ? `<button onclick="viewSlip('${m.name}', '${payData.slipUrl}')" class="text-xs text-blue-400 underline">ดูสลิป</button>` : ''}
-            <button onclick="triggerUploadSlip('${id}')" class="text-[11px] bg-slate-700 hover:bg-slate-600 px-2.5 py-1.5 rounded-lg text-white">
-              ${paidAmount > 0 ? 'แนบสลิปเพิ่ม' : '📤 แนบสลิป'}
-            </button>
-          </div>
-        `;
-        container.appendChild(card);
       });
 
-      document.getElementById('paidStatusCounter').innerText = `จ่ายครบ ${fullyPaidCount}/${activeList.length} คน`;
+      const fundBalance = totalFundIn - totalFundOut;
+      document.getElementById('dashFundBalance').innerHTML = `${fundBalance.toLocaleString()} <span class="text-lg font-normal">บาท</span>`;
+      document.getElementById('dashFundIn').innerText = (fundPerPerson * activeCount).toLocaleString();
+      document.getElementById('dashFundOut').innerText = currentMonthFundOut.toLocaleString();
+
+      // Render Current Month Fund List
+      const fundListDiv = document.getElementById('fundExpenseList');
+      fundListDiv.innerHTML = '';
+      if(curData.fundExpenses) {
+        Object.values(curData.fundExpenses).forEach(exp => {
+          fundListDiv.innerHTML += `
+            <div class="flex justify-between items-center text-xs bg-indigo-950/30 p-2 rounded border border-indigo-900/50">
+              <div><span class="text-slate-200">${exp.name}</span> <span class="text-slate-500 ml-2">(${exp.buyer})</span></div>
+              <div class="text-rose-400">-${Number(exp.amount).toLocaleString()} ฿</div>
+            </div>`;
+        });
+      } else {
+        fundListDiv.innerHTML = '<div class="text-xs text-slate-500">ไม่มีรายการเบิก</div>';
+      }
+
+      // Render Member Status
+      renderOverviewMembers(totalRequiredPerPerson, curData.payments || {});
     }
 
-    function triggerUploadSlip(memberId) {
-      currentUploadTarget = memberId;
+    function renderOverviewMembers(reqTotal, paymentsObj) {
+      const container = document.getElementById('overviewMembersList');
+      container.innerHTML = '';
+      let fullyPaid = 0;
+      
+      Object.entries(members).filter(([_, m]) => m.active).forEach(([id, m]) => {
+        const pData = paymentsObj[id] || { paidAmount: 0, slips: [] };
+        const pAmt = Number(pData.paidAmount);
+        
+        // slips data structure: array of { url: "...", amount: 1000, date: "..." }
+        const slips = pData.slips ? (Array.isArray(pData.slips) ? pData.slips : Object.values(pData.slips)) : [];
+
+        let statusText = '';
+        let dotColor = 'bg-slate-600';
+        if (pAmt >= reqTotal && reqTotal > 0) {
+          fullyPaid++;
+          dotColor = 'bg-emerald-400';
+          statusText = `<div class="text-emerald-400 text-xs mt-1">✓ จ่ายครบ (${pAmt} ฿)</div>`;
+        } else if (pAmt > 0) {
+          dotColor = 'bg-amber-400';
+          statusText = `<div class="text-amber-400 text-[10px] mt-1">จ่ายแล้ว ${pAmt} ฿ (ขาด ${reqTotal - pAmt})</div>`;
+        } else {
+          statusText = `<div class="text-slate-400 text-[10px] mt-1">ยอดที่ต้องจ่าย ${reqTotal} ฿</div>`;
+        }
+
+        container.innerHTML += `
+          <div class="p-3 bg-slate-800/60 border border-slate-700/50 rounded-xl flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <div class="w-3 h-3 rounded-full ${dotColor}"></div>
+              <div>
+                <div class="text-sm font-medium text-slate-200">${m.name}</div>
+                ${statusText}
+              </div>
+            </div>
+            <div class="flex flex-col gap-1 items-end">
+              ${slips.length > 0 ? `<button onclick='openGallery(${JSON.stringify(slips).replace(/'/g, "&#39;")}, "${m.name}")' class="text-[10px] text-blue-400 underline">ดูสลิป (${slips.length})</button>` : ''}
+              <button onclick="triggerUploadSlip('${id}', ${reqTotal - pAmt})" class="text-[10px] bg-emerald-600/80 hover:bg-emerald-500 px-2 py-1 rounded text-white">+ แนบสลิป</button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    // MULTIPLE SLIP SYSTEM
+    let targetMissingAmount = 0;
+    
+    function triggerUploadSlip(mId, missing) {
+      currentUploadTarget = mId;
+      targetMissingAmount = missing > 0 ? missing : 0;
       document.getElementById('slipInput').click();
     }
 
@@ -260,90 +381,47 @@
       if (!file || !currentUploadTarget) return;
 
       const overlay = document.getElementById('loadingOverlay');
-      const statusText = document.getElementById('loadingStatusText');
       overlay.classList.remove('hidden');
-      
-      let detectedAmount = 0;
-      let nameMatched = false;
-      const member = members[currentUploadTarget];
-      const prevPaid = Number(bills.payments?.[currentUploadTarget]?.paidAmount) || 0;
+      document.getElementById('loadingStatusText').innerText = "AI กำลังอ่านและอัปโหลด...";
 
       try {
-        // 1. AI OCR (Tesseract)
-        statusText.innerText = "🤖 AI กำลังวิเคราะห์สลิป (1/2)...";
-        
+        // 1. Tesseract OCR (Simple check)
         const worker = await Tesseract.createWorker('tha+eng');
         const ret = await worker.recognize(file);
-        const text = ret.data.text.replace(/\s+/g, ''); // ลบเว้นวรรคออกเพื่อให้หาง่าย
+        const text = ret.data.text.replace(/,/g, '');
         await worker.terminate();
 
-        // ตรวจชื่อ
-        if (member.bankName && member.bankName.trim() !== "") {
-          const searchName = member.bankName.replace(/\s+/g, '');
-          if (text.includes(searchName)) nameMatched = true;
-        } else {
-          nameMatched = true; // ข้ามการตรวจถ้าไม่ได้ตั้งชื่อไว้
-        }
-
-        // ตรวจจำนวนเงิน
-        const amountRegex = /\d{1,3}(?:,\d{3})*\.\d{2}/g; // หาฟอร์แมต 1,200.00
-        const rawMatches = ret.data.text.match(amountRegex) || [];
-        const nums = rawMatches.map(v => parseFloat(v.replace(/,/g, '')));
+        const amountRegex = /\d+\.\d{2}/g;
+        const matches = text.match(amountRegex) || [];
+        const nums = matches.map(Number);
         
-        const remainingRequired = currentRequiredAmount - prevPaid;
-
-        if (nums.includes(remainingRequired)) {
-          detectedAmount = remainingRequired;
-        } else if (nums.length > 0) {
-          detectedAmount = Math.max(...nums); // ดึงเลขมากสุดที่น่าจะเป็นยอดโอน
-        }
-
-      } catch (err) {
-        console.error("AI Scan Failed:", err);
-      }
-
-      // ระบบ Fallback ตรวจสอบความถูกต้อง
-      let finalSlipAmount = detectedAmount;
-      const remainingRequired = currentRequiredAmount - prevPaid;
-
-      if (detectedAmount !== remainingRequired || !nameMatched) {
-        let warnMsg = detectedAmount === 0 
-          ? `AI อ่านยอดเงินไม่ได้ (ยอดที่ต้องจ่ายคือ ${remainingRequired} ฿)\nโปรดระบุยอดเงินที่โอนจริง:` 
-          : `AI อ่านยอดได้ ${detectedAmount} ฿ (ยอดที่ต้องการคือ ${remainingRequired} ฿)\nโปรดตรวจสอบและแก้ไขยอดจริงที่โอน:`;
+        let detectedAmount = nums.includes(targetMissingAmount) ? targetMissingAmount : (nums.length ? Math.max(...nums) : targetMissingAmount);
         
-        if (!nameMatched && member.bankName) {
-          warnMsg = `⚠️ AI ไม่พบชื่อ '${member.bankName}' บนสลิป\n` + warnMsg;
-        }
+        let finalAmount = prompt(`ตรวจสอบยอดเงินสลิปใบนี้ (โอนมาเท่าไหร่?):\n(ยอดคงค้างคือ ${targetMissingAmount} ฿)`, detectedAmount);
+        if (finalAmount === null) throw new Error("Cancelled");
+        finalAmount = Number(finalAmount);
 
-        const userOverride = prompt(warnMsg, detectedAmount || remainingRequired);
-        if (userOverride === null) {
-          overlay.classList.add('hidden');
-          document.getElementById('slipInput').value = '';
-          return; // ยกเลิก
-        }
-        finalSlipAmount = Number(userOverride);
-      }
-
-      // 2. อัปโหลดรูปขึ้น ImgBB
-      statusText.innerText = "☁️ กำลังบันทึกสลิปลงระบบ (2/2)...";
-      try {
+        // 2. Upload ImgBB
         const formData = new FormData();
         formData.append('image', file);
         const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
         const resData = await res.json();
-        
-        if (!resData.success) throw new Error("Upload Failed");
+        if(!resData.success) throw new Error("Upload Fail");
 
-        // 3. บันทึกเข้า Firebase (บวกทบของเดิมถ้ามีการจ่ายบางส่วน)
-        const newTotalPaid = prevPaid + finalSlipAmount;
-        await db.ref(`bills/${currentMonth}/payments/${currentUploadTarget}`).update({
-          paidAmount: newTotalPaid,
-          slipUrl: resData.data.url,
-          lastUpdated: new Date().toISOString()
+        // 3. Save to DB Array
+        const curData = allMonthsData[currentMonth]?.payments?.[currentUploadTarget] || { paidAmount: 0, slips: [] };
+        const curSlips = Array.isArray(curData.slips) ? curData.slips : Object.values(curData.slips || {});
+        
+        curSlips.push({ url: resData.data.url, amount: finalAmount, date: new Date().toLocaleDateString('th-TH') });
+        const newTotal = Number(curData.paidAmount) + finalAmount;
+
+        await db.ref(`bills/${currentMonth}/payments/${currentUploadTarget}`).set({
+          paidAmount: newTotal,
+          slips: curSlips
         });
 
       } catch (err) {
-        alert("เกิดข้อผิดพลาดในการอัปโหลดรูป: " + err.message);
+        if(err.message !== "Cancelled") alert("Error: " + err.message);
       } finally {
         overlay.classList.add('hidden');
         document.getElementById('slipInput').value = '';
@@ -351,43 +429,97 @@
       }
     }
 
-    function viewSlip(name, url) {
-      document.getElementById('modalSlipTitle').innerText = `สลิปของ ${name}`;
-      document.getElementById('modalSlipImg').src = url;
+    // GALLERY VIEWER
+    function openGallery(slipsStr, name) {
+      currentGallerySlips = typeof slipsStr === 'string' ? JSON.parse(slipsStr) : slipsStr;
+      currentGalleryIndex = 0;
+      document.getElementById('modalSlipTitle').innerText = `หลักฐานของ ${name}`;
+      updateGalleryUI();
       document.getElementById('slipModal').classList.remove('hidden');
     }
-
-    function closeSlipModal() {
-      document.getElementById('slipModal').classList.add('hidden');
+    
+    function updateGalleryUI() {
+      if(!currentGallerySlips.length) return;
+      const slip = currentGallerySlips[currentGalleryIndex];
+      document.getElementById('modalSlipImg').src = slip.url;
+      document.getElementById('modalSlipCount').innerText = `ใบที่ ${currentGalleryIndex + 1} / ${currentGallerySlips.length} (ยอด ${slip.amount} ฿)`;
+      
+      document.getElementById('btnPrevSlip').classList.toggle('hidden', currentGalleryIndex === 0);
+      document.getElementById('btnNextSlip').classList.toggle('hidden', currentGalleryIndex === currentGallerySlips.length - 1);
     }
+    
+    function changeSlipView(dir) {
+      currentGalleryIndex += dir;
+      updateGalleryUI();
+    }
+    
+    function closeSlipModal() { document.getElementById('slipModal').classList.add('hidden'); }
 
-    // Settings
-    function renderMembersSettings() {
-      const container = document.getElementById('settingsMemberList');
-      container.innerHTML = '';
-      Object.entries(members).forEach(([id, m]) => {
-        container.innerHTML += `
-          <div class="flex flex-col sm:flex-row gap-2 bg-slate-800/50 p-2.5 rounded-lg border border-slate-700 items-start sm:items-center justify-between">
-            <div class="flex items-center gap-2">
-              <input type="checkbox" ${m.active ? 'checked' : ''} onchange="db.ref('members/${id}/active').set(!${m.active})" class="w-4 h-4 accent-emerald-500">
-              <span class="text-sm font-medium ${m.active?'text-white':'text-slate-500'}">${m.name}</span>
-            </div>
-            <div class="flex gap-2 w-full sm:w-auto">
-              <input type="text" value="${m.bankName || ''}" onchange="db.ref('members/${id}/bankName').set(this.value)" placeholder="ชื่อบัญชี (เช่น วัชรพงษ์)" class="flex-1 sm:w-32 bg-slate-900 border border-slate-700 text-[11px] rounded px-2 py-1">
-              <button onclick="db.ref('members/${id}').remove()" class="text-xs text-rose-400 px-2 hover:bg-slate-700 rounded">ลบ</button>
-            </div>
-          </div>
-        `;
+    // CHART.JS ANALYTICS
+    function renderChart() {
+      const ctx = document.getElementById('expenseChart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+
+      const labels = [];
+      const waterData = [];
+      const elecData = [];
+      const fundOutData = [];
+
+      // Sort months chronologically
+      const sortedMonths = Object.keys(allMonthsData).sort();
+      
+      sortedMonths.forEach(m => {
+        labels.push(m);
+        const md = allMonthsData[m];
+        waterData.push(md.water || 0);
+        elecData.push(md.electricDirect || 0);
+        
+        let fo = 0;
+        if(md.fundExpenses) Object.values(md.fundExpenses).forEach(e => fo += Number(e.amount));
+        fundOutData.push(fo);
+      });
+
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            { label: 'ค่าไฟฟ้า', data: elecData, backgroundColor: '#fbbf24', stack: 'Stack 0' },
+            { label: 'ค่าน้ำประปา', data: waterData, backgroundColor: '#22d3ee', stack: 'Stack 0' },
+            { label: 'เบิกของส่วนกลาง', data: fundOutData, backgroundColor: '#818cf8', stack: 'Stack 1' }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          color: '#94a3b8',
+          scales: {
+            x: { stacked: true, grid: { color: '#334155' } },
+            y: { stacked: true, grid: { color: '#334155' } }
+          },
+          plugins: { legend: { labels: { color: '#e2e8f0' } } }
+        }
       });
     }
 
-    function addNewMember() {
-      const name = document.getElementById('newMemberName').value.trim();
-      const bName = document.getElementById('newMemberBank').value.trim();
-      if (!name) return;
-      db.ref(`members/m_${Date.now()}`).set({ name: name, bankName: bName, active: true });
-      document.getElementById('newMemberName').value = '';
-      document.getElementById('newMemberBank').value = '';
+    // Settings & Admin
+    function updateBuyerSelect() {
+      const sel = document.getElementById('fundBuyerSelect');
+      sel.innerHTML = '<option value="">เลือกคนสำรองจ่าย...</option>';
+      Object.values(members).forEach(m => {
+        if(m.active) sel.innerHTML += `<option value="${m.name}">${m.name}</option>`;
+      });
+    }
+
+    function addFundExpense() {
+      const name = document.getElementById('fundItemName').value.trim();
+      const cost = Number(document.getElementById('fundItemCost').value);
+      const buyer = document.getElementById('fundBuyerSelect').value;
+      if(!name || !cost || !buyer) return alert("กรอกข้อมูลเบิกเงินให้ครบ");
+      
+      db.ref(`bills/${currentMonth}/fundExpenses`).push({ name, amount: cost, buyer });
+      document.getElementById('fundItemName').value = '';
+      document.getElementById('fundItemCost').value = '';
+      alert("บันทึกการเบิกเงินกองกลางแล้ว!");
     }
 
     function saveBillsFromAdmin() {
@@ -396,10 +528,36 @@
         water: Number(document.getElementById('inpWater').value) || 0,
         electricDirect: Number(document.getElementById('inpElectricDirect').value) || 0,
         other: Number(document.getElementById('inpOther').value) || 0,
-      }).then(() => { alert("บันทึกแล้ว!"); switchTab('overview'); });
+      }).then(() => { alert("บันทึกบิลบ้านแล้ว!"); switchTab('overview'); });
     }
 
-    listenToMonthData();
+    function renderMembersSettings() {
+      const div = document.getElementById('settingsMemberList');
+      div.innerHTML = '';
+      Object.entries(members).forEach(([id, m]) => {
+        div.innerHTML += `
+          <div class="flex items-center justify-between p-2 bg-slate-800 rounded">
+            <label class="flex items-center gap-2"><input type="checkbox" ${m.active?'checked':''} onchange="db.ref('members/${id}/active').set(!${m.active})"> ${m.name}</label>
+            <button onclick="db.ref('members/${id}').remove()" class="text-xs text-rose-400">ลบ</button>
+          </div>
+        `;
+      });
+    }
+
+    function addNewMember() {
+      const nm = document.getElementById('newMemberName').value.trim();
+      const bk = document.getElementById('newMemberBank').value.trim();
+      if(nm) db.ref(`members/m_${Date.now()}`).set({ name: nm, bankName: bk, active: true });
+      document.getElementById('newMemberName').value = '';
+      document.getElementById('newMemberBank').value = '';
+    }
+
+    function saveSettings() {
+      db.ref('settings').update({
+        fundRate: Number(document.getElementById('setFundRate').value),
+        defaultRent: Number(document.getElementById('setDefRent').value)
+      }).then(() => alert("บันทึกการตั้งค่าแล้ว"));
+    }
   </script>
 </body>
 </html>
