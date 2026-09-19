@@ -253,7 +253,7 @@
             <div><input type="text" id="setFundAccNo" class="w-full bg-slate-800 rounded-lg p-2 text-xs mb-2" placeholder="เลขบัญชี"></div>
             <div><input type="text" id="setFundQR" class="w-full bg-slate-800 rounded-lg p-2 text-xs" placeholder="ลิงก์รูป QR Code (เช่น URL จาก imgbb)"></div>
             
-            <button onclick="saveSettings()" class="w-full bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium mt-2">บันทึกการตั้งค่า</button>
+            <button onclick="saveSettings()" class="w-full bg-emerald-600 hover:bg-emerald-500 px-3 py-3 rounded-lg text-sm font-bold text-white mt-2 shadow-lg">💾 บันทึกการตั้งค่า</button>
           </div>
         </div>
 
@@ -289,7 +289,7 @@
 
     // App State
     let currentMonth = new Date().toISOString().slice(0, 7);
-    let members = {}, allMonthsData = {}, sharedBillsData = {}, settings = { fundRate: 500, initialFund: 0, defaultRent: 12000 };
+    let members = {}, allMonthsData = {}, sharedBillsData = {}, settings = { fundRate: 0, initialFund: 0, defaultRent: 12000 };
     
     let currentUploadConfig = null; 
     let currentGallerySlips = [], currentGalleryIndex = 0, currentGalleryConfig = null; 
@@ -322,9 +322,9 @@
     db.ref('settings').on('value', snap => {
       if (snap.exists()) settings = { ...settings, ...snap.val() };
       
-      document.getElementById('setFundRate').value = settings.fundRate;
+      document.getElementById('setFundRate').value = settings.fundRate || 0;
       document.getElementById('setInitialFund').value = settings.initialFund || 0;
-      document.getElementById('fundPerPersonRate').innerText = settings.fundRate;
+      document.getElementById('fundPerPersonRate').innerText = settings.fundRate || 0;
       
       document.getElementById('setFundBank').value = settings.fundBank || '';
       document.getElementById('setFundAccName').value = settings.fundAccName || '';
@@ -606,7 +606,7 @@
       document.getElementById('slipInput').click();
     }
 
-    // --- GENERAL SLIP UPLOAD (OCR & SAVE) ---
+    // --- GENERAL SLIP UPLOAD (OCR & SAVE) - อัปเดตใหม่ ---
     function triggerUploadSlip(memberId, paymentType, expectedAmt, targetAdvId = null) {
       currentUploadConfig = { memberId, paymentType, expectedAmt: expectedAmt > 0 ? expectedAmt : 0, targetAdvId };
       document.getElementById('slipInput').click();
@@ -616,60 +616,95 @@
       const file = e.target.files[0];
       if (!file || !currentUploadConfig) return;
 
-      if(document.getElementById('fundDepositModal').classList.contains('hidden') === false) {
+      if(!document.getElementById('fundDepositModal').classList.contains('hidden')) {
         closeFundDepositModal();
       }
 
       const overlay = document.getElementById('loadingOverlay');
+      const statusText = document.getElementById('loadingStatusText');
       overlay.classList.remove('hidden');
-      document.getElementById('loadingStatusText').innerText = "AI กำลังอ่านข้อมูลและสแกนชื่อ...";
+      
+      const { expectedAmt, memberId, paymentType, targetAdvId, note } = currentUploadConfig;
+      let detected = expectedAmt > 0 ? expectedAmt : 0;
+      let promptMsg = '';
 
       try {
-        const worker = await Tesseract.createWorker('tha+eng');
-        const ret = await worker.recognize(file);
-        const text = ret.data.text.replace(/\s+/g, ''); // ลบ space 
-        await worker.terminate();
+        statusText.innerText = "AI กำลังอ่านข้อมูล (อาจใช้เวลา 5-10 วินาที)...";
+        
+        // 1. ประมวลผล OCR พร้อมระบบจับเวลา Timeout 10 วินาทีเพื่อป้องกันระบบค้าง
+        const ocrPromise = (async () => {
+          const worker = await Tesseract.createWorker('tha+eng');
+          const ret = await worker.recognize(file);
+          await worker.terminate();
+          return ret.data.text.replace(/\s+/g, '');
+        })();
 
-        const { expectedAmt, memberId, paymentType, targetAdvId, note } = currentUploadConfig;
+        const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve('TIMEOUT'), 10000));
         
-        // 1. OCR เช็กตัวเลข
-        const nums = (text.match(/\d{1,3}(?:,\d{3})*\.\d{2}/g) || []).map(v => parseFloat(v.replace(/,/g, '')));
-        let detected = nums.includes(expectedAmt) && expectedAmt > 0 ? expectedAmt : (nums.length ? Math.max(...nums) : expectedAmt);
-        
-        // 2. OCR เช็กชื่อบัญชี
-        const memberBankName = members[memberId]?.bankName || '';
-        let promptMsg = '';
-        
-        if (memberBankName.trim() !== '') {
-          const searchName = memberBankName.replace(/\s+/g, '');
-          if (!text.includes(searchName)) {
-            promptMsg = `⚠️ AI สแกนไม่พบชื่อบัญชี '${memberBankName}' ในสลิป\n\n`;
-          } else {
-             promptMsg = `✅ สแกนพบชื่อบัญชี '${memberBankName}' ถูกต้อง\n\n`;
-          }
+        const text = await Promise.race([ocrPromise, timeoutPromise]);
+
+        if (text !== 'TIMEOUT') {
+           const nums = (text.match(/\d{1,3}(?:,\d{3})*\.\d{2}/g) || []).map(v => parseFloat(v.replace(/,/g, '')));
+           if(nums.includes(expectedAmt) && expectedAmt > 0) detected = expectedAmt;
+           else if(nums.length) detected = Math.max(...nums);
+           
+           const memberBankName = members[memberId]?.bankName || '';
+           if (memberBankName.trim() !== '') {
+             const searchName = memberBankName.replace(/\s+/g, '');
+             if (!text.includes(searchName)) {
+               promptMsg = `⚠️ AI สแกนไม่พบชื่อบัญชี '${memberBankName}' ในสลิป\n\n`;
+             } else {
+               promptMsg = `✅ สแกนพบชื่อบัญชี '${memberBankName}' ถูกต้อง\n\n`;
+             }
+           }
+        } else {
+           promptMsg = `⚠️ AI ใช้เวลาสแกนนานเกินไป ระบบข้ามการอ่านชื่อบัญชี\n\n`;
         }
-        
-        promptMsg += `📌 โปรดพิมพ์ยอดเงินที่โอนจริง (เช่น 500):`;
-        let defaultVal = detected > 0 ? detected : '';
+      } catch (err) {
+        console.log("OCR Error:", err);
+        promptMsg = `⚠️ AI สแกนขัดข้อง (ข้ามกระบวนการสแกนอัตโนมัติ)\n\n`;
+      }
 
-        // แจ้งเตือนผู้ใช้ให้พิมพ์ยอดให้ชัดเจน
-        let finalAmountStr = prompt(promptMsg, defaultVal);
-        if (finalAmountStr === null) throw new Error("Cancelled");
-        
-        let finalAmount = Number(finalAmountStr.replace(/,/g, ''));
-        if (isNaN(finalAmount)) finalAmount = 0;
+      // ซ่อนหน้าต่างโหลดตอนเด้งถามตัวเลข เพื่อไม่ให้บังจอ
+      overlay.classList.add('hidden');
 
-        if (finalAmount <= 0) {
-          const confirmZero = confirm("⚠️ คุณระบุยอดเงินเป็น 0 บาท (หรือไม่ได้ระบุยอด) ต้องการบันทึกสลิปนี้เข้าระบบโดยไม่มียอดเงินใช่หรือไม่?");
-          if(!confirmZero) throw new Error("Cancelled");
+      promptMsg += `📌 โปรดพิมพ์ยอดเงินที่โอนจริง (เช่น 500):`;
+      let finalAmountStr = prompt(promptMsg, detected > 0 ? detected : '');
+      
+      // ถ้ากดยกเลิก
+      if (finalAmountStr === null) {
+        document.getElementById('slipInput').value = ''; 
+        currentUploadConfig = null;
+        return; 
+      }
+      
+      let finalAmount = Number(finalAmountStr.replace(/,/g, ''));
+      if (isNaN(finalAmount)) finalAmount = 0;
+
+      if (finalAmount <= 0) {
+        const confirmZero = confirm("⚠️ คุณระบุยอดเงินเป็น 0 บาท หรือไม่ได้ระบุยอด แน่ใจที่จะบันทึกใช่หรือไม่?");
+        if(!confirmZero) {
+            document.getElementById('slipInput').value = ''; 
+            currentUploadConfig = null;
+            return;
         }
+      }
 
-        document.getElementById('loadingStatusText').innerText = "กำลังบันทึกสลิป...";
+      // แสดงหน้าต่างโหลดอีกครั้งเพื่อเริ่มอัปโหลด
+      overlay.classList.remove('hidden');
+      statusText.innerText = "กำลังอัปโหลดรูปภาพสลิปเข้าคลังเก็บ...";
+
+      try {
         const formData = new FormData(); formData.append('image', file);
         const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
         const resData = await res.json();
-        if(!resData.success) throw new Error("Upload Fail");
+        
+        if(!resData.success) {
+           throw new Error("อัปโหลดรูปภาพล้มเหลว กรุณาตรวจสอบอินเทอร์เน็ต");
+        }
 
+        statusText.innerText = "กำลังบันทึกข้อมูลเงินเข้าสู่ระบบ...";
+        
         const slipObj = { url: resData.data.url, amount: finalAmount, date: new Date().toLocaleDateString('th-TH') };
         if(note) slipObj.note = note;
 
@@ -693,11 +728,15 @@
           await db.ref(`bills/${currentMonth}/fundDeposits`).push(slipObj);
         }
 
+        // เมื่อทำงานสำเร็จทั้งหมด
+        alert("✅ บันทึกสลิปและยอดเงินเรียบร้อยแล้ว!");
+
       } catch (err) {
-        if(err.message !== "Cancelled") alert("Error: " + err.message);
+        alert("เกิดข้อผิดพลาด: " + err.message);
       } finally {
         overlay.classList.add('hidden');
-        document.getElementById('slipInput').value = ''; currentUploadConfig = null;
+        document.getElementById('slipInput').value = ''; 
+        currentUploadConfig = null;
       }
     }
 
