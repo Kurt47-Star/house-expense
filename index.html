@@ -98,7 +98,14 @@
         <button id="tabBtn-analytics" onclick="switchTab('analytics')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white whitespace-nowrap">📈 สถิติ</button>
         <button id="tabBtn-admin" onclick="switchTab('admin')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white whitespace-nowrap">📝 ตั้งค่า</button>
       </div>
-      <input type="month" id="selectedMonth" class="bg-slate-800 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 outline-none w-full sm:w-auto">
+      
+      <!-- ระบบเลื่อนเดือนแบบใหม่ (บั๊กฟรี 100%) -->
+      <div class="flex items-center bg-slate-800/80 rounded-xl border border-slate-700/60 text-sm overflow-hidden shadow-inner w-full sm:w-auto justify-between">
+        <button onclick="changeMonthOffset(-1)" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 transition">◀</button>
+        <div id="currentMonthDisplay" class="font-bold text-emerald-400 min-w-[130px] text-center text-sm px-2"></div>
+        <button onclick="changeMonthOffset(1)" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 transition">▶</button>
+      </div>
+
     </div>
   </nav>
 
@@ -110,7 +117,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- บิลบ้าน -->
         <div class="bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-3xl p-5 shadow-xl flex flex-col justify-between">
-          <div class="text-emerald-400 font-medium text-sm mb-1">🏠 ค่าเช่าบ้าน/น้ำ/ไฟ เดือนนี้</div>
+          <div class="text-emerald-400 font-medium text-sm mb-1">🏠 ค่าเช่าบ้าน/น้ำ/ไฟ (<span id="overviewMonthText">เดือนนี้</span>)</div>
           <div class="text-3xl font-extrabold text-white" id="dashPerPerson">0 <span class="text-sm text-emerald-400 font-normal">บ./คน</span></div>
         </div>
 
@@ -121,7 +128,7 @@
             <div>
               <div class="text-indigo-400 font-medium text-sm mb-1">💎 กองกลางคงเหลือสุทธิ</div>
               <div class="text-3xl font-extrabold text-indigo-300" id="dashFundBalance">0 <span class="text-sm font-normal">บาท</span></div>
-              <div class="text-[10px] text-indigo-200/60 mt-1">เป้าหมายเก็บเดือนนี้ <span id="fundPerPersonRate">0</span> บ./คน</div>
+              <div class="text-[10px] text-indigo-200/60 mt-1">เป้าหมายเก็บ <span id="fundPerPersonRate">0</span> บ./คน</div>
             </div>
             <button onclick="openFundDepositModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-2 rounded-xl shadow-lg transition flex items-center gap-1 border border-indigo-500">
               <span class="font-medium">+ ฝากกองกลาง</span>
@@ -144,7 +151,7 @@
       <!-- ประวัติการฝากกองกลาง -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
         <h2 class="font-semibold text-sm text-slate-200 mb-3 flex items-center gap-2">
-          <span class="text-indigo-400">📥</span> ประวัติเงินเข้ากองกลาง (เดือนนี้)
+          <span class="text-indigo-400">📥</span> ประวัติเงินเข้ากองกลาง (<span id="logMonthText">เดือนนี้</span>)
         </h2>
         <div id="fundDepositLog" class="space-y-2 max-h-40 overflow-y-auto pr-1"></div>
       </div>
@@ -152,7 +159,7 @@
       <!-- สมาชิกและการชำระเงิน -->
       <div class="space-y-4">
         <div class="flex justify-between items-center px-1">
-          <h2 class="font-semibold text-lg text-slate-200">ตรวจสอบสถานะการจ่ายเงิน (รายบุคคล)</h2>
+          <h2 class="font-semibold text-lg text-slate-200">ตรวจสอบสถานะการจ่ายเงิน (<span id="statusMonthText">เดือนนี้</span>)</h2>
         </div>
         <div id="overviewMembersCards" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
       </div>
@@ -271,13 +278,17 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // App State
-    let currentMonth = new Date().toISOString().slice(0, 7);
-    let members = {}, allMonthsData = {}, sharedBillsData = {}, settings = { fundRate: 0, initialFund: 0, defaultRent: 12000 };
+    // ระบบเวลาไทย แก้ปัญหาเดือนเพี้ยน
+    let d = new Date();
+    let currentMonth = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
     
+    let members = {}, allMonthsData = {}, sharedBillsData = {}, settings = { fundRate: 0, initialFund: 0, defaultRent: 12000 };
     let currentUploadConfig = null; 
     let currentGallerySlips = [], currentGalleryIndex = 0, currentGalleryConfig = null; 
     let chartInstance = null;
+
+    // ระบบเก็บแคชสลิป ป้องกันบั๊กการแสดงผลรูป (Safe Gallery)
+    window.cachedSlips = { house: {}, fund: {}, sharedBill: {} };
 
     function checkAdminPasscode(actionDescription) {
       const p = prompt(`เพื่อความปลอดภัย กรุณาใส่รหัสผ่านสำหรับการ ${actionDescription}`);
@@ -286,11 +297,35 @@
       return true;
     }
 
+    // ฟังก์ชันเลื่อนเดือนแบบใหม่ (บั๊กฟรี)
+    function updateMonthDisplay() {
+      const [yy, mm] = currentMonth.split('-');
+      const monthsTh = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+      const displayStr = `${monthsTh[parseInt(mm, 10) - 1]} ${yy}`;
+      
+      document.getElementById('currentMonthDisplay').innerText = displayStr;
+      document.getElementById('overviewMonthText').innerText = displayStr;
+      document.getElementById('logMonthText').innerText = displayStr;
+      document.getElementById('statusMonthText').innerText = displayStr;
+    }
+
+    function changeMonthOffset(offset) {
+      const [yy, mm] = currentMonth.split('-');
+      let newY = parseInt(yy, 10);
+      let newM = parseInt(mm, 10) - 1 + offset;
+      
+      if (newM < 0) { newM = 11; newY--; }
+      if (newM > 11) { newM = 0; newY++; }
+      
+      const mmStr = (newM + 1).toString().padStart(2, '0');
+      currentMonth = `${newY}-${mmStr}`;
+      
+      updateMonthDisplay();
+      listenToCurrentMonth();
+    }
+
     // Initialize UI
-    document.getElementById('selectedMonth').value = currentMonth;
-    document.getElementById('selectedMonth').addEventListener('change', (e) => {
-      currentMonth = e.target.value; listenToCurrentMonth();
-    });
+    updateMonthDisplay();
 
     function switchTab(tabId) {
       ['overview', 'sharedbill', 'board', 'analytics', 'admin'].forEach(tab => {
@@ -345,6 +380,7 @@
       sharedBillsData = snap.val() || {}; renderSharedBills();
     });
 
+    // Board Auto-Save
     const boardTextArea = document.getElementById('houseBoardText');
     let boardTimeout = null;
     db.ref('board/content').on('value', snap => {
@@ -378,10 +414,8 @@
       const electric = Number(curData.electricDirect) || 0, other = Number(curData.other) || 0;
       
       const breakdown = {
-        rent: Math.round(rent / activeCount),
-        water: Math.round(water / activeCount),
-        electric: Math.round(electric / activeCount),
-        other: Math.round(other / activeCount),
+        rent: Math.round(rent / activeCount), water: Math.round(water / activeCount),
+        electric: Math.round(electric / activeCount), other: Math.round(other / activeCount),
         total: Math.round((rent + water + electric + other) / activeCount)
       };
 
@@ -393,24 +427,28 @@
       const fundPayObj = {};
       
       Object.keys(allMonthsData).forEach(mth => {
+        // ดึงสลิปกองกลางแบบเก่า (ระบบเดือนกันยาและก่อนหน้า)
         if (allMonthsData[mth].fundPayments) {
           Object.entries(allMonthsData[mth].fundPayments).forEach(([mId, pData]) => {
             totalFundPaidIn += Number(pData.paidAmount || 0);
             if (mth === currentMonth) {
               if(!fundPayObj[mId]) fundPayObj[mId] = { paidAmount: 0, slips: [] };
               fundPayObj[mId].paidAmount += Number(pData.paidAmount || 0);
-              const slips = pData.slips ? (Array.isArray(pData.slips) ? pData.slips : Object.values(pData.slips)) : [];
-              slips.forEach(s => fundPayObj[mId].slips.push(s));
+              
+              // แก้บั๊ก ID ทำให้ลบสลิปเก่าไม่ได้
+              const slips = pData.slips ? (Array.isArray(pData.slips) ? pData.slips.map((x,i)=>({...x, id: i})) : Object.keys(pData.slips).map(k=>({...pData.slips[k], id: k}))) : [];
+              slips.forEach(s => fundPayObj[mId].slips.push({...s, legacy: true}));
             }
           });
         }
+        // ดึงสลิปกองกลางระบบใหม่
         if (allMonthsData[mth].fundDeposits) {
           Object.entries(allMonthsData[mth].fundDeposits).forEach(([depId, dep]) => {
             totalFundPaidIn += Number(dep.amount || 0);
             if (mth === currentMonth) {
                if(!fundPayObj[dep.memberId]) fundPayObj[dep.memberId] = { paidAmount: 0, slips: [] };
                fundPayObj[dep.memberId].paidAmount += Number(dep.amount || 0);
-               fundPayObj[dep.memberId].slips.push({ id: depId, url: dep.url, amount: dep.amount, note: dep.note, date: dep.date });
+               fundPayObj[dep.memberId].slips.push({ id: depId, url: dep.url, amount: dep.amount, note: dep.note, date: dep.date, legacy: false });
             }
           });
         }
@@ -452,17 +490,27 @@
       const houseBillAmt = bd.total;
       const houseDetailStr = `เช่า ${bd.rent} | น้ำ ${bd.water} | ไฟ ${bd.electric}${bd.other > 0 ? ' | อื่นๆ '+bd.other : ''}`;
       
+      // Clear cache before render
+      window.cachedSlips.house = {};
+      window.cachedSlips.fund = {};
+
       Object.entries(members).filter(([_, m]) => m.active).forEach(([mId, m]) => {
+        // House Bill
         const hData = housePayObj[mId] || { paidAmount: 0, slips: [] };
         const hPaid = Number(hData.paidAmount);
         const hSlipsObj = hData.slips || {};
         const hSlips = Array.isArray(hSlipsObj) ? hSlipsObj.map((s, i) => ({...s, id: i})) : Object.keys(hSlipsObj).map(key => ({...hSlipsObj[key], id: key}));
         const hStatus = hPaid >= houseBillAmt ? `<span class="text-emerald-400">✓ จ่ายครบ</span>` : (hPaid > 0 ? `<span class="text-amber-400">ขาด ${houseBillAmt - hPaid} ฿</span>` : `<span class="text-slate-400">${houseBillAmt} ฿</span>`);
         
+        // Fund Data 
         const fData = fundPayObj[mId] || { paidAmount: 0, slips: [] };
         const fPaid = Number(fData.paidAmount);
         const fSlips = fData.slips || [];
         const fStatus = fPaid >= fundAmt ? `<span class="text-indigo-400">✓ จ่ายครบ</span>` : (fPaid > 0 ? `<span class="text-indigo-300/70">ขาด ${fundAmt - fPaid} ฿</span>` : `<span class="text-slate-400">${fundAmt} ฿</span>`);
+
+        // Save to safe cache
+        window.cachedSlips.house[mId] = hSlips;
+        window.cachedSlips.fund[mId] = fSlips;
 
         container.innerHTML += `
           <div class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl flex flex-col">
@@ -471,7 +519,7 @@
             <div class="flex justify-between items-start bg-slate-900/50 p-2.5 rounded-lg border border-slate-800">
               <div><div class="text-[11px] text-emerald-400/80">🏠 ค่าบ้าน/น้ำ/ไฟ (รวม ${houseBillAmt} ฿)</div><div class="text-[10px] text-slate-400 mt-0.5">${houseDetailStr}</div><div class="text-sm font-medium mt-1">${hStatus}</div></div>
               <div class="flex flex-col gap-1 items-end pt-1">
-                ${hSlips.length ? `<button onclick='openGallery(${JSON.stringify(hSlips)}, "${m.name} (ค่าบ้าน)", {memberId: "${mId}", paymentType: "house"})' class="text-[10px] text-blue-400 underline">ดูสลิป</button>` : ''}
+                ${hSlips.length ? `<button onclick="openGalleryFromCache('house', '${mId}', '${m.name} (ค่าบ้าน)')" class="text-[10px] text-blue-400 underline">ดูสลิป</button>` : ''}
                 <button onclick="triggerUploadSlip('${mId}', 'house', ${houseBillAmt - hPaid})" class="text-[10px] bg-slate-700 hover:bg-slate-600 px-2 py-1.5 rounded text-white">+ แนบสลิป</button>
               </div>
             </div>
@@ -479,7 +527,7 @@
             <div class="flex justify-between items-start bg-indigo-950/20 p-2.5 rounded-lg border border-indigo-900/30 mt-2">
               <div><div class="text-[11px] text-indigo-400/80">💎 เงินกองกลาง (เป้าหมาย ${fundAmt} ฿)</div><div class="text-sm font-medium mt-1">${fStatus}</div></div>
               <div class="flex flex-col gap-1 items-end pt-1">
-                ${fSlips.length ? `<button onclick='openGallery(${JSON.stringify(fSlips).replace(/'/g, "&#39;")}, "${m.name} (กองกลาง)", {memberId: "${mId}", paymentType: "fundDeposit"})' class="text-[10px] text-blue-400 underline">ดูสลิป</button>` : ''}
+                ${fSlips.length ? `<button onclick="openGalleryFromCache('fund', '${mId}', '${m.name} (กองกลาง)')" class="text-[10px] text-blue-400 underline">ดูสลิป</button>` : ''}
                 <button onclick="openFundDepositModal('${mId}')" class="text-[10px] bg-indigo-900/80 border border-indigo-700 hover:bg-indigo-700 px-2 py-1.5 rounded text-indigo-200">+ ฝากกองกลาง</button>
               </div>
             </div>
@@ -495,6 +543,8 @@
         container.innerHTML = `<div class="bg-slate-900 p-8 rounded-2xl border border-slate-800 text-center text-slate-500 text-sm">ยังไม่มีบิลก้อนใหญ่ที่ต้องหารกัน</div>`;
         return;
       }
+      
+      window.cachedSlips.sharedBill = {};
 
       Object.entries(sharedBillsData).forEach(([billId, bill]) => {
         const reqMembers = bill.requiredMembers || [];
@@ -510,6 +560,8 @@
           const slips = Array.isArray(slipsObj) ? slipsObj.map((s, i) => ({...s, id: i})) : Object.keys(slipsObj).map(k => ({...slipsObj[k], id: k}));
           const pStatus = pAmt >= perPersonAmt ? `<span class="text-emerald-400">✓ จ่ายครบแล้ว</span>` : (pAmt > 0 ? `<span class="text-amber-400">ขาด ${perPersonAmt - pAmt} ฿</span>` : `<span class="text-slate-400">ค้าง ${perPersonAmt} ฿</span>`);
           
+          window.cachedSlips.sharedBill[`${billId}_${mId}`] = slips;
+
           membersHtml += `
             <div class="flex justify-between items-center py-2 border-b border-amber-900/20 last:border-0">
               <div class="flex items-center gap-2">
@@ -517,7 +569,7 @@
                 <span class="text-xs text-slate-300">${m.name}</span><span class="text-[11px] font-medium ml-2">${pStatus}</span>
               </div>
               <div class="flex items-center gap-2">
-                ${slips.length ? `<button onclick='openGallery(${JSON.stringify(slips).replace(/'/g, "&#39;")}, "${m.name} (${bill.title})", {memberId: "${mId}", paymentType: "sharedBill", targetAdvId: "${billId}"})' class="text-[10px] text-blue-400 underline">ดูสลิป</button>` : ''}
+                ${slips.length ? `<button onclick="openGalleryFromCache('sharedBill', '${billId}_${mId}', '${m.name} (${bill.title})', '${billId}', '${mId}')" class="text-[10px] text-blue-400 underline">ดูสลิป</button>` : ''}
                 <button onclick="triggerUploadSlip('${mId}', 'sharedBill', ${perPersonAmt - pAmt}, '${billId}')" class="text-[10px] bg-amber-900/60 hover:bg-amber-800/80 px-2 py-1 rounded border border-amber-700/50 text-amber-300">+ แนบสลิป</button>
               </div>
             </div>`;
@@ -642,7 +694,17 @@
       }
     }
 
-    // GALLERY VIEWER
+    // GALLERY VIEWER แบบดึงจาก Cache (ป้องกันบั๊ก JSON Quotes)
+    function openGalleryFromCache(cacheType, cacheKey, nameStr, targetAdvId = null, mId = null) {
+      const slips = window.cachedSlips[cacheType][cacheKey] || [];
+      let config = {};
+      if (cacheType === 'house') config = { memberId: cacheKey, paymentType: 'house' };
+      else if (cacheType === 'fund') config = { memberId: cacheKey, paymentType: 'fundDeposit' };
+      else if (cacheType === 'sharedBill') config = { memberId: mId, paymentType: 'sharedBill', targetAdvId: targetAdvId };
+
+      openGallery(slips, nameStr, config);
+    }
+
     function openGallery(slips, nameStr, config) {
       currentGallerySlips = slips; currentGalleryIndex = 0; currentGalleryConfig = config; 
       document.getElementById('modalSlipTitle').innerText = nameStr;
@@ -674,11 +736,23 @@
       let dbPath = "";
       if (paymentType === 'house') dbPath = `bills/${currentMonth}/payments/${memberId}`;
       else if (paymentType === 'sharedBill') dbPath = `sharedBills/${targetAdvId}/payments/${memberId}`;
-      else if (paymentType === 'fundDeposit') dbPath = `bills/${currentMonth}/fundDeposits`;
-
+      
       try {
         if(paymentType === 'fundDeposit') {
-           await db.ref(`${dbPath}/${slipToDelete.id}`).remove();
+            // ระบบตรวจสอบว่าเป็นสลิปกองกลางใหม่ หรือ สลิปเก่าจากเดือนก่อนๆ (Legacy)
+            if (slipToDelete.legacy) {
+                dbPath = `bills/${currentMonth}/fundPayments/${memberId}`;
+                const snap = await db.ref(dbPath).once('value');
+                const data = snap.val();
+                if (data) {
+                    const newPaidAmount = Math.max(0, Number(data.paidAmount) - Number(slipToDelete.amount));
+                    await db.ref(dbPath).update({ paidAmount: newPaidAmount });
+                    await db.ref(`${dbPath}/slips/${slipToDelete.id}`).remove();
+                }
+            } else {
+                dbPath = `bills/${currentMonth}/fundDeposits`;
+                await db.ref(`${dbPath}/${slipToDelete.id}`).remove();
+            }
         } else {
           const snap = await db.ref(dbPath).once('value');
           const data = snap.val();
@@ -734,8 +808,8 @@
       if(nm && cst && byr) { db.ref(`bills/${currentMonth}/fundExpenses`).push({name:nm, amount:cst, buyer:byr}); document.getElementById('fundItemName').value=''; document.getElementById('fundItemCost').value=''; }
     }
     function addNewMember() {
-      const nm = document.getElementById('newMemberName').value.trim();
-      if(nm) db.ref(`members/m_${Date.now()}`).set({ name: nm, active: true }); document.getElementById('newMemberName').value='';
+      const nm = document.getElementById('newMemberName').value.trim(); const bk = document.getElementById('newMemberBank').value.trim();
+      if(nm) db.ref(`members/m_${Date.now()}`).set({ name: nm, bankName: bk, active: true }); document.getElementById('newMemberName').value=''; document.getElementById('newMemberBank').value='';
     }
     function renderMembersSettings() {
       const div = document.getElementById('settingsMemberList'); div.innerHTML = '';
@@ -759,7 +833,6 @@
           fundQrUrl: document.getElementById('setFundQR').value.trim()
         }).then(() => {
           alert("✅ บันทึกการตั้งค่ากองกลางและยอดเงินตั้งต้นเรียบร้อยแล้ว");
-          // อัปเดต UI ทันที
           settings.fundRate = newFundRate;
           settings.initialFund = newInitialFund;
           document.getElementById('fundPerPersonRate').innerText = newFundRate;
