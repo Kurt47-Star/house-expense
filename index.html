@@ -20,11 +20,50 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen pb-16">
 
   <!-- ================= OVERLAYS & MODALS ================= -->
+  <!-- ซ่อน Input File ไว้ -->
   <input type="file" id="slipInput" accept="image/*" class="hidden" onchange="handleSlipSelected(event)">
-  <div id="loadingOverlay" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex flex-col items-center justify-center p-4 text-center">
+  
+  <!-- Loading หน้าจอตอนอัปโหลด -->
+  <div id="loadingOverlay" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[100] hidden flex flex-col items-center justify-center p-4 text-center">
     <div class="w-12 h-12 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin mb-4"></div>
     <div id="loadingStatusText" class="text-base font-semibold text-emerald-400">กำลังอัปโหลดสลิป...</div>
     <div class="text-xs text-slate-400 mt-2">ห้ามปิดหน้าจอจนกว่าจะเสร็จสิ้น</div>
+  </div>
+
+  <!-- 💡 CUSTOM POPUPS: แก้ปัญหา Messenger/LINE บล็อกหน้าต่างแจ้งเตือน 💡 -->
+  <!-- Prompt Modal สำหรับถามยอดเงิน -->
+  <div id="customPromptModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-emerald-500/50 rounded-3xl max-w-sm w-full shadow-2xl p-6 relative overflow-hidden">
+      <div class="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl"></div>
+      <h3 class="text-lg font-bold text-emerald-400 mb-2 relative z-10" id="customPromptTitle">ระบุยอดเงิน</h3>
+      <p class="text-sm text-slate-300 mb-5 whitespace-pre-line relative z-10" id="customPromptDesc">โปรดระบุยอดเงินที่โอนจริง</p>
+      <input type="number" id="customPromptInput" class="w-full bg-slate-950 rounded-xl p-4 text-3xl text-emerald-400 font-bold text-center border border-slate-700 outline-none focus:border-emerald-500 mb-5 shadow-inner relative z-10" placeholder="0">
+      <div class="flex gap-3 relative z-10">
+        <button id="customPromptCancel" class="flex-1 bg-slate-800 hover:bg-slate-700 py-3.5 rounded-xl text-sm font-medium text-white transition border border-slate-700">ยกเลิก</button>
+        <button id="customPromptConfirm" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-3.5 rounded-xl text-sm font-bold text-white transition shadow-lg shadow-emerald-600/20">ยืนยัน</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Modal สำหรับถามย้ำ (เช่น กรณีใส่ยอด 0 บาท) -->
+  <div id="customConfirmModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-amber-500/50 rounded-3xl max-w-sm w-full shadow-2xl p-6">
+      <h3 class="text-lg font-bold text-amber-400 mb-2">⚠️ ยืนยันการดำเนินการ</h3>
+      <p class="text-sm text-slate-300 mb-6 whitespace-pre-line" id="customConfirmDesc"></p>
+      <div class="flex gap-3">
+        <button id="customConfirmNo" class="flex-1 bg-slate-800 hover:bg-slate-700 py-3 rounded-xl text-sm font-medium text-white transition border border-slate-700">ยกเลิก</button>
+        <button id="customConfirmYes" class="flex-1 bg-amber-600 hover:bg-amber-500 py-3 rounded-xl text-sm font-bold text-white transition shadow-lg shadow-amber-600/20">ตกลง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alert Modal แจ้งเตือนความสำเร็จหรือล้มเหลว -->
+  <div id="customAlertModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-sm w-full shadow-2xl p-6 text-center">
+      <div class="text-5xl mb-4" id="customAlertIcon">✅</div>
+      <h3 class="text-base font-bold text-slate-200 mb-6 whitespace-pre-line" id="customAlertDesc"></h3>
+      <button onclick="document.getElementById('customAlertModal').classList.add('hidden')" class="w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-xl text-sm font-bold text-white transition border border-slate-700">ปิดหน้าต่าง</button>
+    </div>
   </div>
 
   <!-- Modal นำเงินเข้ากองกลาง -->
@@ -47,7 +86,7 @@
           <label class="block text-xs text-slate-400 mb-1">วัตถุประสงค์ / หมายเหตุ</label>
           <input type="text" id="fundDepNote" placeholder="เช่น สมทบรายเดือน, ค่าปรับทิ้งขยะ" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm text-slate-200 border border-slate-700 outline-none focus:border-indigo-500">
         </div>
-        <button onclick="triggerFundSlipUpload()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-xl text-sm font-medium transition text-white shadow-lg shadow-indigo-600/20">
+        <button onclick="triggerFundSlipUpload()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl text-sm font-medium transition text-white shadow-lg shadow-indigo-600/20">
           📤 เลือกสลิปเพื่ออัปโหลด
         </button>
       </div>
@@ -99,13 +138,12 @@
         <button id="tabBtn-admin" onclick="switchTab('admin')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white whitespace-nowrap">📝 ตั้งค่า</button>
       </div>
       
-      <!-- ระบบเลื่อนเดือนแบบใหม่ (บั๊กฟรี 100%) -->
+      <!-- ระบบเลื่อนเดือนแบบปุ่ม -->
       <div class="flex items-center bg-slate-800/80 rounded-xl border border-slate-700/60 text-sm overflow-hidden shadow-inner w-full sm:w-auto justify-between">
         <button onclick="changeMonthOffset(-1)" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 transition">◀</button>
         <div id="currentMonthDisplay" class="font-bold text-emerald-400 min-w-[130px] text-center text-sm px-2"></div>
         <button onclick="changeMonthOffset(1)" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 transition">▶</button>
       </div>
-
     </div>
   </nav>
 
@@ -113,7 +151,6 @@
 
     <!-- ================= TAB 1: OVERVIEW ================= -->
     <div id="tab-overview" class="space-y-6">
-      
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- บิลบ้าน -->
         <div class="bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-3xl p-5 shadow-xl flex flex-col justify-between">
@@ -148,7 +185,6 @@
         </div>
       </div>
 
-      <!-- ประวัติการฝากกองกลาง -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
         <h2 class="font-semibold text-sm text-slate-200 mb-3 flex items-center gap-2">
           <span class="text-indigo-400">📥</span> ประวัติเงินเข้ากองกลาง (<span id="logMonthText">เดือนนี้</span>)
@@ -156,7 +192,6 @@
         <div id="fundDepositLog" class="space-y-2 max-h-40 overflow-y-auto pr-1"></div>
       </div>
 
-      <!-- สมาชิกและการชำระเงิน -->
       <div class="space-y-4">
         <div class="flex justify-between items-center px-1">
           <h2 class="font-semibold text-lg text-slate-200">ตรวจสอบสถานะการจ่ายเงิน (<span id="statusMonthText">เดือนนี้</span>)</h2>
@@ -211,7 +246,7 @@
 
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
         <h2 class="text-lg font-bold text-amber-400 border-b border-slate-800 pb-2">💸 2. สร้างบิลก้อนใหญ่สำหรับหาร (Shared Bills)</h2>
-        <p class="text-[11px] text-slate-400">ใช้สำหรับค่าใช้จ่ายพิเศษ เช่น ค่าประกันบ้าน, ซื้อเครื่องซักผ้า โดยเลือกว่าบิลนี้ "ใครต้องหารร่วมกันบ้าง"</p>
+        <p class="text-[11px] text-slate-400">ใช้สำหรับค่าใช้จ่ายพิเศษ เช่น ค่าประกันบ้าน, ซื้อเครื่องซักผ้า</p>
         <div class="space-y-3">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input type="text" id="sharedBillTitle" placeholder="ชื่อบิล (เช่น ค่าประกันบ้าน)" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm">
@@ -246,7 +281,7 @@
             <div><input type="text" id="setFundBank" class="w-full bg-slate-800 rounded-lg p-2 text-xs mb-2" placeholder="ธนาคาร (เช่น กสิกรไทย)"></div>
             <div><input type="text" id="setFundAccName" class="w-full bg-slate-800 rounded-lg p-2 text-xs mb-2" placeholder="ชื่อบัญชี (เช่น นาย สมชาย)"></div>
             <div><input type="text" id="setFundAccNo" class="w-full bg-slate-800 rounded-lg p-2 text-xs mb-2" placeholder="เลขบัญชี"></div>
-            <div><input type="text" id="setFundQR" class="w-full bg-slate-800 rounded-lg p-2 text-xs" placeholder="ลิงก์รูป QR Code (เช่น URL จาก imgbb)"></div>
+            <div><input type="text" id="setFundQR" class="w-full bg-slate-800 rounded-lg p-2 text-xs" placeholder="ลิงก์รูป QR Code (เช่น จาก imgbb)"></div>
             <button onclick="saveSettings()" class="w-full bg-emerald-600 hover:bg-emerald-500 px-3 py-3 rounded-lg text-sm font-bold text-white mt-2 shadow-lg">💾 บันทึกการตั้งค่า</button>
           </div>
         </div>
@@ -266,7 +301,6 @@
   <script>
     const ADMIN_PASSCODE = "gravitationalwave15092015";
 
-    // Firebase & API Config
     const firebaseConfig = {
       apiKey: "AIzaSyDlNYdFNfQGkKZ71EaQn2RDI_SRqEHsxpg",
       authDomain: "house-trak-su.firebaseapp.com",
@@ -278,7 +312,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ระบบเวลาไทย แก้ปัญหาเดือนเพี้ยน
     let d = new Date();
     let currentMonth = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
     
@@ -287,9 +320,54 @@
     let currentGallerySlips = [], currentGalleryIndex = 0, currentGalleryConfig = null; 
     let chartInstance = null;
 
-    // ระบบเก็บแคชสลิป ป้องกันบั๊กการแสดงผลรูป (Safe Gallery)
     window.cachedSlips = { house: {}, fund: {}, sharedBill: {} };
 
+    // --- HELPER FUNCTIONS FOR CUSTOM MODALS ---
+    function customAlert(msg, icon="✅") {
+        document.getElementById('customAlertIcon').innerText = icon;
+        document.getElementById('customAlertDesc').innerText = msg;
+        document.getElementById('customAlertModal').classList.remove('hidden');
+    }
+
+    function customConfirm(msg) {
+      return new Promise((resolve) => {
+        const modal = document.getElementById('customConfirmModal');
+        document.getElementById('customConfirmDesc').innerText = msg;
+        modal.classList.remove('hidden');
+        
+        const cleanup = () => { modal.classList.add('hidden'); };
+        
+        document.getElementById('customConfirmYes').onclick = () => { cleanup(); resolve(true); };
+        document.getElementById('customConfirmNo').onclick = () => { cleanup(); resolve(false); };
+      });
+    }
+
+    function askAmount(title, desc, defaultVal) {
+      return new Promise((resolve) => {
+        const modal = document.getElementById('customPromptModal');
+        const input = document.getElementById('customPromptInput');
+        const btnConfirm = document.getElementById('customPromptConfirm');
+        const btnCancel = document.getElementById('customPromptCancel');
+
+        document.getElementById('customPromptTitle').innerText = title;
+        document.getElementById('customPromptDesc').innerText = desc;
+        input.value = defaultVal || '';
+
+        modal.classList.remove('hidden');
+        input.focus();
+
+        const cleanup = () => {
+          modal.classList.add('hidden');
+          btnConfirm.onclick = null;
+          btnCancel.onclick = null;
+        };
+
+        btnConfirm.onclick = () => { cleanup(); resolve(input.value); };
+        btnCancel.onclick = () => { cleanup(); resolve(null); };
+      });
+    }
+
+    // --- ADMIN SYSTEM ---
     function checkAdminPasscode(actionDescription) {
       const p = prompt(`เพื่อความปลอดภัย กรุณาใส่รหัสผ่านสำหรับการ ${actionDescription}`);
       if (p === null) return false;
@@ -297,7 +375,6 @@
       return true;
     }
 
-    // ฟังก์ชันเลื่อนเดือนแบบใหม่ (บั๊กฟรี)
     function updateMonthDisplay() {
       const [yy, mm] = currentMonth.split('-');
       const monthsTh = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
@@ -324,7 +401,6 @@
       listenToCurrentMonth();
     }
 
-    // Initialize UI
     updateMonthDisplay();
 
     function switchTab(tabId) {
@@ -337,7 +413,6 @@
       if (tabId === 'analytics') renderChart();
     }
 
-    // DB Listeners
     db.ref('settings').on('value', snap => {
       if (snap.exists()) settings = { ...settings, ...snap.val() };
       
@@ -380,7 +455,6 @@
       sharedBillsData = snap.val() || {}; renderSharedBills();
     });
 
-    // Board Auto-Save
     const boardTextArea = document.getElementById('houseBoardText');
     let boardTimeout = null;
     db.ref('board/content').on('value', snap => {
@@ -427,21 +501,17 @@
       const fundPayObj = {};
       
       Object.keys(allMonthsData).forEach(mth => {
-        // ดึงสลิปกองกลางแบบเก่า (ระบบเดือนกันยาและก่อนหน้า)
         if (allMonthsData[mth].fundPayments) {
           Object.entries(allMonthsData[mth].fundPayments).forEach(([mId, pData]) => {
             totalFundPaidIn += Number(pData.paidAmount || 0);
             if (mth === currentMonth) {
               if(!fundPayObj[mId]) fundPayObj[mId] = { paidAmount: 0, slips: [] };
               fundPayObj[mId].paidAmount += Number(pData.paidAmount || 0);
-              
-              // แก้บั๊ก ID ทำให้ลบสลิปเก่าไม่ได้
               const slips = pData.slips ? (Array.isArray(pData.slips) ? pData.slips.map((x,i)=>({...x, id: i})) : Object.keys(pData.slips).map(k=>({...pData.slips[k], id: k}))) : [];
               slips.forEach(s => fundPayObj[mId].slips.push({...s, legacy: true}));
             }
           });
         }
-        // ดึงสลิปกองกลางระบบใหม่
         if (allMonthsData[mth].fundDeposits) {
           Object.entries(allMonthsData[mth].fundDeposits).forEach(([depId, dep]) => {
             totalFundPaidIn += Number(dep.amount || 0);
@@ -490,25 +560,21 @@
       const houseBillAmt = bd.total;
       const houseDetailStr = `เช่า ${bd.rent} | น้ำ ${bd.water} | ไฟ ${bd.electric}${bd.other > 0 ? ' | อื่นๆ '+bd.other : ''}`;
       
-      // Clear cache before render
       window.cachedSlips.house = {};
       window.cachedSlips.fund = {};
 
       Object.entries(members).filter(([_, m]) => m.active).forEach(([mId, m]) => {
-        // House Bill
         const hData = housePayObj[mId] || { paidAmount: 0, slips: [] };
         const hPaid = Number(hData.paidAmount);
         const hSlipsObj = hData.slips || {};
         const hSlips = Array.isArray(hSlipsObj) ? hSlipsObj.map((s, i) => ({...s, id: i})) : Object.keys(hSlipsObj).map(key => ({...hSlipsObj[key], id: key}));
         const hStatus = hPaid >= houseBillAmt ? `<span class="text-emerald-400">✓ จ่ายครบ</span>` : (hPaid > 0 ? `<span class="text-amber-400">ขาด ${houseBillAmt - hPaid} ฿</span>` : `<span class="text-slate-400">${houseBillAmt} ฿</span>`);
         
-        // Fund Data 
         const fData = fundPayObj[mId] || { paidAmount: 0, slips: [] };
         const fPaid = Number(fData.paidAmount);
         const fSlips = fData.slips || [];
         const fStatus = fPaid >= fundAmt ? `<span class="text-indigo-400">✓ จ่ายครบ</span>` : (fPaid > 0 ? `<span class="text-indigo-300/70">ขาด ${fundAmt - fPaid} ฿</span>` : `<span class="text-slate-400">${fundAmt} ฿</span>`);
 
-        // Save to safe cache
         window.cachedSlips.house[mId] = hSlips;
         window.cachedSlips.fund[mId] = fSlips;
 
@@ -587,7 +653,7 @@
       });
     }
 
-    // --- BULLETPROOF UPLOAD SYSTEM ---
+    // --- NEW BULLETPROOF UPLOAD FLOW ---
     function openFundDepositModal(preSelectId = null) {
       document.getElementById('modalFundBank').innerText = settings.fundBank || 'ไม่ระบุธนาคาร';
       document.getElementById('modalFundAccNo').innerText = settings.fundAccNo || '---';
@@ -609,12 +675,13 @@
     function triggerFundSlipUpload() {
       const mId = document.getElementById('fundDepMember').value;
       const note = document.getElementById('fundDepNote').value.trim();
-      if(!mId) return alert("กรุณาเลือกสมาชิกที่เป็นเจ้าของเงิน");
-      
+      if(!mId) {
+        customAlert("กรุณาเลือกสมาชิกที่เป็นเจ้าของเงิน", "⚠️");
+        return;
+      }
       currentUploadConfig = { memberId: mId, paymentType: 'fundDeposit', expectedAmt: 0, note: note };
-      
       document.getElementById('fundDepositModal').classList.add('hidden'); 
-      setTimeout(() => { document.getElementById('slipInput').click(); }, 100);
+      document.getElementById('slipInput').click(); 
     }
 
     function triggerUploadSlip(memberId, paymentType, expectedAmt, targetAdvId = null) {
@@ -622,19 +689,18 @@
       document.getElementById('slipInput').click();
     }
 
-    // การอัปโหลดแบบกรอกตัวเลขเอง 100% (เพื่อแก้ปัญหาเว็บค้างจาก AI)
     async function handleSlipSelected(e) {
       const file = e.target.files[0];
       if (!file || !currentUploadConfig) return;
 
       const { expectedAmt, memberId, paymentType, targetAdvId, note } = currentUploadConfig;
       
-      // ถามยอดเงินก่อนเลย
+      let promptTitle = expectedAmt > 0 ? "📌 ยืนยันยอดชำระ" : "📌 ระบุยอดโอน";
       let promptMsg = expectedAmt > 0 
-        ? `📌 ยอดที่ต้องชำระคือ ${expectedAmt} บาท\nโปรดพิมพ์ยอดเงินที่โอนจริง:` 
-        : `📌 โปรดพิมพ์ยอดเงินที่โอนจริง (เช่น 500):`;
+        ? `ยอดที่ต้องชำระคือ ${expectedAmt} บาท\n\nโปรดพิมพ์ยอดเงินตามสลิปโอนจริง:` 
+        : `โปรดพิมพ์ยอดเงินที่โอนจริง (เช่น 500):`;
         
-      let finalAmountStr = prompt(promptMsg, expectedAmt > 0 ? expectedAmt : '');
+      let finalAmountStr = await askAmount(promptTitle, promptMsg, expectedAmt > 0 ? expectedAmt : '');
       
       if (finalAmountStr === null) {
         document.getElementById('slipInput').value = ''; 
@@ -645,7 +711,15 @@
       let finalAmount = Number(finalAmountStr.replace(/,/g, ''));
       if (isNaN(finalAmount)) finalAmount = 0;
 
-      // แสดง Loading ป้องกันการกดซ้ำ
+      if (finalAmount <= 0) {
+        const isConfirm = await customConfirm("คุณระบุยอดเงินเป็น 0 บาท หรือไม่ได้ระบุยอด\n\nแน่ใจที่จะบันทึกสลิปนี้ใช่หรือไม่?");
+        if(!isConfirm) {
+            document.getElementById('slipInput').value = ''; 
+            currentUploadConfig = null;
+            return;
+        }
+      }
+
       const overlay = document.getElementById('loadingOverlay');
       overlay.classList.remove('hidden');
 
@@ -654,7 +728,7 @@
         const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
         const resData = await res.json();
         
-        if(!resData.success) throw new Error("อัปโหลดรูปภาพล้มเหลว กรุณาตรวจสอบอินเทอร์เน็ต");
+        if(!resData.success) throw new Error("อัปโหลดรูปล้มเหลว กรุณาลองใหม่");
 
         const slipObj = { 
             url: resData.data.url, 
@@ -683,10 +757,10 @@
           await db.ref(`bills/${currentMonth}/fundDeposits`).push(slipObj);
         }
 
-        alert("✅ บันทึกสลิปสำเร็จ! ยอดเงินเข้าสู่ระบบแล้ว");
+        customAlert("บันทึกสลิปสำเร็จ!\nยอดเงินเข้าสู่ระบบแล้ว", "✅");
 
       } catch (err) {
-        alert("❌ เกิดข้อผิดพลาด: " + err.message);
+        customAlert(err.message, "❌");
       } finally {
         overlay.classList.add('hidden');
         document.getElementById('slipInput').value = ''; 
@@ -694,7 +768,7 @@
       }
     }
 
-    // GALLERY VIEWER แบบดึงจาก Cache (ป้องกันบั๊ก JSON Quotes)
+    // GALLERY VIEWER
     function openGalleryFromCache(cacheType, cacheKey, nameStr, targetAdvId = null, mId = null) {
       const slips = window.cachedSlips[cacheType][cacheKey] || [];
       let config = {};
@@ -739,7 +813,6 @@
       
       try {
         if(paymentType === 'fundDeposit') {
-            // ระบบตรวจสอบว่าเป็นสลิปกองกลางใหม่ หรือ สลิปเก่าจากเดือนก่อนๆ (Legacy)
             if (slipToDelete.legacy) {
                 dbPath = `bills/${currentMonth}/fundPayments/${memberId}`;
                 const snap = await db.ref(dbPath).once('value');
@@ -762,8 +835,9 @@
             await db.ref(`${dbPath}/slips/${slipToDelete.id}`).remove();
           }
         }
-        alert("ลบสลิปและปรับปรุงยอดเรียบร้อยแล้ว"); closeSlipModal();
-      } catch (err) { alert("เกิดข้อผิดพลาดในการลบ: " + err.message); }
+        customAlert("ลบสลิปเรียบร้อย", "✅"); 
+        closeSlipModal();
+      } catch (err) { customAlert("เกิดข้อผิดพลาดในการลบ: " + err.message, "❌"); }
     }
 
     // Admin Panel
@@ -778,10 +852,10 @@
       const cbs = document.querySelectorAll('.shared-member-cb:checked');
       const reqMembers = Array.from(cbs).map(cb => cb.value);
 
-      if (!title || !amt || reqMembers.length === 0) return alert("ข้อมูลไม่ครบ");
+      if (!title || !amt || reqMembers.length === 0) return customAlert("ข้อมูลไม่ครบ", "⚠️");
       db.ref(`sharedBills`).push({ title, amount: amt, requiredMembers: reqMembers, date: new Date().toLocaleDateString('th-TH') });
       document.getElementById('sharedBillTitle').value = ''; document.getElementById('sharedBillAmount').value = '';
-      cbs.forEach(cb => cb.checked = false); alert("สร้างบิลก้อนใหญ่เรียบร้อย");
+      cbs.forEach(cb => cb.checked = false); customAlert("สร้างบิลก้อนใหญ่เรียบร้อย", "✅");
     }
     function deleteSharedBill(billId) {
       if (checkAdminPasscode("ลบบิลก้อนใหญ่")) db.ref(`sharedBills/${billId}`).remove();
@@ -801,15 +875,15 @@
       db.ref(`bills/${currentMonth}`).update({
         rent: Number(document.getElementById('inpRent').value)||0, water: Number(document.getElementById('inpWater').value)||0,
         electricDirect: Number(document.getElementById('inpElectricDirect').value)||0, other: Number(document.getElementById('inpOther').value)||0,
-      }).then(() => { alert("บันทึกแล้ว!"); switchTab('overview'); });
+      }).then(() => { customAlert("บันทึกข้อมูลบิลเรียบร้อย!", "✅"); switchTab('overview'); });
     }
     function addFundExpense() {
       const nm = document.getElementById('fundItemName').value, cst = Number(document.getElementById('fundItemCost').value), sel = document.getElementById('fundBuyerSelect'), byr = sel.options[sel.selectedIndex]?.text;
       if(nm && cst && byr) { db.ref(`bills/${currentMonth}/fundExpenses`).push({name:nm, amount:cst, buyer:byr}); document.getElementById('fundItemName').value=''; document.getElementById('fundItemCost').value=''; }
     }
     function addNewMember() {
-      const nm = document.getElementById('newMemberName').value.trim(); const bk = document.getElementById('newMemberBank').value.trim();
-      if(nm) db.ref(`members/m_${Date.now()}`).set({ name: nm, bankName: bk, active: true }); document.getElementById('newMemberName').value=''; document.getElementById('newMemberBank').value='';
+      const nm = document.getElementById('newMemberName').value.trim();
+      if(nm) db.ref(`members/m_${Date.now()}`).set({ name: nm, active: true }); document.getElementById('newMemberName').value='';
     }
     function renderMembersSettings() {
       const div = document.getElementById('settingsMemberList'); div.innerHTML = '';
@@ -818,7 +892,6 @@
       });
     }
     
-    // บันทึกการตั้งค่า
     function saveSettings() {
       if(checkAdminPasscode("ตั้งค่าระบบ")) {
         const newFundRate = Number(document.getElementById('setFundRate').value) || 0;
@@ -832,13 +905,13 @@
           fundAccNo: document.getElementById('setFundAccNo').value.trim(), 
           fundQrUrl: document.getElementById('setFundQR').value.trim()
         }).then(() => {
-          alert("✅ บันทึกการตั้งค่ากองกลางและยอดเงินตั้งต้นเรียบร้อยแล้ว");
+          customAlert("บันทึกการตั้งค่ากองกลางและยอดเงินตั้งต้นเรียบร้อยแล้ว", "✅");
           settings.fundRate = newFundRate;
           settings.initialFund = newInitialFund;
           document.getElementById('fundPerPersonRate').innerText = newFundRate;
           calculateAndRender();
         }).catch((err) => {
-           alert("เกิดข้อผิดพลาดในการบันทึก: " + err.message);
+           customAlert("เกิดข้อผิดพลาดในการบันทึก: " + err.message, "❌");
         });
       }
     }
