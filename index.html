@@ -204,7 +204,8 @@
         <div class="bg-slate-900/90 border border-slate-800/90 rounded-3xl p-5 shadow-xl flex flex-col justify-between h-full">
           <div class="flex justify-between items-center mb-4">
             <h2 class="font-bold text-sm text-slate-100 flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-emerald-400"></span> สัดส่วนค่าใช้จ่าย
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span> สัดส่วนค่าใช้จ่าย 
+              <span id="donutMonthText" class="text-xs text-slate-400 font-normal ml-1"></span> <!-- ตัวที่หายไปผมเติมให้แล้วครับ -->
             </h2>
             <select id="donutViewMode" class="bg-slate-800/90 border border-slate-700/80 rounded-xl px-2 py-1 text-[10px] text-slate-200 outline-none" onchange="renderDonutChartMode()">
               <option value="month">รายเดือน</option>
@@ -415,8 +416,11 @@
       document.getElementById('txMonthName').innerText = displayStr;
       document.getElementById('txFundMonthName').innerText = displayStr;
       document.getElementById('monthPicker').value = currentMonth;
-      if (document.getElementById('donutViewMode').value === 'month') {
-        document.getElementById('donutMonthText').innerText = displayStr;
+      
+      // ตัวกันแครช: เช็กว่ามีกล่องข้อความอยู่บนหน้าเว็บจริงๆ ถึงจะสั่งเปลี่ยนชื่อเดือน
+      if (document.getElementById('donutViewMode') && document.getElementById('donutViewMode').value === 'month') {
+        const donutMonthElem = document.getElementById('donutMonthText');
+        if (donutMonthElem) donutMonthElem.innerText = displayStr;
       }
     }
 
@@ -600,6 +604,19 @@
         e += Number(md.electricDirect || 0); o += Number(md.other || 0);
         if (md.fundExpenses) Object.values(md.fundExpenses).forEach(exp => fe += Number(exp.amount));
       });
+
+      // ตัวกันแครช
+      const donutMonthElem = document.getElementById('donutMonthText');
+      if(donutMonthElem) {
+        if (mode === 'month') {
+          const monthsTh = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+          donutMonthElem.innerText = `เดือน ${monthsTh[mInt - 1]} ${yInt}`;
+        } else if (mode === 'quarter') {
+          donutMonthElem.innerText = `ไตรมาส ${Math.ceil(mInt / 3)} ปี ${yInt}`;
+        } else if (mode === 'year') {
+          donutMonthElem.innerText = `ตลอดปี ${yInt}`;
+        }
+      }
 
       renderDonutChart(r, w, e, o, fe, sb);
     }
