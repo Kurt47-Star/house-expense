@@ -12,26 +12,25 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>body { font-family: 'Kanit', sans-serif; }</style>
   
-  <!-- Firebase & Chart.js -->
+  <!-- Firebase & Chart.js & SheetJS (สำหรับ Export Excel) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen pb-16">
 
   <!-- ================= OVERLAYS & MODALS ================= -->
-  <!-- ซ่อน Input File ไว้ -->
   <input type="file" id="slipInput" accept="image/*" class="hidden" onchange="handleSlipSelected(event)">
   
   <!-- Loading หน้าจอตอนอัปโหลด -->
   <div id="loadingOverlay" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[100] hidden flex flex-col items-center justify-center p-4 text-center">
     <div class="w-12 h-12 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin mb-4"></div>
-    <div id="loadingStatusText" class="text-base font-semibold text-emerald-400">กำลังอัปโหลดสลิป...</div>
+    <div id="loadingStatusText" class="text-base font-semibold text-emerald-400">กำลังประมวลผล...</div>
     <div class="text-xs text-slate-400 mt-2">ห้ามปิดหน้าจอจนกว่าจะเสร็จสิ้น</div>
   </div>
 
-  <!-- 💡 CUSTOM POPUPS: แก้ปัญหา Messenger/LINE บล็อกหน้าต่างแจ้งเตือน 💡 -->
-  <!-- Prompt Modal สำหรับถามยอดเงิน -->
+  <!-- Custom Prompt Modal สำหรับถามยอดเงิน (Messenger/LINE Safe) -->
   <div id="customPromptModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-emerald-500/50 rounded-3xl max-w-sm w-full shadow-2xl p-6 relative overflow-hidden">
       <div class="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl"></div>
@@ -45,7 +44,7 @@
     </div>
   </div>
 
-  <!-- Confirm Modal สำหรับถามย้ำ (เช่น กรณีใส่ยอด 0 บาท) -->
+  <!-- Custom Confirm Modal -->
   <div id="customConfirmModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-amber-500/50 rounded-3xl max-w-sm w-full shadow-2xl p-6">
       <h3 class="text-lg font-bold text-amber-400 mb-2">⚠️ ยืนยันการดำเนินการ</h3>
@@ -57,7 +56,7 @@
     </div>
   </div>
 
-  <!-- Alert Modal แจ้งเตือนความสำเร็จหรือล้มเหลว -->
+  <!-- Custom Alert Modal -->
   <div id="customAlertModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-sm w-full shadow-2xl p-6 text-center">
       <div class="text-5xl mb-4" id="customAlertIcon">✅</div>
@@ -66,7 +65,7 @@
     </div>
   </div>
 
-  <!-- Modal นำเงินเข้ากองกลาง -->
+  <!-- Modal นำเงินเข้ากองกลาง (ฝาก) -->
   <div id="fundDepositModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-indigo-500/50 rounded-2xl max-w-sm w-full shadow-2xl">
       <div class="p-3 border-b border-slate-800 flex justify-between items-center">
@@ -88,6 +87,33 @@
         </div>
         <button onclick="triggerFundSlipUpload()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl text-sm font-medium transition text-white shadow-lg shadow-indigo-600/20">
           📤 เลือกสลิปเพื่ออัปโหลด
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal เบิกเงินกองกลาง (ใหม่!) -->
+  <div id="fundWithdrawModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-rose-500/50 rounded-2xl max-w-sm w-full shadow-2xl">
+      <div class="p-3 border-b border-slate-800 flex justify-between items-center">
+        <h3 class="text-sm font-bold text-rose-400 flex items-center gap-2">💸 เบิกเงินจากกองกลาง</h3>
+        <button onclick="closeFundWithdrawModal()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+      <div class="p-4 space-y-4">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">ใครเป็นคนเบิกเงิน?</label>
+          <select id="fundWithBuyer" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm text-slate-200 border border-slate-700 outline-none focus:border-rose-500"></select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">จำนวนเงินที่เบิก (บาท)</label>
+          <input type="number" id="fundWithAmount" placeholder="เช่น 250" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm text-slate-200 border border-slate-700 outline-none focus:border-rose-500">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">เบิกไปใช้ทำอะไร / วัตถุประสงค์</label>
+          <input type="text" id="fundWithReason" placeholder="เช่น ค่าน้ำมันรถไปซื้อของ, ซื้อทิชชู่, ซื้อน้ำยาล้างจาน" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm text-slate-200 border border-slate-700 outline-none focus:border-rose-500">
+        </div>
+        <button onclick="submitFundWithdraw()" class="w-full bg-rose-600 hover:bg-rose-500 py-3 rounded-xl text-sm font-bold transition text-white shadow-lg shadow-rose-600/20">
+          ยืนยันการเบิกเงิน
         </button>
       </div>
     </div>
@@ -132,7 +158,7 @@
       </div>
       <div class="flex items-center bg-slate-800/80 p-1 rounded-xl border border-slate-700/60 text-sm overflow-x-auto w-full sm:w-auto">
         <button id="tabBtn-overview" onclick="switchTab('overview')" class="px-3 py-1.5 rounded-lg font-medium transition bg-emerald-600 text-white whitespace-nowrap">📊 ภาพรวมบิล</button>
-        <button id="tabBtn-sharedbill" onclick="switchTab('sharedbill')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white whitespace-nowrap">💸 บิลก้อนใหญ่</button>
+        <button id="tabBtn-tx" onclick="switchTab('tx')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white whitespace-nowrap">📑 รายการ & Excel</button>
         <button id="tabBtn-board" onclick="switchTab('board')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white whitespace-nowrap">📌 บอร์ดบ้าน</button>
         <button id="tabBtn-analytics" onclick="switchTab('analytics')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white whitespace-nowrap">📈 สถิติ</button>
         <button id="tabBtn-admin" onclick="switchTab('admin')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white whitespace-nowrap">📝 ตั้งค่า</button>
@@ -149,7 +175,7 @@
 
   <main class="max-w-4xl mx-auto px-4 mt-6">
 
-    <!-- ================= TAB 1: OVERVIEW ================= -->
+    <!-- ================= TAB 1: OVERVIEW (หน้าหลัก รวมครบทุกอย่าง!) ================= -->
     <div id="tab-overview" class="space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- บิลบ้าน -->
@@ -158,18 +184,23 @@
           <div class="text-3xl font-extrabold text-white" id="dashPerPerson">0 <span class="text-sm text-emerald-400 font-normal">บ./คน</span></div>
         </div>
 
-        <!-- กองกลาง Super Card -->
+        <!-- กองกลาง Super Card (มีทั้งปุ่มฝาก และปุ่มเบิก!) -->
         <div class="bg-indigo-950/30 border border-indigo-500/30 rounded-3xl p-5 shadow-xl flex flex-col justify-between relative overflow-hidden">
           <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl"></div>
-          <div class="flex justify-between items-start relative z-10">
+          <div class="flex justify-between items-start relative z-10 gap-2">
             <div>
               <div class="text-indigo-400 font-medium text-sm mb-1">💎 กองกลางคงเหลือสุทธิ</div>
               <div class="text-3xl font-extrabold text-indigo-300" id="dashFundBalance">0 <span class="text-sm font-normal">บาท</span></div>
               <div class="text-[10px] text-indigo-200/60 mt-1">เป้าหมายเก็บ <span id="fundPerPersonRate">0</span> บ./คน</div>
             </div>
-            <button onclick="openFundDepositModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-2 rounded-xl shadow-lg transition flex items-center gap-1 border border-indigo-500">
-              <span class="font-medium">+ ฝากกองกลาง</span>
-            </button>
+            <div class="flex flex-col gap-2">
+              <button onclick="openFundDepositModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-xl shadow-lg transition flex items-center justify-center gap-1 border border-indigo-500">
+                <span class="font-medium">+ ฝากกองกลาง</span>
+              </button>
+              <button onclick="openFundWithdrawModal()" class="bg-rose-700/80 hover:bg-rose-600 text-rose-100 text-xs px-3 py-1.5 rounded-xl shadow-lg transition flex items-center justify-center gap-1 border border-rose-500/60">
+                <span class="font-medium">- เบิกเงิน</span>
+              </button>
+            </div>
           </div>
           <div class="mt-4 pt-3 border-t border-indigo-500/20 relative z-10">
             <div class="flex justify-between items-center">
@@ -185,33 +216,86 @@
         </div>
       </div>
 
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-        <h2 class="font-semibold text-sm text-slate-200 mb-3 flex items-center gap-2">
-          <span class="text-indigo-400">📥</span> ประวัติเงินเข้ากองกลาง (<span id="logMonthText">เดือนนี้</span>)
-        </h2>
-        <div id="fundDepositLog" class="space-y-2 max-h-40 overflow-y-auto pr-1"></div>
+      <!-- 💸 รวมบิลก้อนใหญ่มาไว้หน้าเดียวกันแล้ว! -->
+      <div class="space-y-3">
+        <div class="flex justify-between items-center px-1">
+          <div>
+            <h2 class="font-semibold text-base text-amber-400 flex items-center gap-2">
+              <span>💸</span> บิลก้อนใหญ่ที่ต้องจ่ายร่วมกัน (Shared Bills)
+            </h2>
+            <p class="text-xs text-slate-400">รายการค่าใช้จ่ายพิเศษ เช่น ค่าประกันบ้าน หรือของใช้ชิ้นใหญ่ที่ต้องหารกัน</p>
+          </div>
+        </div>
+        <div id="sharedBillsContainer" class="space-y-4"></div>
       </div>
 
-      <div class="space-y-4">
+      <!-- สถานะการจ่ายเงินค่าบ้าน & กองกลาง (รายบุคคล) -->
+      <div class="space-y-3 pt-2">
         <div class="flex justify-between items-center px-1">
-          <h2 class="font-semibold text-lg text-slate-200">ตรวจสอบสถานะการจ่ายเงิน (<span id="statusMonthText">เดือนนี้</span>)</h2>
+          <h2 class="font-semibold text-base text-slate-200">ตรวจสอบสถานะการจ่ายเงินค่าบ้านประจำเดือน (<span id="statusMonthText">เดือนนี้</span>)</h2>
         </div>
         <div id="overviewMembersCards" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
       </div>
+
+      <!-- ประวัติการเข้า-ออกกองกลาง (เดือนนี้) -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+        <h2 class="font-semibold text-sm text-slate-200 mb-3 flex items-center justify-between">
+          <span class="flex items-center gap-2"><span class="text-indigo-400">📋</span> ความเคลื่อนไหวกองกลาง (<span id="logMonthText">เดือนนี้</span>)</span>
+          <span class="text-[11px] text-slate-500">เข้า / ออก</span>
+        </h2>
+        <div id="fundDepositLog" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
+      </div>
     </div>
 
-    <!-- ================= TAB 1.5: SHARED BIG BILLS ================= -->
-    <div id="tab-sharedbill" class="hidden space-y-6">
-      <div class="flex justify-between items-center px-1">
+    <!-- ================= TAB 2: TRANSACTIONS & EXPORT EXCEL (ใหม่!) ================= -->
+    <div id="tab-tx" class="hidden space-y-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl">
         <div>
-          <h2 class="font-semibold text-lg text-slate-200">💸 รายการหารบิลก้อนใหญ่ / สำรองจ่าย</h2>
-          <p class="text-xs text-slate-400">บิลที่แยกจากค่าเช่ารายเดือน เช่น ค่าประกันบ้าน, ค่าซื้อของชิ้นใหญ่</p>
+          <h2 class="text-lg font-bold text-emerald-400">📑 ข้อมูล Transaction & การวิเคราะห์</h2>
+          <p class="text-xs text-slate-400">ดูสรุปรายรับ-รายจ่ายทั้งหมด และส่งออกเป็นไฟล์ Excel เพื่อนำไปวิเคราะห์ต่อ</p>
+        </div>
+        <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition flex items-center gap-2 shadow-lg shadow-emerald-600/20">
+          <span>📥</span> ส่งออกเป็นไฟล์ Excel (.xlsx)
+        </button>
+      </div>
+
+      <!-- ตารางสรุปรายจ่ายประจำเดือน -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+        <h3 class="font-bold text-sm text-slate-200 mb-3">1. สรุปรายจ่ายประจำเดือน (<span id="txMonthName"></span>)</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left text-slate-300">
+            <thead class="bg-slate-800 text-slate-400 uppercase">
+              <tr>
+                <th class="p-2.5 rounded-l-lg">หมวดหมู่ค่าใช้จ่าย</th>
+                <th class="p-2.5 text-right">ยอดรวม (บาท)</th>
+                <th class="p-2.5 text-right rounded-r-lg">เฉลี่ยต่อคน (บาท)</th>
+              </tr>
+            </thead>
+            <tbody id="txExpensesTable" class="divide-y divide-slate-800"></tbody>
+          </table>
         </div>
       </div>
-      <div id="sharedBillsContainer" class="space-y-6"></div>
+
+      <!-- ตารางธุรกรรมกองกลาง (ฝาก/เบิก) -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+        <h3 class="font-bold text-sm text-slate-200 mb-3">2. ประวัติการฝากและเบิกกองกลาง (<span id="txFundMonthName"></span>)</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left text-slate-300">
+            <thead class="bg-slate-800 text-slate-400">
+              <tr>
+                <th class="p-2.5 rounded-l-lg">ประเภท</th>
+                <th class="p-2.5">สมาชิก</th>
+                <th class="p-2.5">รายละเอียด / วัตถุประสงค์</th>
+                <th class="p-2.5 text-right rounded-r-lg">จำนวนเงิน</th>
+              </tr>
+            </thead>
+            <tbody id="txFundTable" class="divide-y divide-slate-800"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
-    <!-- ================= TAB 2: BOARD ================= -->
+    <!-- ================= TAB 3: BOARD ================= -->
     <div id="tab-board" class="hidden space-y-6">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col h-[500px]">
         <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-4">
@@ -222,7 +306,7 @@
       </div>
     </div>
 
-    <!-- ================= TAB 3: ANALYTICS ================= -->
+    <!-- ================= TAB 4: ANALYTICS ================= -->
     <div id="tab-analytics" class="hidden space-y-6">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
         <h2 class="font-semibold text-slate-200 mb-4">📈 เทรนด์ค่าใช้จ่ายรายเดือน</h2>
@@ -230,7 +314,7 @@
       </div>
     </div>
 
-    <!-- ================= TAB 4: ADMIN & SETTINGS ================= -->
+    <!-- ================= TAB 5: ADMIN & SETTINGS ================= -->
     <div id="tab-admin" class="hidden space-y-6">
       
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
@@ -260,17 +344,6 @@
         <button onclick="createSharedBill()" class="bg-amber-600 hover:bg-amber-500 w-full py-2.5 rounded-xl text-sm transition font-medium">สร้างบิลหารร่วม</button>
       </div>
 
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-        <h2 class="text-lg font-bold text-indigo-400 border-b border-slate-800 pb-2">🛒 3. เบิกซื้อของ (หักจากกองกลาง)</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <input type="text" id="fundItemName" placeholder="ชื่อของที่ซื้อ (เช่น ทิชชู่)" class="w-full bg-slate-800 rounded-lg p-2 text-xs">
-          <input type="number" id="fundItemCost" placeholder="ราคา (บาท)" class="w-full bg-slate-800 rounded-lg p-2 text-xs">
-          <select id="fundBuyerSelect" class="w-full bg-slate-800 rounded-lg p-2 text-xs text-slate-300"></select>
-        </div>
-        <button onclick="addFundExpense()" class="bg-indigo-600 hover:bg-indigo-500 w-full py-2 rounded-xl text-sm transition">หักเงินกองกลาง</button>
-        <div id="fundExpenseAdminList" class="mt-3 pt-3 border-t border-slate-800 text-[11px] space-y-1 max-h-32 overflow-y-auto"></div>
-      </div>
-
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
           <h2 class="text-lg font-bold text-slate-200 border-b border-slate-800 pb-2">⚙️ ตั้งค่าเงินและกองกลาง</h2>
@@ -281,7 +354,7 @@
             <div><input type="text" id="setFundBank" class="w-full bg-slate-800 rounded-lg p-2 text-xs mb-2" placeholder="ธนาคาร (เช่น กสิกรไทย)"></div>
             <div><input type="text" id="setFundAccName" class="w-full bg-slate-800 rounded-lg p-2 text-xs mb-2" placeholder="ชื่อบัญชี (เช่น นาย สมชาย)"></div>
             <div><input type="text" id="setFundAccNo" class="w-full bg-slate-800 rounded-lg p-2 text-xs mb-2" placeholder="เลขบัญชี"></div>
-            <div><input type="text" id="setFundQR" class="w-full bg-slate-800 rounded-lg p-2 text-xs" placeholder="ลิงก์รูป QR Code (เช่น จาก imgbb)"></div>
+            <div><input type="text" id="setFundQR" class="w-full bg-slate-800 rounded-lg p-2 text-xs" placeholder="ลิงก์รูป QR Code (ต้องเป็นลิงก์รูปตรง เช่น i.ibb.co/...)"></div>
             <button onclick="saveSettings()" class="w-full bg-emerald-600 hover:bg-emerald-500 px-3 py-3 rounded-lg text-sm font-bold text-white mt-2 shadow-lg">💾 บันทึกการตั้งค่า</button>
           </div>
         </div>
@@ -367,7 +440,6 @@
       });
     }
 
-    // --- ADMIN SYSTEM ---
     function checkAdminPasscode(actionDescription) {
       const p = prompt(`เพื่อความปลอดภัย กรุณาใส่รหัสผ่านสำหรับการ ${actionDescription}`);
       if (p === null) return false;
@@ -384,6 +456,8 @@
       document.getElementById('overviewMonthText').innerText = displayStr;
       document.getElementById('logMonthText').innerText = displayStr;
       document.getElementById('statusMonthText').innerText = displayStr;
+      document.getElementById('txMonthName').innerText = displayStr;
+      document.getElementById('txFundMonthName').innerText = displayStr;
     }
 
     function changeMonthOffset(offset) {
@@ -404,7 +478,7 @@
     updateMonthDisplay();
 
     function switchTab(tabId) {
-      ['overview', 'sharedbill', 'board', 'analytics', 'admin'].forEach(tab => {
+      ['overview', 'tx', 'board', 'analytics', 'admin'].forEach(tab => {
         document.getElementById(`tab-${tab}`).classList.toggle('hidden', tab !== tabId);
         document.getElementById(`tabBtn-${tab}`).className = tab === tabId 
           ? "px-3 py-1.5 rounded-lg font-medium transition bg-emerald-600 text-white" 
@@ -529,29 +603,50 @@
       
       document.getElementById('dashFundBalance').innerHTML = `${(totalFundPaidIn - totalFundOut).toLocaleString()} <span class="text-sm">บาท</span>`;
 
-      const fAdmin = document.getElementById('fundExpenseAdminList'); fAdmin.innerHTML = '';
+      // แสดงความเคลื่อนไหวกองกลาง (ฝาก และ เบิก) ในหน้าแรก
+      const depLog = document.getElementById('fundDepositLog'); depLog.innerHTML = '';
+      let hasFundActivity = false;
+
+      // รายการเบิกเงินออก
       if(curData.fundExpenses) {
         Object.entries(curData.fundExpenses).forEach(([expId, e]) => {
-          fAdmin.innerHTML += `<div class="flex justify-between items-center border-b border-slate-800 py-2"><div class="text-slate-300">${e.name} <span class="text-slate-500 text-[10px]">(${e.buyer})</span></div><div class="flex items-center gap-2"><span class="text-rose-400 font-medium">-${Number(e.amount).toLocaleString()}</span><button onclick="deleteFundExpense('${expId}')" class="text-[10px] bg-rose-900/40 hover:bg-rose-800/60 text-rose-300 px-1.5 py-1 rounded">ลบ</button></div></div>`;
+          hasFundActivity = true;
+          depLog.innerHTML += `
+            <div class="flex justify-between items-center bg-rose-950/20 p-2.5 rounded-lg border border-rose-900/30">
+              <div>
+                <div class="text-xs text-rose-300 font-medium">📤 เบิกโดย: ${e.buyer}</div>
+                <div class="text-[10px] text-slate-400">${e.name} ${e.date ? '• '+e.date : ''}</div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-rose-400 text-xs font-semibold">-${Number(e.amount).toLocaleString()} ฿</span>
+                <button onclick="deleteFundExpense('${expId}')" class="text-[10px] bg-rose-900/40 hover:bg-rose-800 text-rose-300 px-1.5 py-0.5 rounded">ลบ</button>
+              </div>
+            </div>`;
         });
       }
 
-      const depLog = document.getElementById('fundDepositLog'); depLog.innerHTML = '';
+      // รายการฝากเงินเข้า
       if(curData.fundDeposits) {
-        const depositsArray = Object.values(curData.fundDeposits).reverse();
-        depositsArray.forEach(dep => {
+        Object.values(curData.fundDeposits).reverse().forEach(dep => {
+          hasFundActivity = true;
           const mName = members[dep.memberId]?.name || '?';
           depLog.innerHTML += `
             <div class="flex justify-between items-center bg-indigo-950/20 p-2.5 rounded-lg border border-indigo-900/30">
-              <div><div class="text-xs text-indigo-300 font-medium">${mName}</div><div class="text-[10px] text-slate-400">${dep.note || 'สมทบกองกลาง'}</div></div>
+              <div>
+                <div class="text-xs text-indigo-300 font-medium">📥 ฝากโดย: ${mName}</div>
+                <div class="text-[10px] text-slate-400">${dep.note || 'สมทบกองกลาง'} • ${dep.date}</div>
+              </div>
               <div class="text-emerald-400 text-xs font-semibold">+${Number(dep.amount).toLocaleString()} ฿</div>
             </div>`;
         });
-      } else {
-        depLog.innerHTML = '<div class="text-[11px] text-slate-500">ยังไม่มีประวัติเงินเข้าในเดือนนี้</div>';
+      }
+
+      if(!hasFundActivity) {
+        depLog.innerHTML = '<div class="text-[11px] text-slate-500">ยังไม่มีการฝากหรือเบิกกองกลางในเดือนนี้</div>';
       }
 
       renderPersonalCards(breakdown, fundPerPerson, curData.payments || {}, fundPayObj);
+      renderTransactionsTab(rent, water, electric, other, breakdown, curData);
     }
 
     function renderPersonalCards(bd, fundAmt, housePayObj, fundPayObj) {
@@ -606,7 +701,7 @@
       const container = document.getElementById('sharedBillsContainer');
       container.innerHTML = '';
       if (Object.keys(sharedBillsData).length === 0) {
-        container.innerHTML = `<div class="bg-slate-900 p-8 rounded-2xl border border-slate-800 text-center text-slate-500 text-sm">ยังไม่มีบิลก้อนใหญ่ที่ต้องหารกัน</div>`;
+        container.innerHTML = `<div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 text-center text-slate-500 text-xs">ไม่มีบิลก้อนใหญ่ที่ต้องหารกันในขณะนี้</div>`;
         return;
       }
       
@@ -632,7 +727,7 @@
             <div class="flex justify-between items-center py-2 border-b border-amber-900/20 last:border-0">
               <div class="flex items-center gap-2">
                 <span class="w-1.5 h-1.5 rounded-full ${pAmt >= perPersonAmt ? 'bg-emerald-500' : 'bg-slate-500'}"></span>
-                <span class="text-xs text-slate-300">${m.name}</span><span class="text-[11px] font-medium ml-2">${pStatus}</span>
+                <span class="text-xs text-slate-300 font-medium">${m.name}</span><span class="text-[11px] font-medium ml-2">${pStatus}</span>
               </div>
               <div class="flex items-center gap-2">
                 ${slips.length ? `<button onclick="openGalleryFromCache('sharedBill', '${billId}_${mId}', '${m.name} (${bill.title})', '${billId}', '${mId}')" class="text-[10px] text-blue-400 underline">ดูสลิป</button>` : ''}
@@ -644,7 +739,10 @@
         container.innerHTML += `
           <div class="bg-amber-950/20 border border-amber-900/40 rounded-2xl overflow-hidden shadow-lg">
             <div class="bg-amber-900/40 px-4 py-3 flex justify-between items-center">
-              <div><h3 class="text-sm font-bold text-amber-400">${bill.title}</h3><div class="text-[10px] text-slate-400 mt-0.5">ยอดรวม: ${Number(bill.amount).toLocaleString()} ฿ • สร้างเมื่อ: ${bill.date}</div></div>
+              <div>
+                <h3 class="text-sm font-bold text-amber-400">${bill.title}</h3>
+                <div class="text-[10px] text-slate-400 mt-0.5">ยอดรวม: ${Number(bill.amount).toLocaleString()} ฿ (หารคนละ ${perPersonAmt.toLocaleString()} ฿) • สร้างเมื่อ: ${bill.date}</div>
+              </div>
               <button onclick="deleteSharedBill('${billId}')" class="text-xs text-rose-400 hover:underline">ลบบิลนี้</button>
             </div>
             <div class="p-4 bg-slate-900/50">${membersHtml}</div>
@@ -653,7 +751,128 @@
       });
     }
 
-    // --- NEW BULLETPROOF UPLOAD FLOW ---
+    // --- RENDER TRANSACTIONS TAB ---
+    function renderTransactionsTab(rent, water, electric, other, breakdown, curData) {
+      const expTable = document.getElementById('txExpensesTable');
+      const totalExp = rent + water + electric + other;
+      
+      expTable.innerHTML = `
+        <tr><td class="p-2.5">🏠 ค่าเช่าบ้าน</td><td class="p-2.5 text-right font-medium">${rent.toLocaleString()}</td><td class="p-2.5 text-right text-emerald-400 font-medium">${breakdown.rent.toLocaleString()}</td></tr>
+        <tr><td class="p-2.5">💧 ค่าน้ำประปา</td><td class="p-2.5 text-right font-medium">${water.toLocaleString()}</td><td class="p-2.5 text-right text-emerald-400 font-medium">${breakdown.water.toLocaleString()}</td></tr>
+        <tr><td class="p-2.5">⚡ ค่าไฟฟ้า</td><td class="p-2.5 text-right font-medium">${electric.toLocaleString()}</td><td class="p-2.5 text-right text-emerald-400 font-medium">${breakdown.electric.toLocaleString()}</td></tr>
+        <tr><td class="p-2.5">🌐 ค่าเน็ต / อื่นๆ</td><td class="p-2.5 text-right font-medium">${other.toLocaleString()}</td><td class="p-2.5 text-right text-emerald-400 font-medium">${breakdown.other.toLocaleString()}</td></tr>
+        <tr class="bg-slate-800/50 font-bold"><td class="p-2.5 text-white">ยอดรวมทั้งหมด</td><td class="p-2.5 text-right text-white">${totalExp.toLocaleString()} ฿</td><td class="p-2.5 text-right text-emerald-300">${breakdown.total.toLocaleString()} ฿</td></tr>
+      `;
+
+      const fundTable = document.getElementById('txFundTable');
+      fundTable.innerHTML = '';
+      let hasFundData = false;
+
+      if(curData.fundExpenses) {
+        Object.values(curData.fundExpenses).forEach(e => {
+          hasFundData = true;
+          fundTable.innerHTML += `<tr><td class="p-2.5"><span class="bg-rose-950 text-rose-400 border border-rose-800 px-2 py-0.5 rounded text-[10px]">เบิกเงินออก</span></td><td class="p-2.5 font-medium">${e.buyer}</td><td class="p-2.5">${e.name}</td><td class="p-2.5 text-right text-rose-400 font-bold">-${Number(e.amount).toLocaleString()} ฿</td></tr>`;
+        });
+      }
+      if(curData.fundDeposits) {
+        Object.values(curData.fundDeposits).forEach(dep => {
+          hasFundData = true;
+          const mName = members[dep.memberId]?.name || '?';
+          fundTable.innerHTML += `<tr><td class="p-2.5"><span class="bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded text-[10px]">ฝากเงินเข้า</span></td><td class="p-2.5 font-medium">${mName}</td><td class="p-2.5">${dep.note || 'สมทบกองกลาง'}</td><td class="p-2.5 text-right text-emerald-400 font-bold">+${Number(dep.amount).toLocaleString()} ฿</td></tr>`;
+        });
+      }
+
+      if(!hasFundData) {
+        fundTable.innerHTML = '<tr><td colspan="4" class="p-3 text-center text-slate-500">ไม่มีรายการกองกลางในเดือนนี้</td></tr>';
+      }
+    }
+
+    // --- EXPORT TO EXCEL FUNCTION (.xlsx) ---
+    function exportToExcel() {
+      const curData = allMonthsData[currentMonth] || {};
+      const activeCount = Object.values(members).filter(m => m.active).length || 1;
+      
+      const rent = Number(curData.rent) || 0;
+      const water = Number(curData.water) || 0;
+      const electric = Number(curData.electricDirect) || 0;
+      const other = Number(curData.other) || 0;
+      const totalHouse = rent + water + electric + other;
+
+      const wb = XLSX.utils.book_new();
+
+      // Sheet 1: สรุปค่าใช้จ่ายบ้าน
+      const expenseData = [
+        ["รายงานค่าใช้จ่ายบ้านพักประจำเดือน", currentMonth],
+        [],
+        ["รายการ", "ยอดรวม (บาท)", "จำนวนคนหาร", "ยอดต่อคน (บาท)"],
+        ["ค่าเช่าบ้าน", rent, activeCount, Math.round(rent / activeCount)],
+        ["ค่าน้ำประปา", water, activeCount, Math.round(water / activeCount)],
+        ["ค่าไฟฟ้า", electric, activeCount, Math.round(electric / activeCount)],
+        ["ค่าเน็ต/อื่นๆ", other, activeCount, Math.round(other / activeCount)],
+        ["ยอดรวมทั้งสิ้น", totalHouse, activeCount, Math.round(totalHouse / activeCount)],
+        [],
+        ["--- สถานะการชำระเงินของสมาชิก ---"],
+        ["ชื่อสมาชิก", "ยอดที่ต้องจ่าย", "ยอดที่จ่ายแล้ว", "สถานะ"]
+      ];
+
+      Object.entries(members).filter(([_, m]) => m.active).forEach(([mId, m]) => {
+        const pPaid = Number(curData.payments?.[mId]?.paidAmount || 0);
+        const perPerson = Math.round(totalHouse / activeCount);
+        const status = pPaid >= perPerson ? "จ่ายครบแล้ว" : `ค้าง ${perPerson - pPaid} บาท`;
+        expenseData.push([m.name, perPerson, pPaid, status]);
+      });
+
+      const wsExpenses = XLSX.utils.aoa_to_sheet(expenseData);
+      XLSX.utils.book_append_sheet(wb, wsExpenses, "สรุปบิลประจำเดือน");
+
+      // Sheet 2: กองกลาง (ฝาก-เบิก)
+      const fundData = [
+        ["ประวัติความเคลื่อนไหวเงินกองกลาง", currentMonth],
+        [],
+        ["ประเภท", "วันที่", "สมาชิก", "รายละเอียด/วัตถุประสงค์", "จำนวนเงิน (บาท)"]
+      ];
+
+      if(curData.fundDeposits) {
+        Object.values(curData.fundDeposits).forEach(dep => {
+          const mName = members[dep.memberId]?.name || '?';
+          fundData.push(["ฝากเงินเข้า", dep.date || '', mName, dep.note || 'สมทบกองกลาง', Number(dep.amount)]);
+        });
+      }
+      if(curData.fundExpenses) {
+        Object.values(curData.fundExpenses).forEach(e => {
+          fundData.push(["เบิกเงินออก", e.date || '', e.buyer || '', e.name || '', -Number(e.amount)]);
+        });
+      }
+
+      const wsFund = XLSX.utils.aoa_to_sheet(fundData);
+      XLSX.utils.book_append_sheet(wb, wsFund, "เงินกองกลาง");
+
+      // Sheet 3: บิลก้อนใหญ่ (Shared Big Bills)
+      const sbData = [
+        ["รายการบิลก้อนใหญ่ (Shared Big Bills)"],
+        [],
+        ["ชื่อบิล", "ยอดรวม (บาท)", "วันที่สร้าง", "สมาชิก", "ยอดที่ต้องจ่าย", "จ่ายแล้ว", "สถานะ"]
+      ];
+
+      Object.entries(sharedBillsData).forEach(([_, bill]) => {
+        const reqMembers = bill.requiredMembers || [];
+        const perPerson = Math.round(bill.amount / (reqMembers.length || 1));
+        reqMembers.forEach(mId => {
+          const mName = members[mId]?.name || '?';
+          const pAmt = Number(bill.payments?.[mId]?.paidAmount || 0);
+          const status = pAmt >= perPerson ? "จ่ายครบแล้ว" : `ค้าง ${perPerson - pAmt} บาท`;
+          sbData.push([bill.title, bill.amount, bill.date, mName, perPerson, pAmt, status]);
+        });
+      });
+
+      const wsSB = XLSX.utils.aoa_to_sheet(sbData);
+      XLSX.utils.book_append_sheet(wb, wsSB, "บิลก้อนใหญ่");
+
+      // Export file
+      XLSX.writeFile(wb, `รายงานค่าใช้จ่ายบ้านพัก_${currentMonth}.xlsx`);
+    }
+
+    // --- FUND DEPOSIT & WITHDRAW ---
     function openFundDepositModal(preSelectId = null) {
       document.getElementById('modalFundBank').innerText = settings.fundBank || 'ไม่ระบุธนาคาร';
       document.getElementById('modalFundAccNo').innerText = settings.fundAccNo || '---';
@@ -671,6 +890,43 @@
     }
     
     function closeFundDepositModal() { document.getElementById('fundDepositModal').classList.add('hidden'); }
+
+    function openFundWithdrawModal() {
+      const sel = document.getElementById('fundWithBuyer');
+      sel.innerHTML = '<option value="">-- เลือกสมาชิกที่เบิก --</option>';
+      Object.entries(members).forEach(([id, m]) => {
+        if(m.active) sel.innerHTML += `<option value="${m.name}">${m.name}</option>`;
+      });
+      document.getElementById('fundWithAmount').value = '';
+      document.getElementById('fundWithReason').value = '';
+      document.getElementById('fundWithdrawModal').classList.remove('hidden');
+    }
+
+    function closeFundWithdrawModal() { document.getElementById('fundWithdrawModal').classList.add('hidden'); }
+
+    function submitFundWithdraw() {
+      const buyer = document.getElementById('fundWithBuyer').value;
+      const amt = Number(document.getElementById('fundWithAmount').value);
+      const reason = document.getElementById('fundWithReason').value.trim();
+
+      if(!buyer || !amt || !reason) {
+        customAlert("กรุณากรอกข้อมูลให้ครบถ้วน", "⚠️");
+        return;
+      }
+
+      const todayStr = new Date().toLocaleDateString('th-TH');
+      db.ref(`bills/${currentMonth}/fundExpenses`).push({
+        name: reason,
+        amount: amt,
+        buyer: buyer,
+        date: todayStr
+      }).then(() => {
+        closeFundWithdrawModal();
+        customAlert(`เบิกเงินกองกลางสำเร็จ!\nจำนวน: ${amt.toLocaleString()} บาท`, "✅");
+      }).catch(err => {
+        customAlert("เกิดข้อผิดพลาด: " + err.message, "❌");
+      });
+    }
 
     function triggerFundSlipUpload() {
       const mId = document.getElementById('fundDepMember').value;
@@ -856,30 +1112,25 @@
       db.ref(`sharedBills`).push({ title, amount: amt, requiredMembers: reqMembers, date: new Date().toLocaleDateString('th-TH') });
       document.getElementById('sharedBillTitle').value = ''; document.getElementById('sharedBillAmount').value = '';
       cbs.forEach(cb => cb.checked = false); customAlert("สร้างบิลก้อนใหญ่เรียบร้อย", "✅");
+      switchTab('overview');
     }
     function deleteSharedBill(billId) {
       if (checkAdminPasscode("ลบบิลก้อนใหญ่")) db.ref(`sharedBills/${billId}`).remove();
     }
     function updateDropdowns() {
-      let fundOpts = '<option value="">เลือกเพื่อน...</option>'; let sbChecks = '';
+      let sbChecks = '';
       Object.entries(members).forEach(([id, m]) => { 
         if(m.active) {
-          fundOpts += `<option value="${id}">${m.name}</option>`; 
           sbChecks += `<label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="${id}" class="shared-member-cb w-4 h-4 accent-amber-500"> ${m.name}</label>`;
         }
       });
       document.getElementById('sharedBillMembersCheckboxes').innerHTML = sbChecks; 
-      document.getElementById('fundBuyerSelect').innerHTML = fundOpts;
     }
     function saveBillsFromAdmin() {
       db.ref(`bills/${currentMonth}`).update({
         rent: Number(document.getElementById('inpRent').value)||0, water: Number(document.getElementById('inpWater').value)||0,
         electricDirect: Number(document.getElementById('inpElectricDirect').value)||0, other: Number(document.getElementById('inpOther').value)||0,
       }).then(() => { customAlert("บันทึกข้อมูลบิลเรียบร้อย!", "✅"); switchTab('overview'); });
-    }
-    function addFundExpense() {
-      const nm = document.getElementById('fundItemName').value, cst = Number(document.getElementById('fundItemCost').value), sel = document.getElementById('fundBuyerSelect'), byr = sel.options[sel.selectedIndex]?.text;
-      if(nm && cst && byr) { db.ref(`bills/${currentMonth}/fundExpenses`).push({name:nm, amount:cst, buyer:byr}); document.getElementById('fundItemName').value=''; document.getElementById('fundItemCost').value=''; }
     }
     function addNewMember() {
       const nm = document.getElementById('newMemberName').value.trim();
@@ -905,7 +1156,7 @@
           fundAccNo: document.getElementById('setFundAccNo').value.trim(), 
           fundQrUrl: document.getElementById('setFundQR').value.trim()
         }).then(() => {
-          customAlert("บันทึกการตั้งค่ากองกลางและยอดเงินตั้งต้นเรียบร้อยแล้ว", "✅");
+          customAlert("บันทึกการตั้งค่าเรียบร้อยแล้ว", "✅");
           settings.fundRate = newFundRate;
           settings.initialFund = newInitialFund;
           document.getElementById('fundPerPersonRate').innerText = newFundRate;
