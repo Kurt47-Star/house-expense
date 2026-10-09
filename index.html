@@ -12,15 +12,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Kanit', sans-serif; }
-    .house-container { position: relative; width: 140px; height: 160px; margin: 0 auto; }
-    .house-roof { position: absolute; top: 0; left: 0; width: 0; height: 0; border-left: 70px solid transparent; border-right: 70px solid transparent; border-bottom: 60px solid #94a3b8; z-index: 2; }
-    .house-body { position: absolute; top: 60px; left: 10px; width: 120px; height: 100px; background-color: #1e293b; border: 2px solid #334155; border-radius: 4px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 4px; padding: 6px; }
-    .window-room { position: relative; background-color: #0f172a; border-radius: 4px; border: 2px solid #475569; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-    .window-fill { position: absolute; bottom: 0; left: 0; width: 100%; height: 0%; transition: height 1s ease-in-out, background-color 0.5s ease; z-index: 1; }
-    .room-emoji { position: relative; z-index: 2; font-size: 1.2rem; opacity: 0.2; transition: opacity 0.5s ease; text-shadow: 0 0 4px rgba(0,0,0,0.8); }
-    .window-frame { position: absolute; inset: 0; z-index: 3; border: 1px solid #334155; }
-    .window-frame::before { content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 2px; background-color: #475569; transform: translateY(-50%); }
-    .window-frame::after { content: ''; position: absolute; top: 0; left: 50%; width: 2px; height: 100%; background-color: #475569; transform: translateX(-50%); }
   </style>
   
   <!-- Firebase & Chart.js & SheetJS -->
@@ -31,8 +22,8 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen pb-16 selection:bg-emerald-500 selection:text-white">
 
-  <!-- File Input ที่เบราว์เซอร์มือถือไม่บล็อก -->
-  <input type="file" id="slipInput" accept="image/*" style="position: fixed; top: -1000px; left: -1000px; opacity: 0; pointer-events: none;" onchange="handleSlipSelected(event)">
+  <!-- File Input สำหรับแนบสลิป -->
+  <input type="file" id="slipInput" accept="image/*" class="hidden" onchange="handleSlipSelected(event)">
   
   <div id="loadingOverlay" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[100] hidden flex flex-col items-center justify-center p-4 text-center">
     <div class="w-12 h-12 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin mb-4"></div>
@@ -40,7 +31,7 @@
     <div class="text-xs text-slate-400 mt-2">ห้ามปิดหน้าจอจนกว่าจะเสร็จสิ้น</div>
   </div>
 
-  <!-- Custom Prompt Modal -->
+  <!-- Custom Prompt Modal สำหรับใส่ยอดเงินสลิป -->
   <div id="customPromptModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-emerald-500/50 rounded-3xl max-w-sm w-full shadow-2xl p-6 relative overflow-hidden">
       <h3 class="text-lg font-bold text-emerald-400 mb-2" id="customPromptTitle">ระบุยอดเงิน</h3>
@@ -53,12 +44,12 @@
     </div>
   </div>
 
-  <!-- Custom Alert Modal -->
+  <!-- Custom Alert Modal แจ้งเตือนสถานะ -->
   <div id="customAlertModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-sm w-full shadow-2xl p-6 text-center">
       <div class="text-5xl mb-4" id="customAlertIcon">✅</div>
       <h3 class="text-base font-bold text-slate-200 mb-6 whitespace-pre-line" id="customAlertDesc"></h3>
-      <button onclick="document.getElementById('customAlertModal').classList.add('hidden')" class="w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-xl text-sm font-bold text-white transition border border-slate-700">ปิดหน้าต่าง</button>
+      <button onclick="document.getElementById('customAlertModal').classList.add('hidden')" class="w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-xl text-sm font-bold text-white transition border border-slate-700">ตกลง</button>
     </div>
   </div>
 
@@ -174,56 +165,55 @@
     <!-- ================= TAB 1: OVERVIEW ================= -->
     <div id="tab-overview" class="space-y-6">
       
-      <!-- 1. บิลบ้าน & อนิเมชัน -->
-      <div class="bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/20 rounded-3xl p-5 shadow-xl">
-        <div class="flex flex-col md:flex-row gap-6 items-center md:items-start justify-between">
-          <div class="w-full md:w-1/2">
-            <div class="text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-2">🏠 ค่าเช่าบ้าน/น้ำ/ไฟ (<span id="overviewMonthText">เดือนนี้</span>)</div>
-            <div class="text-4xl font-black text-white mb-4" id="dashPerPerson">0 <span class="text-sm text-emerald-400 font-normal">บ./คน</span></div>
-            <div class="bg-slate-950/50 rounded-2xl p-4 border border-slate-800">
-              <h4 class="text-xs text-slate-400 mb-2 border-b border-slate-800 pb-1">รายละเอียดบิลเดือนนี้</h4>
-              <div class="space-y-1.5 text-sm" id="houseBillDetails"></div>
-            </div>
+      <!-- 1. บิลบ้านขึ้นมาไว้บนสุด (ไม่มีอนิเมชัน สะอาด สบายตา) -->
+      <div class="bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-3xl p-6 shadow-xl">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4 mb-4">
+          <div>
+            <div class="text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-1">🏠 ค่าเช่าบ้าน/น้ำ/ไฟ (<span id="overviewMonthText">เดือนนี้</span>)</div>
+            <div class="text-4xl font-black text-white" id="dashPerPerson">0 <span class="text-sm text-emerald-400 font-normal">บ./คน</span></div>
           </div>
-          <div class="w-full md:w-1/2 flex justify-center items-center py-4">
-             <div class="house-container">
-                <div class="house-roof"></div>
-                <div class="house-body">
-                  <div class="window-room" id="room-tl" title="เกอร์"><div class="window-fill" id="fill-tl"></div><div class="window-frame"></div><div class="room-emoji" id="emoji-tl">👓</div></div>
-                  <div class="window-room" id="room-tr" title="ฟ้า"><div class="window-fill" id="fill-tr"></div><div class="window-frame"></div><div class="room-emoji" id="emoji-tr">👩🏻</div></div>
-                  <div class="window-room" id="room-bl" title="แพรวา"><div class="window-fill" id="fill-bl"></div><div class="window-frame"></div><div class="room-emoji" id="emoji-bl">👱🏻‍♀️</div></div>
-                  <div class="window-room" id="room-br" title="แพรว"><div class="window-fill" id="fill-br"></div><div class="window-frame"></div><div class="room-emoji" id="emoji-br">👧🏻</div></div>
-                </div>
-             </div>
+          <div class="text-xs text-slate-400 sm:text-right">
+            <span>คำนวณจากสมาชิกที่เปิดใช้งานทั้งหมด</span>
           </div>
+        </div>
+
+        <!-- รายละเอียดบิลย่อย -->
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3" id="houseBillDetails">
+          <!-- แทรกเนื้อหาด้วย JS -->
         </div>
       </div>
 
-      <!-- กราฟและกองกลาง -->
+      <!-- 2. กราฟสัดส่วนค่าใช้จ่าย และ เงินกองกลาง -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="bg-slate-900/90 border border-slate-800/90 rounded-3xl p-5 shadow-xl flex flex-col justify-between h-full">
-          <div class="flex justify-between items-center mb-4">
+        
+        <!-- การ์ดแสดงกราฟสัดส่วนค่าใช้จ่าย -->
+        <div class="bg-slate-900/90 border border-slate-800/90 rounded-3xl p-5 shadow-xl flex flex-col justify-between">
+          <div class="flex justify-between items-center mb-3">
             <h2 class="font-bold text-sm text-slate-100 flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-emerald-400"></span> สัดส่วนค่าใช้จ่าย 
               <span id="donutMonthText" class="text-xs text-slate-400 font-normal ml-1"></span>
             </h2>
-            <select id="donutViewMode" class="bg-slate-800/90 border border-slate-700/80 rounded-xl px-2 py-1 text-[10px] text-slate-200 outline-none" onchange="renderDonutChartMode()">
+            <select id="donutViewMode" class="bg-slate-800/90 border border-slate-700/80 rounded-xl px-2.5 py-1 text-[11px] text-slate-200 outline-none" onchange="renderDonutChartMode()">
               <option value="month">รายเดือน</option>
               <option value="quarter">รายไตรมาส</option>
               <option value="year">รายปี</option>
             </select>
           </div>
-          <div class="relative w-full flex-grow flex justify-center items-center my-2" style="min-height: 180px;">
+
+          <div class="relative w-full flex justify-center items-center my-2" style="height: 180px;">
             <canvas id="overviewDonutChart"></canvas>
           </div>
+
           <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 mt-2 flex justify-between items-center shadow-inner">
-            <span class="text-[10px] font-medium text-slate-400">รวมค่าใช้จ่ายทั้งหมด</span>
+            <span class="text-[11px] font-medium text-slate-400">รวมค่าใช้จ่ายทั้งหมด</span>
             <span class="text-base font-black text-emerald-400 tracking-tight" id="donutTotalText">0 ฿</span>
           </div>
+
           <div id="donutBreakdownList" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[10px] mt-2"></div>
         </div>
 
-        <div class="bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-900 border border-indigo-500/20 rounded-3xl p-5 shadow-xl flex flex-col justify-between relative overflow-hidden h-full">
+        <!-- กองกลาง Super Card -->
+        <div class="bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-900 border border-indigo-500/20 rounded-3xl p-5 shadow-xl flex flex-col justify-between relative overflow-hidden">
           <div class="flex flex-col h-full justify-between relative z-10">
             <div class="flex justify-between items-start gap-2">
               <div>
@@ -236,6 +226,7 @@
                 <button onclick="openFundWithdrawModal()" class="bg-rose-700/80 hover:bg-rose-600 text-rose-100 text-xs px-3 py-1.5 rounded-xl shadow-lg transition">- เบิก</button>
               </div>
             </div>
+
             <div class="mt-4 flex-grow flex flex-col">
                <h4 class="text-[10px] text-slate-400 mb-2 border-b border-slate-800 pb-1 flex justify-between items-center">
                  <span>ความเคลื่อนไหวล่าสุด</span>
@@ -243,6 +234,7 @@
                </h4>
                <div id="fundDepositLog" class="space-y-1.5 overflow-y-auto max-h-[100px] pr-1 flex-grow"></div>
             </div>
+
             <div class="mt-3 pt-2 border-t border-indigo-500/20 flex justify-between items-center">
               <div class="text-[10px] text-slate-300">
                 <span id="displayFundBank" class="font-medium text-indigo-300"></span> 
@@ -255,15 +247,15 @@
         </div>
       </div>
 
-      <!-- บิลก้อนใหญ่ -->
+      <!-- 3. บิลก้อนใหญ่ (Shared Bills) -->
       <div class="space-y-3 pt-2">
         <h2 class="font-bold text-base text-amber-400">💸 บิลก้อนใหญ่ที่ต้องจ่ายร่วมกัน (Shared Bills)</h2>
         <div id="sharedBillsContainer" class="space-y-3"></div>
       </div>
 
-      <!-- สถานะการจ่ายค่าบ้านรายบุคคล -->
+      <!-- 4. สถานะการจ่ายค่าบ้านรายบุคคล (กระชับ & ตัดเงินกองกลางออกแล้ว) -->
       <div class="space-y-3 pt-2">
-        <h2 class="font-bold text-base text-slate-200">สถานะการแนบสลิปค่าบ้าน (<span id="statusMonthText">เดือนนี้</span>)</h2>
+        <h2 class="font-bold text-base text-slate-200">ตรวจสอบสถานะการจ่ายเงินค่าบ้านประจำเดือน (<span id="statusMonthText">เดือนนี้</span>)</h2>
         <div id="overviewMembersCardsCompact" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
       </div>
     </div>
@@ -292,7 +284,7 @@
     <div id="tab-board" class="hidden space-y-6">
       <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col h-[500px]">
         <h2 class="text-lg font-bold text-purple-400 mb-3">📌 บอร์ดประกาศ & กฎประจำบ้าน</h2>
-        <textarea id="houseBoardText" class="w-full flex-1 bg-slate-800/80 border border-slate-700 rounded-2xl p-4 text-sm text-slate-200 resize-none outline-none" placeholder="พิมพ์ข้อความที่นี่..."></textarea>
+        <textarea id="houseBoardText" class="w-full flex-1 bg-slate-800/80 border border-slate-700 rounded-2xl p-4 text-sm text-slate-200 resize-none outline-none" placeholder="พิมพ์ข้อความที่นี่... (ข้อมูลจะเซฟอัตโนมัติ)"></textarea>
       </div>
     </div>
 
@@ -381,10 +373,8 @@
     let chartInstance = null, donutChartInstance = null;
 
     window.cachedSlips = { house: {}, fund: {}, sharedBill: {} };
-    const roomMapping = { 'เกอร์': 'tl', 'ฟ้า': 'tr', 'แพรวา': 'bl', 'แพรว': 'br' };
-    const roomColors = { 'tl': '#10b981', 'tr': '#0ea5e9', 'bl': '#f59e0b', 'br': '#f43f5e' };
 
-    // ฟังก์ชันช่วยจัดการ DOM แบบปลอดภัย ไม่ทำให้ JavaScript แครช
+    // ฟังก์ชันช่วยจัดการ DOM ป้องกัน JavaScript ขัดข้อง
     function setSafeText(id, text) {
       const el = document.getElementById(id);
       if (el) el.innerText = text;
@@ -535,12 +525,29 @@
       };
 
       setSafeHTML('dashPerPerson', `${breakdown.total.toLocaleString()} <span class="text-sm text-emerald-400 font-normal">บ./คน</span>`);
+      
+      // การ์ดแสดงรายละเอียดบิลย่อยบนสุด
       setSafeHTML('houseBillDetails', `
-        <div class="flex justify-between text-slate-300"><span>ค่าเช่าบ้าน:</span> <span class="font-bold">${rent.toLocaleString()} ฿</span></div>
-        <div class="flex justify-between text-slate-300"><span>ค่าน้ำประปา:</span> <span class="font-bold">${water.toLocaleString()} ฿</span></div>
-        <div class="flex justify-between text-amber-400/90"><span>ค่าไฟฟ้า:</span> <span class="font-bold">${electric.toLocaleString()} ฿</span></div>
-        <div class="flex justify-between text-slate-300"><span>ค่าเน็ต/อื่นๆ:</span> <span class="font-bold">${other.toLocaleString()} ฿</span></div>
-        <div class="flex justify-between text-white border-t border-slate-700 pt-1.5 mt-1.5 font-black"><span>รวมทั้งหมด:</span> <span class="text-emerald-400">${(rent + water + electric + other).toLocaleString()} ฿</span></div>
+        <div class="bg-slate-950/60 border border-slate-800 p-3 rounded-2xl">
+          <div class="text-[11px] text-slate-400">ค่าเช่าบ้าน</div>
+          <div class="text-sm font-bold text-slate-200 mt-0.5">${rent.toLocaleString()} ฿</div>
+        </div>
+        <div class="bg-slate-950/60 border border-slate-800 p-3 rounded-2xl">
+          <div class="text-[11px] text-slate-400">ค่าน้ำประปา</div>
+          <div class="text-sm font-bold text-slate-200 mt-0.5">${water.toLocaleString()} ฿</div>
+        </div>
+        <div class="bg-slate-950/60 border border-slate-800 p-3 rounded-2xl">
+          <div class="text-[11px] text-amber-400/90">ค่าไฟฟ้า</div>
+          <div class="text-sm font-bold text-amber-400 mt-0.5">${electric.toLocaleString()} ฿</div>
+        </div>
+        <div class="bg-slate-950/60 border border-slate-800 p-3 rounded-2xl">
+          <div class="text-[11px] text-slate-400">ค่าเน็ต/อื่นๆ</div>
+          <div class="text-sm font-bold text-slate-200 mt-0.5">${other.toLocaleString()} ฿</div>
+        </div>
+        <div class="bg-emerald-950/30 border border-emerald-500/30 p-3 rounded-2xl col-span-2 sm:col-span-1">
+          <div class="text-[11px] text-emerald-400">รวมทั้งหมด</div>
+          <div class="text-sm font-black text-emerald-300 mt-0.5">${(rent + water + electric + other).toLocaleString()} ฿</div>
+        </div>
       `);
 
       let totalFundPaidIn = Number(settings.initialFund) || 0, totalFundOut = 0;
@@ -564,7 +571,7 @@
       
       setSafeHTML('dashFundBalance', `${(totalFundPaidIn - totalFundOut).toLocaleString()} <span class="text-sm font-normal text-indigo-300">บาท</span>`);
 
-      // อัปเดตประวัติกองกลาง
+      // ประวัติกองกลาง
       const depLog = document.getElementById('fundDepositLog');
       if (depLog) {
         depLog.innerHTML = '';
@@ -580,7 +587,7 @@
         }
       }
 
-      // Sync Admin Inputs
+      // Sync ข้อมูลบัญชีธนาคารและการตั้งค่า
       setSafeValue('setFundRate', settings.fundRate || 0);
       setSafeValue('setInitialFund', settings.initialFund || 0);
       setSafeText('fundPerPersonRate', settings.fundRate || 0);
@@ -602,38 +609,8 @@
       }
 
       renderPersonalCardsCompact(breakdown, curData.payments || {});
-      updateHouseAnimation(breakdown, curData.payments || {});
       renderTransactionsTab(rent, water, electric, other, breakdown, curData);
       renderDonutChartMode();
-    }
-
-    function updateHouseAnimation(bd, housePayObj) {
-      const houseBillAmt = bd.total;
-      ['tl', 'tr', 'bl', 'br'].forEach(pos => {
-        const f = document.getElementById(`fill-${pos}`);
-        const em = document.getElementById(`emoji-${pos}`);
-        if (f) f.style.height = '0%';
-        if (em) em.style.opacity = '0.2';
-      });
-      if (houseBillAmt === 0) return;
-
-      Object.entries(members).filter(([_, m]) => m.active).forEach(([mId, m]) => {
-        const hPaid = Number(housePayObj[mId]?.paidAmount || 0);
-        let pct = Math.min(100, (hPaid / houseBillAmt) * 100);
-        let pos = '';
-        for (const [nameKey, posKey] of Object.entries(roomMapping)) {
-          if (m.name.includes(nameKey)) { pos = posKey; break; }
-        }
-        if (pos) {
-          const fill = document.getElementById(`fill-${pos}`);
-          const emoji = document.getElementById(`emoji-${pos}`);
-          if (fill) {
-            fill.style.height = `${pct}%`;
-            if (pct > 0) fill.style.backgroundColor = roomColors[pos];
-          }
-          if (emoji && pct >= 100) emoji.style.opacity = '1';
-        }
-      });
     }
 
     function renderDonutChartMode() {
