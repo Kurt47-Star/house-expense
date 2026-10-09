@@ -31,8 +31,8 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen pb-16 selection:bg-emerald-500 selection:text-white">
 
-  <!-- ================= OVERLAYS & MODALS ================= -->
-  <input type="file" id="slipInput" accept="image/*" class="hidden" onchange="handleSlipSelected(event)">
+  <!-- File Input ที่เบราว์เซอร์มือถือไม่บล็อก -->
+  <input type="file" id="slipInput" accept="image/*" style="position: fixed; top: -1000px; left: -1000px; opacity: 0; pointer-events: none;" onchange="handleSlipSelected(event)">
   
   <div id="loadingOverlay" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[100] hidden flex flex-col items-center justify-center p-4 text-center">
     <div class="w-12 h-12 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin mb-4"></div>
@@ -205,7 +205,7 @@
           <div class="flex justify-between items-center mb-4">
             <h2 class="font-bold text-sm text-slate-100 flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-emerald-400"></span> สัดส่วนค่าใช้จ่าย 
-              <span id="donutMonthText" class="text-xs text-slate-400 font-normal ml-1"></span> <!-- ตัวที่หายไปผมเติมให้แล้วครับ -->
+              <span id="donutMonthText" class="text-xs text-slate-400 font-normal ml-1"></span>
             </h2>
             <select id="donutViewMode" class="bg-slate-800/90 border border-slate-700/80 rounded-xl px-2 py-1 text-[10px] text-slate-200 outline-none" onchange="renderDonutChartMode()">
               <option value="month">รายเดือน</option>
@@ -237,12 +237,17 @@
               </div>
             </div>
             <div class="mt-4 flex-grow flex flex-col">
-               <h4 class="text-[10px] text-slate-400 mb-2 border-b border-slate-800 pb-1">ความเคลื่อนไหวล่าสุด</h4>
+               <h4 class="text-[10px] text-slate-400 mb-2 border-b border-slate-800 pb-1 flex justify-between items-center">
+                 <span>ความเคลื่อนไหวล่าสุด</span>
+                 <span id="logMonthText" class="text-[9px] text-slate-500"></span>
+               </h4>
                <div id="fundDepositLog" class="space-y-1.5 overflow-y-auto max-h-[100px] pr-1 flex-grow"></div>
             </div>
             <div class="mt-3 pt-2 border-t border-indigo-500/20 flex justify-between items-center">
               <div class="text-[10px] text-slate-300">
-                <span id="displayFundBank" class="font-medium text-indigo-300"></span> (<span id="displayFundAccName"></span>)
+                <span id="displayFundBank" class="font-medium text-indigo-300"></span> 
+                <span id="displayFundAccNo" class="text-white"></span>
+                (<span id="displayFundAccName"></span>)
               </div>
               <button onclick="showFundQR()" id="btnShowFundQr" class="hidden text-[10px] border border-indigo-500/50 text-indigo-300 px-2 py-1 rounded-lg bg-indigo-950/50">ดู QR</button>
             </div>
@@ -270,13 +275,13 @@
         <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-sm transition">📥 ส่งออก Excel (.xlsx)</button>
       </div>
       <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl">
-        <h3 class="font-bold text-sm text-slate-200 mb-3">สรุปรายจ่ายประจำเดือน</h3>
+        <h3 class="font-bold text-sm text-slate-200 mb-3">สรุปรายจ่ายประจำเดือน (<span id="txMonthName"></span>)</h3>
         <table class="w-full text-xs text-left text-slate-300">
           <tbody id="txExpensesTable" class="divide-y divide-slate-800"></tbody>
         </table>
       </div>
       <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl">
-        <h3 class="font-bold text-sm text-slate-200 mb-3">ประวัติเงินกองกลาง</h3>
+        <h3 class="font-bold text-sm text-slate-200 mb-3">ประวัติเงินกองกลาง (<span id="txFundMonthName"></span>)</h3>
         <table class="w-full text-xs text-left text-slate-300">
           <tbody id="txFundTable" class="divide-y divide-slate-800"></tbody>
         </table>
@@ -372,17 +377,32 @@
     let currentMonth = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
     
     let members = {}, allMonthsData = {}, sharedBillsData = {}, settings = { fundRate: 0, initialFund: 0, defaultRent: 12000 };
-    let currentUploadConfig = null, currentGallerySlips = [], currentGalleryIndex = 0, currentGalleryConfig = null;
+    let currentUploadConfig = null;
     let chartInstance = null, donutChartInstance = null;
 
     window.cachedSlips = { house: {}, fund: {}, sharedBill: {} };
     const roomMapping = { 'เกอร์': 'tl', 'ฟ้า': 'tr', 'แพรวา': 'bl', 'แพรว': 'br' };
     const roomColors = { 'tl': '#10b981', 'tr': '#0ea5e9', 'bl': '#f59e0b', 'br': '#f43f5e' };
 
+    // ฟังก์ชันช่วยจัดการ DOM แบบปลอดภัย ไม่ทำให้ JavaScript แครช
+    function setSafeText(id, text) {
+      const el = document.getElementById(id);
+      if (el) el.innerText = text;
+    }
+    function setSafeHTML(id, html) {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = html;
+    }
+    function setSafeValue(id, val) {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    }
+
     function customAlert(msg, icon="✅") {
-      document.getElementById('customAlertIcon').innerText = icon;
-      document.getElementById('customAlertDesc').innerText = msg;
-      document.getElementById('customAlertModal').classList.remove('hidden');
+      setSafeText('customAlertIcon', icon);
+      setSafeText('customAlertDesc', msg);
+      const modal = document.getElementById('customAlertModal');
+      if (modal) modal.classList.remove('hidden');
     }
 
     function askAmount(title, desc, defaultVal) {
@@ -392,15 +412,19 @@
         const btnConfirm = document.getElementById('customPromptConfirm');
         const btnCancel = document.getElementById('customPromptCancel');
 
-        document.getElementById('customPromptTitle').innerText = title;
-        document.getElementById('customPromptDesc').innerText = desc;
-        input.value = defaultVal || '';
-        modal.classList.remove('hidden');
-        input.focus();
+        setSafeText('customPromptTitle', title);
+        setSafeText('customPromptDesc', desc);
+        if (input) input.value = defaultVal || '';
+        if (modal) modal.classList.remove('hidden');
+        if (input) input.focus();
 
-        const cleanup = () => { modal.classList.add('hidden'); btnConfirm.onclick = null; btnCancel.onclick = null; };
-        btnConfirm.onclick = () => { cleanup(); resolve(input.value); };
-        btnCancel.onclick = () => { cleanup(); resolve(null); };
+        const cleanup = () => { 
+          if (modal) modal.classList.add('hidden'); 
+          if (btnConfirm) btnConfirm.onclick = null; 
+          if (btnCancel) btnCancel.onclick = null; 
+        };
+        if (btnConfirm) btnConfirm.onclick = () => { cleanup(); resolve(input ? input.value : ''); };
+        if (btnCancel) btnCancel.onclick = () => { cleanup(); resolve(null); };
       });
     }
 
@@ -409,24 +433,26 @@
       const monthsTh = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
       const displayStr = `${monthsTh[parseInt(mm, 10) - 1]} ${yy}`;
       
-      document.getElementById('currentMonthText').innerText = displayStr;
-      document.getElementById('overviewMonthText').innerText = displayStr;
-      document.getElementById('logMonthText').innerText = displayStr;
-      document.getElementById('statusMonthText').innerText = displayStr;
-      document.getElementById('txMonthName').innerText = displayStr;
-      document.getElementById('txFundMonthName').innerText = displayStr;
-      document.getElementById('monthPicker').value = currentMonth;
+      setSafeText('currentMonthText', displayStr);
+      setSafeText('overviewMonthText', displayStr);
+      setSafeText('logMonthText', displayStr);
+      setSafeText('statusMonthText', displayStr);
+      setSafeText('txMonthName', displayStr);
+      setSafeText('txFundMonthName', displayStr);
+      setSafeValue('monthPicker', currentMonth);
       
-      // ตัวกันแครช: เช็กว่ามีกล่องข้อความอยู่บนหน้าเว็บจริงๆ ถึงจะสั่งเปลี่ยนชื่อเดือน
-      if (document.getElementById('donutViewMode') && document.getElementById('donutViewMode').value === 'month') {
-        const donutMonthElem = document.getElementById('donutMonthText');
-        if (donutMonthElem) donutMonthElem.innerText = displayStr;
+      const donutView = document.getElementById('donutViewMode');
+      if (donutView && donutView.value === 'month') {
+        setSafeText('donutMonthText', displayStr);
       }
     }
 
-    document.getElementById('monthPicker').addEventListener('change', (e) => {
-      currentMonth = e.target.value; updateMonthDisplay(); listenToCurrentMonth();
-    });
+    const monthPickerEl = document.getElementById('monthPicker');
+    if (monthPickerEl) {
+      monthPickerEl.addEventListener('change', (e) => {
+        currentMonth = e.target.value; updateMonthDisplay(); listenToCurrentMonth();
+      });
+    }
 
     function changeMonthOffset(offset) {
       const [yy, mm] = currentMonth.split('-');
@@ -441,8 +467,10 @@
 
     function switchTab(tabId) {
       ['overview', 'tx', 'board', 'analytics', 'admin'].forEach(tab => {
-        document.getElementById(`tab-${tab}`).classList.toggle('hidden', tab !== tabId);
-        document.getElementById(`tabBtn-${tab}`).className = tab === tabId 
+        const el = document.getElementById(`tab-${tab}`);
+        const btn = document.getElementById(`tabBtn-${tab}`);
+        if (el) el.classList.toggle('hidden', tab !== tabId);
+        if (btn) btn.className = tab === tabId 
           ? "px-3.5 py-1.5 rounded-xl font-medium transition bg-emerald-600 text-white shadow-sm" 
           : "px-3.5 py-1.5 rounded-xl font-medium transition text-slate-400 hover:text-white";
       });
@@ -462,19 +490,34 @@
 
     db.ref('bills').on('value', snap => {
       allMonthsData = snap.val() || {}; calculateAndRender();
-      if (!document.getElementById('tab-analytics').classList.contains('hidden')) renderChart();
+      if (!document.getElementById('tab-analytics')?.classList.contains('hidden')) renderChart();
     });
 
     db.ref('sharedBills').on('value', snap => {
       sharedBillsData = snap.val() || {}; renderSharedBills(); calculateAndRender();
     });
 
+    // House Board Sync
+    const boardTextArea = document.getElementById('houseBoardText');
+    if (boardTextArea) {
+      let boardTimeout = null;
+      db.ref('board/content').on('value', snap => {
+        if (document.activeElement !== boardTextArea) boardTextArea.value = snap.val() || '';
+      });
+      boardTextArea.addEventListener('input', () => {
+        clearTimeout(boardTimeout);
+        boardTimeout = setTimeout(() => {
+          db.ref('board/content').set(boardTextArea.value);
+        }, 800);
+      });
+    }
+
     function listenToCurrentMonth() {
       const md = allMonthsData[currentMonth] || {};
-      document.getElementById('inpRent').value = md.rent || settings.defaultRent;
-      document.getElementById('inpWater').value = md.water || '';
-      document.getElementById('inpElectricDirect').value = md.electricDirect || '';
-      document.getElementById('inpOther').value = md.other || '';
+      setSafeValue('inpRent', md.rent || settings.defaultRent);
+      setSafeValue('inpWater', md.water || '');
+      setSafeValue('inpElectricDirect', md.electricDirect || '');
+      setSafeValue('inpOther', md.other || '');
       calculateAndRender();
     }
 
@@ -491,14 +534,14 @@
         total: Math.round((rent + water + electric + other) / activeCount)
       };
 
-      document.getElementById('dashPerPerson').innerHTML = `${breakdown.total.toLocaleString()} <span class="text-sm text-emerald-400 font-normal">บ./คน</span>`;
-      document.getElementById('houseBillDetails').innerHTML = `
+      setSafeHTML('dashPerPerson', `${breakdown.total.toLocaleString()} <span class="text-sm text-emerald-400 font-normal">บ./คน</span>`);
+      setSafeHTML('houseBillDetails', `
         <div class="flex justify-between text-slate-300"><span>ค่าเช่าบ้าน:</span> <span class="font-bold">${rent.toLocaleString()} ฿</span></div>
         <div class="flex justify-between text-slate-300"><span>ค่าน้ำประปา:</span> <span class="font-bold">${water.toLocaleString()} ฿</span></div>
         <div class="flex justify-between text-amber-400/90"><span>ค่าไฟฟ้า:</span> <span class="font-bold">${electric.toLocaleString()} ฿</span></div>
         <div class="flex justify-between text-slate-300"><span>ค่าเน็ต/อื่นๆ:</span> <span class="font-bold">${other.toLocaleString()} ฿</span></div>
         <div class="flex justify-between text-white border-t border-slate-700 pt-1.5 mt-1.5 font-black"><span>รวมทั้งหมด:</span> <span class="text-emerald-400">${(rent + water + electric + other).toLocaleString()} ฿</span></div>
-      `;
+      `);
 
       let totalFundPaidIn = Number(settings.initialFund) || 0, totalFundOut = 0;
       const fundPayObj = {};
@@ -519,37 +562,43 @@
         }
       });
       
-      document.getElementById('dashFundBalance').innerHTML = `${(totalFundPaidIn - totalFundOut).toLocaleString()} <span class="text-sm font-normal text-indigo-300">บาท</span>`;
+      setSafeHTML('dashFundBalance', `${(totalFundPaidIn - totalFundOut).toLocaleString()} <span class="text-sm font-normal text-indigo-300">บาท</span>`);
 
       // อัปเดตประวัติกองกลาง
       const depLog = document.getElementById('fundDepositLog');
-      depLog.innerHTML = '';
-      if (curData.fundExpenses) {
-        Object.entries(curData.fundExpenses).forEach(([expId, e]) => {
-          depLog.innerHTML += `<div class="flex justify-between items-center bg-rose-950/20 p-2 rounded border border-rose-900/30 text-[10px]"><span class="text-rose-300">📤 ${e.buyer}: ${e.name}</span><span class="text-rose-400 font-bold">-${Number(e.amount).toLocaleString()} ฿</span></div>`;
-        });
-      }
-      if (curData.fundDeposits) {
-        Object.values(curData.fundDeposits).forEach(dep => {
-          depLog.innerHTML += `<div class="flex justify-between items-center bg-indigo-950/20 p-2 rounded border border-indigo-900/30 text-[10px]"><span class="text-indigo-300">📥 ${members[dep.memberId]?.name || '?'}: ${dep.note}</span><span class="text-emerald-400 font-bold">+${Number(dep.amount).toLocaleString()} ฿</span></div>`;
-        });
+      if (depLog) {
+        depLog.innerHTML = '';
+        if (curData.fundExpenses) {
+          Object.entries(curData.fundExpenses).forEach(([expId, e]) => {
+            depLog.innerHTML += `<div class="flex justify-between items-center bg-rose-950/20 p-2 rounded border border-rose-900/30 text-[10px]"><span class="text-rose-300">📤 ${e.buyer}: ${e.name}</span><span class="text-rose-400 font-bold">-${Number(e.amount).toLocaleString()} ฿</span></div>`;
+          });
+        }
+        if (curData.fundDeposits) {
+          Object.values(curData.fundDeposits).forEach(dep => {
+            depLog.innerHTML += `<div class="flex justify-between items-center bg-indigo-950/20 p-2 rounded border border-indigo-900/30 text-[10px]"><span class="text-indigo-300">📥 ${members[dep.memberId]?.name || '?'}: ${dep.note}</span><span class="text-emerald-400 font-bold">+${Number(dep.amount).toLocaleString()} ฿</span></div>`;
+          });
+        }
       }
 
       // Sync Admin Inputs
-      document.getElementById('setFundRate').value = settings.fundRate || 0;
-      document.getElementById('setInitialFund').value = settings.initialFund || 0;
-      document.getElementById('fundPerPersonRate').innerText = settings.fundRate || 0;
-      document.getElementById('setFundBank').value = settings.fundBank || '';
-      document.getElementById('setFundAccName').value = settings.fundAccName || '';
-      document.getElementById('setFundAccNo').value = settings.fundAccNo || '';
-      document.getElementById('setFundQR').value = settings.fundQrUrl || '';
-      document.getElementById('displayFundBank').innerText = settings.fundBank || 'ไม่ระบุธนาคาร';
-      document.getElementById('displayFundAccName').innerText = settings.fundAccName || '---';
-      if(settings.fundQrUrl) {
-        document.getElementById('btnShowFundQr').classList.remove('hidden');
-        document.getElementById('qrModalImg').src = settings.fundQrUrl;
+      setSafeValue('setFundRate', settings.fundRate || 0);
+      setSafeValue('setInitialFund', settings.initialFund || 0);
+      setSafeText('fundPerPersonRate', settings.fundRate || 0);
+      setSafeValue('setFundBank', settings.fundBank || '');
+      setSafeValue('setFundAccName', settings.fundAccName || '');
+      setSafeValue('setFundAccNo', settings.fundAccNo || '');
+      setSafeValue('setFundQR', settings.fundQrUrl || '');
+      setSafeText('displayFundBank', settings.fundBank || 'ไม่ระบุธนาคาร');
+      setSafeText('displayFundAccNo', settings.fundAccNo || '');
+      setSafeText('displayFundAccName', settings.fundAccName || '---');
+      
+      const btnShowQr = document.getElementById('btnShowFundQr');
+      const qrImg = document.getElementById('qrModalImg');
+      if (settings.fundQrUrl) {
+        if (btnShowQr) btnShowQr.classList.remove('hidden');
+        if (qrImg) qrImg.src = settings.fundQrUrl;
       } else {
-        document.getElementById('btnShowFundQr').classList.add('hidden');
+        if (btnShowQr) btnShowQr.classList.add('hidden');
       }
 
       renderPersonalCardsCompact(breakdown, curData.payments || {});
@@ -561,8 +610,10 @@
     function updateHouseAnimation(bd, housePayObj) {
       const houseBillAmt = bd.total;
       ['tl', 'tr', 'bl', 'br'].forEach(pos => {
-        document.getElementById(`fill-${pos}`).style.height = '0%';
-        document.getElementById(`emoji-${pos}`).style.opacity = '0.2';
+        const f = document.getElementById(`fill-${pos}`);
+        const em = document.getElementById(`emoji-${pos}`);
+        if (f) f.style.height = '0%';
+        if (em) em.style.opacity = '0.2';
       });
       if (houseBillAmt === 0) return;
 
@@ -576,15 +627,17 @@
         if (pos) {
           const fill = document.getElementById(`fill-${pos}`);
           const emoji = document.getElementById(`emoji-${pos}`);
-          fill.style.height = `${pct}%`;
-          if (pct > 0) fill.style.backgroundColor = roomColors[pos];
-          if (pct >= 100) emoji.style.opacity = '1';
+          if (fill) {
+            fill.style.height = `${pct}%`;
+            if (pct > 0) fill.style.backgroundColor = roomColors[pos];
+          }
+          if (emoji && pct >= 100) emoji.style.opacity = '1';
         }
       });
     }
 
     function renderDonutChartMode() {
-      const mode = document.getElementById('donutViewMode').value;
+      const mode = document.getElementById('donutViewMode')?.value || 'month';
       let targetMonths = [currentMonth];
       const [cyy, cmm] = currentMonth.split('-');
       const yInt = parseInt(cyy, 10), mInt = parseInt(cmm, 10);
@@ -605,27 +658,21 @@
         if (md.fundExpenses) Object.values(md.fundExpenses).forEach(exp => fe += Number(exp.amount));
       });
 
-      // ตัวกันแครช
-      const donutMonthElem = document.getElementById('donutMonthText');
-      if(donutMonthElem) {
-        if (mode === 'month') {
-          const monthsTh = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-          donutMonthElem.innerText = `เดือน ${monthsTh[mInt - 1]} ${yInt}`;
-        } else if (mode === 'quarter') {
-          donutMonthElem.innerText = `ไตรมาส ${Math.ceil(mInt / 3)} ปี ${yInt}`;
-        } else if (mode === 'year') {
-          donutMonthElem.innerText = `ตลอดปี ${yInt}`;
-        }
-      }
+      const monthsTh = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+      if (mode === 'month') setSafeText('donutMonthText', `เดือน ${monthsTh[mInt - 1]} ${yInt}`);
+      else if (mode === 'quarter') setSafeText('donutMonthText', `ไตรมาส ${Math.ceil(mInt / 3)} ปี ${yInt}`);
+      else if (mode === 'year') setSafeText('donutMonthText', `ตลอดปี ${yInt}`);
 
       renderDonutChart(r, w, e, o, fe, sb);
     }
 
     function renderDonutChart(rent, water, electric, other, totalFundExp, totalSharedBill) {
       if (donutChartInstance) donutChartInstance.destroy();
-      const ctx = document.getElementById('overviewDonutChart').getContext('2d');
+      const canvasEl = document.getElementById('overviewDonutChart');
+      if (!canvasEl) return;
+      const ctx = canvasEl.getContext('2d');
       const total = rent + water + electric + other + totalFundExp + totalSharedBill;
-      document.getElementById('donutTotalText').innerText = total > 0 ? `${total.toLocaleString()} ฿` : '0 ฿';
+      setSafeText('donutTotalText', total > 0 ? `${total.toLocaleString()} ฿` : '0 ฿');
 
       const categories = [
         { name: 'ค่าเช่าบ้าน', amount: rent, color: '#6366f1' },
@@ -637,15 +684,17 @@
       ];
 
       const breakdownContainer = document.getElementById('donutBreakdownList');
-      breakdownContainer.innerHTML = '';
-      categories.forEach(cat => {
-        const pct = total > 0 ? ((cat.amount / total) * 100).toFixed(1) : '0.0';
-        breakdownContainer.innerHTML += `
-          <div class="flex items-center justify-between p-2 rounded-xl bg-slate-950/60 border border-slate-800/60 text-[10px]">
-            <span class="text-slate-300 font-medium truncate">${cat.name}</span>
-            <span class="text-slate-100 font-bold">${cat.amount.toLocaleString()} ฿ (${pct}%)</span>
-          </div>`;
-      });
+      if (breakdownContainer) {
+        breakdownContainer.innerHTML = '';
+        categories.forEach(cat => {
+          const pct = total > 0 ? ((cat.amount / total) * 100).toFixed(1) : '0.0';
+          breakdownContainer.innerHTML += `
+            <div class="flex items-center justify-between p-2 rounded-xl bg-slate-950/60 border border-slate-800/60 text-[10px]">
+              <span class="text-slate-300 font-medium truncate">${cat.name}</span>
+              <span class="text-slate-100 font-bold">${cat.amount.toLocaleString()} ฿ (${pct}%)</span>
+            </div>`;
+        });
+      }
 
       donutChartInstance = new Chart(ctx, {
         type: 'doughnut',
@@ -659,6 +708,7 @@
 
     function renderPersonalCardsCompact(bd, housePayObj) {
       const container = document.getElementById('overviewMembersCardsCompact');
+      if (!container) return;
       container.innerHTML = '';
       const houseBillAmt = bd.total;
 
@@ -679,6 +729,7 @@
 
     function renderSharedBills() {
       const container = document.getElementById('sharedBillsContainer');
+      if (!container) return;
       container.innerHTML = '';
       Object.entries(sharedBillsData).forEach(([billId, bill]) => {
         container.innerHTML += `
@@ -690,21 +741,30 @@
     }
 
     function renderTransactionsTab(rent, water, electric, other, breakdown, curData) {
-      document.getElementById('txExpensesTable').innerHTML = `
+      setSafeHTML('txExpensesTable', `
         <tr><td class="p-2.5">ค่าเช่าบ้าน</td><td class="p-2.5 text-right font-medium">${rent.toLocaleString()} ฿</td></tr>
         <tr><td class="p-2.5">ค่าน้ำประปา</td><td class="p-2.5 text-right font-medium">${water.toLocaleString()} ฿</td></tr>
         <tr><td class="p-2.5">ค่าไฟฟ้า</td><td class="p-2.5 text-right font-medium">${electric.toLocaleString()} ฿</td></tr>
         <tr><td class="p-2.5">ค่าเน็ต/อื่นๆ</td><td class="p-2.5 text-right font-medium">${other.toLocaleString()} ฿</td></tr>
-      `;
+      `);
     }
 
-    // Direct Operations without blocking Prompt
+    function updateDropdowns() {
+      let sbChecks = '';
+      Object.entries(members).forEach(([id, m]) => { 
+        if(m.active) {
+          sbChecks += `<label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="${id}" class="shared-member-cb w-4 h-4 accent-amber-500"> ${m.name}</label>`;
+        }
+      });
+      setSafeHTML('sharedBillMembersCheckboxes', sbChecks); 
+    }
+
     function saveBillsFromAdmin() {
       db.ref(`bills/${currentMonth}`).update({
-        rent: Number(document.getElementById('inpRent').value) || 0,
-        water: Number(document.getElementById('inpWater').value) || 0,
-        electricDirect: Number(document.getElementById('inpElectricDirect').value) || 0,
-        other: Number(document.getElementById('inpOther').value) || 0
+        rent: Number(document.getElementById('inpRent')?.value) || 0,
+        water: Number(document.getElementById('inpWater')?.value) || 0,
+        electricDirect: Number(document.getElementById('inpElectricDirect')?.value) || 0,
+        other: Number(document.getElementById('inpOther')?.value) || 0
       }).then(() => {
         customAlert("บันทึกข้อมูลบิลค่าบ้านสำเร็จ!");
         calculateAndRender();
@@ -713,16 +773,19 @@
     }
 
     function addNewMember() {
-      const name = document.getElementById('newMemberName').value.trim();
+      const input = document.getElementById('newMemberName');
+      const name = input ? input.value.trim() : '';
       if (!name) return customAlert("กรุณาระบุชื่อสมาชิก", "⚠️");
-      db.ref(`members/m_${Date.now()}`).set({ name, active: true }).then(() => {
-        document.getElementById('newMemberName').value = '';
+      db.ref(`members/m_${Date.now()}`).set({ name: name, active: true }).then(() => {
+        if (input) input.value = '';
         customAlert("เพิ่มสมาชิกสำเร็จ!");
       }).catch(err => customAlert("เกิดข้อผิดพลาด: " + err.message, "❌"));
     }
 
     function renderMembersSettings() {
-      const div = document.getElementById('settingsMemberList'); div.innerHTML = '';
+      const div = document.getElementById('settingsMemberList');
+      if (!div) return;
+      div.innerHTML = '';
       Object.entries(members).forEach(([id, m]) => {
         div.innerHTML += `
           <div class="flex justify-between items-center p-2 bg-slate-800 rounded-xl text-xs">
@@ -734,21 +797,44 @@
 
     function saveSettings() {
       db.ref('settings').update({
-        fundRate: Number(document.getElementById('setFundRate').value) || 0,
-        initialFund: Number(document.getElementById('setInitialFund').value) || 0,
-        fundBank: document.getElementById('setFundBank').value.trim(),
-        fundAccName: document.getElementById('setFundAccName').value.trim(),
-        fundAccNo: document.getElementById('setFundAccNo').value.trim(),
-        fundQrUrl: document.getElementById('setFundQR').value.trim()
+        fundRate: Number(document.getElementById('setFundRate')?.value) || 0,
+        initialFund: Number(document.getElementById('setInitialFund')?.value) || 0,
+        fundBank: document.getElementById('setFundBank')?.value.trim() || '',
+        fundAccName: document.getElementById('setFundAccName')?.value.trim() || '',
+        fundAccNo: document.getElementById('setFundAccNo')?.value.trim() || '',
+        fundQrUrl: document.getElementById('setFundQR')?.value.trim() || ''
       }).then(() => {
         customAlert("บันทึกการตั้งค่ากองกลางสำเร็จ!");
         calculateAndRender();
       }).catch(err => customAlert("เกิดข้อผิดพลาด: " + err.message, "❌"));
     }
 
+    function createSharedBill() {
+      const title = document.getElementById('sharedBillTitle')?.value.trim();
+      const amt = Number(document.getElementById('sharedBillAmount')?.value);
+      const cbs = document.querySelectorAll('.shared-member-cb:checked');
+      const reqMembers = Array.from(cbs).map(cb => cb.value);
+
+      if (!title || !amt || reqMembers.length === 0) return customAlert("กรุณากรอกข้อมูลให้ครบถ้วนและเลือกสมาชิก", "⚠️");
+
+      db.ref(`sharedBills`).push({
+        title: title,
+        amount: amt,
+        requiredMembers: reqMembers,
+        date: new Date().toLocaleDateString('th-TH')
+      }).then(() => {
+        setSafeValue('sharedBillTitle', '');
+        setSafeValue('sharedBillAmount', '');
+        cbs.forEach(cb => cb.checked = false);
+        customAlert("สร้างบิลหารร่วมเรียบร้อย!");
+        switchTab('overview');
+      }).catch(err => customAlert("เกิดข้อผิดพลาด: " + err.message, "❌"));
+    }
+
     function triggerUploadSlip(memberId, paymentType, expectedAmt) {
       currentUploadConfig = { memberId, paymentType, expectedAmt: expectedAmt > 0 ? expectedAmt : 0 };
-      document.getElementById('slipInput').click();
+      const fileInput = document.getElementById('slipInput');
+      if (fileInput) fileInput.click();
     }
 
     async function handleSlipSelected(e) {
@@ -757,11 +843,14 @@
 
       const { expectedAmt, memberId } = currentUploadConfig;
       let finalAmountStr = await askAmount("📌 ระบุยอดเงิน", "พิมพ์ยอดเงินตามสลิปโอน:", expectedAmt > 0 ? expectedAmt : '');
-      if (finalAmountStr === null) { document.getElementById('slipInput').value = ''; return; }
+      if (finalAmountStr === null) { 
+        if (document.getElementById('slipInput')) document.getElementById('slipInput').value = ''; 
+        return; 
+      }
 
       let finalAmount = Number(finalAmountStr.replace(/,/g, '')) || 0;
       const overlay = document.getElementById('loadingOverlay');
-      overlay.classList.remove('hidden');
+      if (overlay) overlay.classList.remove('hidden');
 
       try {
         const formData = new FormData(); formData.append('image', file);
@@ -779,9 +868,101 @@
       } catch (err) {
         customAlert(err.message, "❌");
       } finally {
-        overlay.classList.add('hidden');
-        document.getElementById('slipInput').value = '';
+        if (overlay) overlay.classList.add('hidden');
+        if (document.getElementById('slipInput')) document.getElementById('slipInput').value = '';
       }
+    }
+
+    function exportToExcel() {
+      const curData = allMonthsData[currentMonth] || {};
+      const activeCount = Object.values(members).filter(m => m.active).length || 1;
+      const rent = Number(curData.rent) || 0, water = Number(curData.water) || 0, electric = Number(curData.electricDirect) || 0, other = Number(curData.other) || 0;
+      const wb = XLSX.utils.book_new();
+      const expenseData = [
+        ["รายงานค่าใช้จ่ายบ้านพักประจำเดือน", currentMonth], [],
+        ["รายการ", "ยอดรวม (บาท)", "จำนวนคนหาร", "ยอดต่อคน (บาท)"],
+        ["ค่าเช่าบ้าน", rent, activeCount, Math.round(rent / activeCount)],
+        ["ค่าน้ำประปา", water, activeCount, Math.round(water / activeCount)],
+        ["ค่าไฟฟ้า", electric, activeCount, Math.round(electric / activeCount)],
+        ["ค่าเน็ต/อื่นๆ", other, activeCount, Math.round(other / activeCount)],
+        ["ยอดรวมทั้งสิ้น", rent + water + electric + other, activeCount, Math.round((rent + water + electric + other) / activeCount)]
+      ];
+      const wsExpenses = XLSX.utils.aoa_to_sheet(expenseData);
+      XLSX.utils.book_append_sheet(wb, wsExpenses, "สรุปบิลประจำเดือน");
+      XLSX.writeFile(wb, `รายงานค่าใช้จ่ายบ้านพัก_${currentMonth}.xlsx`);
+    }
+
+    function openFundDepositModal() {
+      const sel = document.getElementById('fundDepMember');
+      if (sel) {
+        sel.innerHTML = '<option value="">-- เลือกผู้ฝากเงิน --</option>';
+        Object.entries(members).forEach(([id, m]) => {
+          if (m.active) sel.innerHTML += `<option value="${id}">${m.name}</option>`;
+        });
+      }
+      const modal = document.getElementById('fundDepositModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+    function closeFundDepositModal() {
+      const modal = document.getElementById('fundDepositModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function openFundWithdrawModal() {
+      const sel = document.getElementById('fundWithBuyer');
+      if (sel) {
+        sel.innerHTML = '<option value="">-- เลือกสมาชิกที่เบิก --</option>';
+        Object.entries(members).forEach(([id, m]) => {
+          if (m.active) sel.innerHTML += `<option value="${m.name}">${m.name}</option>`;
+        });
+      }
+      const modal = document.getElementById('fundWithdrawModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+    function closeFundWithdrawModal() {
+      const modal = document.getElementById('fundWithdrawModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function submitFundWithdraw() {
+      const buyer = document.getElementById('fundWithBuyer')?.value;
+      const amt = Number(document.getElementById('fundWithAmount')?.value);
+      const reason = document.getElementById('fundWithReason')?.value.trim();
+      if (!buyer || !amt || !reason) return customAlert("กรุณากรอกข้อมูลให้ครบถ้วน", "⚠️");
+
+      db.ref(`bills/${currentMonth}/fundExpenses`).push({
+        name: reason, amount: amt, buyer: buyer, date: new Date().toLocaleDateString('th-TH')
+      }).then(() => {
+        closeFundWithdrawModal();
+        customAlert(`เบิกเงินกองกลางสำเร็จ!\nจำนวน: ${amt.toLocaleString()} บาท`, "✅");
+      }).catch(err => customAlert("เกิดข้อผิดพลาด: " + err.message, "❌"));
+    }
+
+    function triggerFundSlipUpload() {
+      const mId = document.getElementById('fundDepMember')?.value;
+      const note = document.getElementById('fundDepNote')?.value.trim();
+      if (!mId) return customAlert("กรุณาเลือกสมาชิกที่เป็นเจ้าของเงิน", "⚠️");
+      currentUploadConfig = { memberId: mId, paymentType: 'fundDeposit', expectedAmt: 0, note: note };
+      closeFundDepositModal();
+      const fileInput = document.getElementById('slipInput');
+      if (fileInput) fileInput.click();
+    }
+
+    function showFundQR() {
+      const modal = document.getElementById('qrModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function renderChart() {
+      if (chartInstance) chartInstance.destroy();
+      const canvasEl = document.getElementById('expenseChart');
+      if (!canvasEl) return;
+      const ctx = canvasEl.getContext('2d');
+      const labels = [], waterData = [], elecData = [];
+      Object.keys(allMonthsData).sort().forEach(m => {
+        labels.push(m); waterData.push(allMonthsData[m].water || 0); elecData.push(allMonthsData[m].electricDirect || 0);
+      });
+      chartInstance = new Chart(ctx, { type: 'bar', data: { labels, datasets: [ { label: 'ค่าไฟฟ้า', data: elecData, backgroundColor: '#f59e0b' }, { label: 'ค่าน้ำประปา', data: waterData, backgroundColor: '#0ea5e9' } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { color: '#334155' } }, y: { grid: { color: '#334155' } } }, plugins: { legend: { labels: { color: '#e2e8f0' } } } } });
     }
   </script>
 </body>
