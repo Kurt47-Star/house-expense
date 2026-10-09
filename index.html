@@ -180,7 +180,7 @@
     <!-- ================= TAB 1: OVERVIEW ================= -->
     <div id="tab-overview" class="space-y-6">
       
-      <!-- ส่วนแสดงกราฟโดนัท (แก้ปัญหาตัวเลขทับ และใส่เปอร์เซ็นต์แล้ว) -->
+      <!-- ส่วนแสดงกราฟโดนัท (แยกตัวเลขไว้ข้างล่าง ไม่ซ้อนทับ 100%) -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
         <div class="flex justify-between items-center mb-4">
           <h2 class="font-semibold text-slate-200">สัดส่วนค่าใช้จ่าย (<span id="donutMonthText">เดือนนี้</span>)</h2>
@@ -191,13 +191,13 @@
           </select>
         </div>
         
-        <!-- ตัวกราฟโดนัทเดี่ยวๆ โล่งๆ ไม่มีตัวเลขมาบังเส้นรอบวง -->
-        <div class="relative w-full h-60 flex justify-center items-center">
+        <!-- กราฟโดนัทเดี่ยวๆ ไม่ซ้อนทับตัวเลข -->
+        <div class="relative w-full h-64 flex justify-center items-center">
             <canvas id="overviewDonutChart"></canvas>
         </div>
 
-        <!-- แยกตัวเลขรวมมาไว้ด้านล่างกราฟชัดเจน -->
-        <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center px-1">
+        <!-- ยอดรวมแสดงด้านล่างกราฟชัดเจน -->
+        <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center px-2">
           <span class="text-xs text-slate-400">รวมค่าใช้จ่ายทั้งหมด:</span>
           <span class="text-xl font-bold text-emerald-400" id="donutTotalText">0 ฿</span>
         </div>
@@ -758,14 +758,14 @@
       const ctx = document.getElementById('overviewDonutChart').getContext('2d');
       const total = rent + water + electric + other + totalFundExp + totalSharedBill;
       
-      // อัปเดตตัวเลขรวมที่อยู่ด้านล่างกราฟ
+      // อัปเดตตัวเลขรวมด้านล่าง
       document.getElementById('donutTotalText').innerText = total > 0 ? `${total.toLocaleString()} ฿` : '0 ฿';
 
       if (total === 0) {
         donutChartInstance = new Chart(ctx, {
             type: 'doughnut',
             data: { labels: ['ไม่มีข้อมูล'], datasets: [{ data: [1], backgroundColor: ['#334155'], borderWidth: 0 }] },
-            options: { cutout: '70%', plugins: { tooltip: { enabled: false }, legend: { display: false } } }
+            options: { cutout: '65%', plugins: { tooltip: { enabled: false }, legend: { display: false } } }
         });
         return;
       }
@@ -799,7 +799,6 @@
                 usePointStyle: true,
                 pointStyle: 'circle',
                 font: { size: 11, family: 'Kanit' },
-                // คำนวณเปอร์เซ็นต์กำกับไว้ที่ Legend ด้านล่าง
                 generateLabels: function(chart) {
                   const dataset = chart.data.datasets[0];
                   return chart.data.labels.map((label, i) => {
