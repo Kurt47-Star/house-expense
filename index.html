@@ -109,8 +109,15 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen pb-16 selection:bg-emerald-500 selection:text-white">
 
+  <!-- แถบแจ้งเตือนเมื่อเปิดจากแอปแชท LINE/Messenger (In-App Browser Warning) -->
+  <div id="inAppWarning" class="hidden bg-amber-500 text-amber-950 px-4 py-2.5 text-xs font-bold text-center z-50 sticky top-0 shadow-lg leading-relaxed">
+    ⚠️ คุณกำลังเปิดเว็บผ่านแอปแชท ซึ่งอาจทำให้แนบสลิปไม่ผ่าน (แอปรีเฟรช)<br>
+    👉 แนะนำให้กดจุด 3 จุดที่มุมขวาบน แล้วเลือก <span class="underline">"เปิดในเบราว์เซอร์ (Safari/Chrome)"</span> 
+  </div>
+
   <!-- ================= OVERLAYS & MODALS ================= -->
-  <input type="file" id="slipInput" accept="image/*" class="hidden" onchange="handleSlipSelected(event)">
+  <!-- แก้เทคนิคการซ่อนปุ่มไฟล์ ให้รองรับ iPhone ได้ 100% -->
+  <input type="file" id="slipInput" accept="image/*" class="absolute w-0 h-0 opacity-0 overflow-hidden" style="z-index: -1;" onchange="handleSlipSelected(event)">
   
   <div id="loadingOverlay" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[100] hidden flex flex-col items-center justify-center p-4 text-center">
     <div class="w-12 h-12 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin mb-4"></div>
@@ -118,17 +125,16 @@
     <div class="text-xs text-slate-400 mt-2">ห้ามปิดหน้าจอจนกว่าจะเสร็จสิ้น</div>
   </div>
 
-  <!-- 💡 CUSTOM PROMPT MODAL (อัปเกรดให้รองรับรหัสผ่าน) 💡 -->
+  <!-- Custom Prompt Modal -->
   <div id="customPromptModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-emerald-500/50 rounded-3xl max-w-sm w-full shadow-2xl p-6 relative overflow-hidden">
       <div class="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl"></div>
       <h3 class="text-lg font-bold text-emerald-400 mb-2 relative z-10" id="customPromptTitle">ระบุยอดเงิน</h3>
       <p class="text-sm text-slate-300 mb-5 whitespace-pre-line relative z-10" id="customPromptDesc">โปรดระบุยอดเงินที่โอนจริง</p>
-      <!-- เปลี่ยน type กลับไปมาได้ด้วย JS -->
-      <input type="text" id="customPromptInput" class="w-full bg-slate-950 rounded-xl p-4 text-2xl text-emerald-400 font-bold text-center border border-slate-700 outline-none focus:border-emerald-500 mb-5 shadow-inner relative z-10" placeholder="">
+      <input type="text" id="customPromptInput" class="w-full bg-slate-950 rounded-xl p-4 text-2xl text-emerald-400 font-bold text-center border border-slate-700 outline-none focus:border-emerald-500 mb-5 shadow-inner relative z-10">
       <div class="flex gap-3 relative z-10">
-        <button id="customPromptCancel" class="flex-1 bg-slate-800 hover:bg-slate-700 py-3.5 rounded-xl text-sm font-medium text-white transition border border-slate-700">ยกเลิก</button>
-        <button id="customPromptConfirm" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-3.5 rounded-xl text-sm font-bold text-white transition shadow-lg shadow-emerald-600/20">ยืนยัน</button>
+        <button id="customPromptCancel" class="flex-1 bg-slate-800 hover:bg-slate-700 py-3.5 rounded-xl text-sm font-medium text-white transition border border-slate-700 active:scale-95">ยกเลิก</button>
+        <button id="customPromptConfirm" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-3.5 rounded-xl text-sm font-bold text-white transition shadow-lg shadow-emerald-600/20 active:scale-95">ยืนยัน</button>
       </div>
     </div>
   </div>
@@ -139,8 +145,8 @@
       <h3 class="text-lg font-bold text-amber-400 mb-2">⚠️ ยืนยันการดำเนินการ</h3>
       <p class="text-sm text-slate-300 mb-6 whitespace-pre-line" id="customConfirmDesc"></p>
       <div class="flex gap-3">
-        <button id="customConfirmNo" class="flex-1 bg-slate-800 hover:bg-slate-700 py-3 rounded-xl text-sm font-medium text-white transition border border-slate-700">ยกเลิก</button>
-        <button id="customConfirmYes" class="flex-1 bg-amber-600 hover:bg-amber-500 py-3 rounded-xl text-sm font-bold text-white transition shadow-lg shadow-amber-600/20">ตกลง</button>
+        <button id="customConfirmNo" class="flex-1 bg-slate-800 hover:bg-slate-700 py-3 rounded-xl text-sm font-medium text-white transition border border-slate-700 active:scale-95">ยกเลิก</button>
+        <button id="customConfirmYes" class="flex-1 bg-amber-600 hover:bg-amber-500 py-3 rounded-xl text-sm font-bold text-white transition shadow-lg shadow-amber-600/20 active:scale-95">ตกลง</button>
       </div>
     </div>
   </div>
@@ -150,7 +156,7 @@
     <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-sm w-full shadow-2xl p-6 text-center">
       <div class="text-5xl mb-4" id="customAlertIcon">✅</div>
       <h3 class="text-base font-bold text-slate-200 mb-6 whitespace-pre-line" id="customAlertDesc"></h3>
-      <button onclick="document.getElementById('customAlertModal').classList.add('hidden')" class="w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-xl text-sm font-bold text-white transition border border-slate-700">ปิดหน้าต่าง</button>
+      <button onclick="document.getElementById('customAlertModal').classList.add('hidden')" class="w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-xl text-sm font-bold text-white transition border border-slate-700 active:scale-95">ปิดหน้าต่าง</button>
     </div>
   </div>
 
@@ -174,7 +180,7 @@
           <label class="block text-xs text-slate-400 mb-1">วัตถุประสงค์ / หมายเหตุ</label>
           <input type="text" id="fundDepNote" placeholder="เช่น สมทบรายเดือน, ค่าปรับทิ้งขยะ" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm text-slate-200 border border-slate-700 outline-none focus:border-indigo-500">
         </div>
-        <button onclick="triggerFundSlipUpload()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl text-sm font-medium transition text-white shadow-lg shadow-indigo-600/20">
+        <button onclick="triggerFundSlipUpload()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl text-sm font-medium transition text-white shadow-lg shadow-indigo-600/20 active:scale-95">
           📤 เลือกสลิปเพื่ออัปโหลด
         </button>
       </div>
@@ -201,7 +207,7 @@
           <label class="block text-xs text-slate-400 mb-1">เบิกไปใช้ทำอะไร / วัตถุประสงค์</label>
           <input type="text" id="fundWithReason" placeholder="เช่น ค่าน้ำมันรถไปซื้อของ, ซื้อทิชชู่" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm text-slate-200 border border-slate-700 outline-none focus:border-rose-500">
         </div>
-        <button onclick="submitFundWithdraw()" class="w-full bg-rose-600 hover:bg-rose-500 py-3 rounded-xl text-sm font-bold transition text-white shadow-lg shadow-rose-600/20">
+        <button onclick="submitFundWithdraw()" class="w-full bg-rose-600 hover:bg-rose-500 py-3 rounded-xl text-sm font-bold transition text-white shadow-lg shadow-rose-600/20 active:scale-95">
           ยืนยันการเบิกเงิน
         </button>
       </div>
@@ -213,7 +219,7 @@
     <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-4 flex flex-col items-center">
       <h3 class="text-sm font-bold text-indigo-400 mb-3">QR Code บัญชีกองกลาง</h3>
       <img id="qrModalImg" src="" class="max-h-64 rounded-lg shadow-lg mb-3 object-contain">
-      <button onclick="document.getElementById('qrModal').classList.add('hidden')" class="mt-2 w-full bg-slate-800 hover:bg-slate-700 py-2 rounded-lg text-sm text-slate-200 transition">ปิด</button>
+      <button onclick="document.getElementById('qrModal').classList.add('hidden')" class="mt-2 w-full bg-slate-800 hover:bg-slate-700 py-2 rounded-lg text-sm text-slate-200 transition active:scale-95">ปิด</button>
     </div>
   </div>
 
@@ -257,7 +263,7 @@
       <div class="flex items-center bg-slate-900 border border-slate-800 rounded-2xl shadow-inner w-full sm:w-auto justify-between overflow-hidden">
         <button onclick="changeMonthOffset(-1)" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition font-bold active:scale-95">◀</button>
         <div class="relative cursor-pointer hover:bg-slate-800/50 rounded-xl transition px-3 py-1 flex items-center justify-center min-w-[130px]">
-          <span id="currentMonthText" class="font-bold text-emerald-400 text-xs sm:text-sm tracking-wide"></span>
+          <span id="currentMonthText" class="font-bold text-emerald-400 text-xs sm:text-sm tracking-wide pointer-events-none"></span>
           <input type="month" id="monthPicker" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
         </div>
         <button onclick="changeMonthOffset(1)" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition font-bold active:scale-95">▶</button>
@@ -385,7 +391,7 @@
                   <span id="displayFundBank" class="font-medium text-indigo-300">ไม่ระบุธนาคาร</span><br>
                   <span id="displayFundAccNo">---</span> (<span id="displayFundAccName">---</span>)
                 </div>
-                <button onclick="showFundQR()" id="btnShowFundQr" class="hidden text-[10px] border border-indigo-500/50 text-indigo-300 hover:bg-indigo-900/50 px-2 py-1 rounded-lg bg-indigo-950/50 transition">
+                <button onclick="showFundQR()" id="btnShowFundQr" class="hidden text-[10px] border border-indigo-500/50 text-indigo-300 hover:bg-indigo-900/50 px-2 py-1 rounded-lg bg-indigo-950/50 transition active:scale-95">
                   ดู QR
                 </button>
               </div>
@@ -526,8 +532,8 @@
         <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
           <h2 class="text-lg font-bold text-slate-200 border-b border-slate-800 pb-2">⚙️ ตั้งค่าเงินและกองกลาง</h2>
           <div class="space-y-3">
-            <div><label class="block text-[11px] text-slate-400 mb-1">เงินกองกลางยกมาตอนแรก (บาท)</label><input type="number" id="setInitialFund" class="w-full bg-slate-800 rounded-xl p-2.5 text-sm" placeholder="เช่น 0 หรือ 500"></div>
-            <div><label class="block text-[11px] text-slate-400 mb-1">เป้าหมายเก็บกองกลาง/คน/เดือน (บาท)</label><input type="number" id="setFundRate" class="w-full bg-slate-800 rounded-xl p-2.5 text-sm"></div>
+            <div><label class="block text-[11px] text-slate-400 mb-1">เงินกองกลางยกมาตอนแรก (บาท)</label><input type="number" id="setInitialFund" class="w-full bg-slate-800 rounded-xl p-2 text-xs" placeholder="เช่น 0 หรือ 500"></div>
+            <div><label class="block text-[11px] text-slate-400 mb-1">เป้าหมายเก็บกองกลาง/คน/เดือน (บาท)</label><input type="number" id="setFundRate" class="w-full bg-slate-800 rounded-xl p-2 text-xs"></div>
             <h3 class="text-xs font-bold text-indigo-400 mt-4 mb-2 border-t border-slate-800 pt-3">ข้อมูลบัญชีรับเงินกองกลาง</h3>
             <div><input type="text" id="setFundBank" class="w-full bg-slate-800 rounded-xl p-2.5 text-sm mb-2" placeholder="ธนาคาร (เช่น กสิกรไทย)"></div>
             <div><input type="text" id="setFundAccName" class="w-full bg-slate-800 rounded-xl p-2.5 text-sm mb-2" placeholder="ชื่อบัญชี (เช่น นาย สมชาย)"></div>
@@ -542,7 +548,7 @@
           <div id="settingsMemberList" class="space-y-2 mb-3 max-h-60 overflow-y-auto pr-1"></div>
           <div class="flex gap-2 pt-2 border-t border-slate-800">
             <input type="text" id="newMemberName" placeholder="ชื่อเรียก" class="w-full bg-slate-800 rounded-xl px-2.5 text-sm">
-            <button onclick="addNewMember()" class="bg-emerald-600 px-4 py-2 rounded-xl text-sm font-bold">+ เพิ่ม</button>
+            <button onclick="addNewMember()" class="bg-emerald-600 px-4 py-2 rounded-xl text-sm font-bold active:scale-95">+ เพิ่ม</button>
           </div>
         </div>
       </div>
@@ -562,6 +568,14 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+
+    // ตัวจับเบราว์เซอร์แอปแชท
+    window.addEventListener('DOMContentLoaded', () => {
+      const ua = navigator.userAgent || navigator.vendor || window.opera;
+      if (ua.indexOf("FBAN") > -1 || ua.indexOf("FBAV") > -1 || ua.indexOf("Line") > -1) {
+          document.getElementById('inAppWarning').classList.remove('hidden');
+      }
+    });
 
     let d = new Date();
     let currentMonth = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
@@ -598,7 +612,7 @@
       });
     }
 
-    // ฟังก์ชันเด้งหน้าต่างที่แก้ปัญหาบล็อกแชท LINE/Messenger และรองรับรหัสผ่าน
+    // ฟังก์ชันเด้งหน้าต่างที่แก้ปัญหาแอปมือถือบล็อก (รองรับ Input หลายแบบ)
     function askAmount(title, desc, defaultVal, isPassword = false) {
       return new Promise((resolve) => {
         const modal = document.getElementById('customPromptModal');
@@ -609,8 +623,7 @@
         document.getElementById('customPromptTitle').innerText = title;
         document.getElementById('customPromptDesc').innerText = desc;
         
-        input.type = isPassword ? 'password' : 'text'; // ใช้ text รองรับมือถือพิมพ์ง่ายกว่า
-        if(!isPassword) input.setAttribute("inputmode", "decimal");
+        input.type = isPassword ? 'password' : 'number'; // ใช้ number หรือ password
         input.value = defaultVal || '';
 
         modal.classList.remove('hidden');
@@ -629,7 +642,6 @@
         btnConfirm.onclick = submit;
         btnCancel.onclick = cancel;
         
-        // รองรับการกด Enter ในคีย์บอร์ดมือถือ/คอม
         input.onkeydown = (e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
@@ -639,7 +651,6 @@
       });
     }
 
-    // ฟังก์ชันถามรหัสผ่าน (ใช้ Custom Modal ป้องกันแอปบล็อก 100%)
     async function askPasscode(actionDescription) {
       const p = await askAmount("🔒 ยืนยันสิทธิ์แอดมิน", `กรุณาใส่รหัสผ่านแอดมินเพื่อ\n${actionDescription}`, "", true);
       if (p === null) return false;
@@ -912,7 +923,7 @@
       });
     }
 
-    // --- RENDER DONUT CHART (โมเดิร์น & ไม่ทับกัน) ---
+    // --- RENDER DONUT CHART ---
     function renderDonutChartMode() {
       const mode = document.getElementById('donutViewMode').value;
       const monthsTh = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
@@ -973,12 +984,12 @@
       document.getElementById('donutTotalText').innerText = total > 0 ? `${total.toLocaleString()} ฿` : '0 ฿';
 
       const categories = [
-        { name: 'ค่าเช่าบ้าน', amount: rent, color: '#6366f1' }, // Indigo
-        { name: 'ค่าไฟฟ้า', amount: electric, color: '#f59e0b' }, // Amber
-        { name: 'ค่าน้ำประปา', amount: water, color: '#06b6d4' }, // Cyan
-        { name: 'ค่าเน็ต/อื่นๆ', amount: other, color: '#10b981' }, // Emerald
-        { name: 'บิลก้อนใหญ่ (Shared)', amount: totalSharedBill, color: '#f43f5e' }, // Rose
-        { name: 'กองกลาง (เบิกใช้)', amount: totalFundExp, color: '#a855f7' } // Purple
+        { name: 'ค่าเช่าบ้าน', amount: rent, color: '#6366f1' },
+        { name: 'ค่าไฟฟ้า', amount: electric, color: '#f59e0b' },
+        { name: 'ค่าน้ำประปา', amount: water, color: '#06b6d4' },
+        { name: 'ค่าเน็ต/อื่นๆ', amount: other, color: '#10b981' },
+        { name: 'บิลก้อนใหญ่ (Shared)', amount: totalSharedBill, color: '#f43f5e' },
+        { name: 'กองกลาง (เบิกใช้)', amount: totalFundExp, color: '#a855f7' }
       ];
 
       const breakdownContainer = document.getElementById('donutBreakdownList');
@@ -1006,7 +1017,7 @@
         donutChartInstance = new Chart(ctx, {
             type: 'doughnut',
             data: { labels: ['ไม่มีข้อมูล'], datasets: [{ data: [1], backgroundColor: ['#1e293b'], borderWidth: 0 }] },
-            options: { cutout: '65%', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+            options: { cutout: '70%', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } } }
         });
         return;
       }
@@ -1024,9 +1035,9 @@
             data: data,
             backgroundColor: bgColors,
             borderWidth: 2,
-            borderColor: '#0f172a',
-            borderRadius: 6, // ขอบโค้งมนเนียนๆ
-            spacing: 3, // เส้นขั้นระหว่างกราฟ
+            borderColor: '#090d16',
+            borderRadius: 6,
+            spacing: 3,
             hoverOffset: 6
           }]
         },
@@ -1036,7 +1047,7 @@
           cutout: '72%',
           layout: { padding: 8 },
           plugins: {
-            legend: { display: false }, // ปิด Legend เพราะมี List อยู่ข้างล่างแล้ว
+            legend: { display: false },
             tooltip: {
               backgroundColor: '#0f172a',
               titleColor: '#f8fafc',
@@ -1141,15 +1152,15 @@
         });
 
         container.innerHTML += `
-          <div class="bg-amber-950/20 border border-amber-900/40 rounded-3xl overflow-hidden shadow-lg p-4">
-            <div class="flex justify-between items-start mb-3">
+          <div class="bg-amber-950/20 border border-amber-900/40 rounded-3xl overflow-hidden shadow-lg p-3 sm:p-4">
+            <div class="flex justify-between items-start mb-2">
               <div>
                 <h3 class="text-sm font-bold text-amber-400">${bill.title}</h3>
                 <div class="text-[10px] text-slate-400 mt-0.5">ยอดรวม: ${Number(bill.amount).toLocaleString()} ฿ (หารคนละ ${perPersonAmt.toLocaleString()} ฿)</div>
               </div>
               <button onclick="deleteSharedBill('${billId}')" class="text-[10px] text-rose-400 hover:underline">ลบบิลนี้</button>
             </div>
-            <div class="bg-slate-900/50 p-3 rounded-2xl">${membersHtml}</div>
+            <div class="bg-slate-900/50 p-2 rounded-xl">${membersHtml}</div>
           </div>
         `;
       });
@@ -1492,9 +1503,7 @@
     // Admin & Auth Secured Actions
     async function deleteFundExpense(expId) {
       const isAuth = await askPasscode("ลบรายการกองกลาง");
-      if (isAuth) {
-        db.ref(`bills/${currentMonth}/fundExpenses/${expId}`).remove();
-      }
+      if (isAuth) { db.ref(`bills/${currentMonth}/fundExpenses/${expId}`).remove(); }
     }
     
     async function createSharedBill() {
