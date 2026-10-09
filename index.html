@@ -165,21 +165,32 @@
     <!-- ================= TAB 1: OVERVIEW ================= -->
     <div id="tab-overview" class="space-y-6">
       
-      <!-- 1. บิลบ้านขึ้นมาไว้บนสุด (ไม่มีอนิเมชัน สะอาด สบายตา) -->
-      <div class="bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-3xl p-6 shadow-xl">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4 mb-4">
+      <!-- 1. บิลบ้าน & สถานะการจ่าย + แนบสลิปของสมาชิก (รวมไว้ที่บนสุดด้วยกัน) -->
+      <div class="bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-3xl p-6 shadow-xl space-y-5">
+        <!-- สรุปยอดรวมค่าบ้านต่อคน -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
           <div>
             <div class="text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-1">🏠 ค่าเช่าบ้าน/น้ำ/ไฟ (<span id="overviewMonthText">เดือนนี้</span>)</div>
             <div class="text-4xl font-black text-white" id="dashPerPerson">0 <span class="text-sm text-emerald-400 font-normal">บ./คน</span></div>
           </div>
           <div class="text-xs text-slate-400 sm:text-right">
-            <span>คำนวณจากสมาชิกที่เปิดใช้งานทั้งหมด</span>
+            <span>คำนวณเฉลี่ยต่อคนจากสมาชิกที่เปิดใช้งาน</span>
           </div>
         </div>
 
         <!-- รายละเอียดบิลย่อย -->
         <div class="grid grid-cols-2 sm:grid-cols-5 gap-3" id="houseBillDetails">
           <!-- แทรกเนื้อหาด้วย JS -->
+        </div>
+
+        <!-- สถานะการจ่าย & ปุ่มแนบสลิปของสมาชิกแต่ละคน (ยกขึ้นมาไว้ในการ์ดบนสุด) -->
+        <div class="pt-4 border-t border-slate-800">
+          <div class="flex justify-between items-center mb-3">
+            <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
+              <span>👥</span> สถานะการจ่าย & แนบสลิปค่าบ้าน (<span id="statusMonthText">เดือนนี้</span>)
+            </h3>
+          </div>
+          <div id="overviewMembersCardsCompact" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
         </div>
       </div>
 
@@ -251,12 +262,6 @@
       <div class="space-y-3 pt-2">
         <h2 class="font-bold text-base text-amber-400">💸 บิลก้อนใหญ่ที่ต้องจ่ายร่วมกัน (Shared Bills)</h2>
         <div id="sharedBillsContainer" class="space-y-3"></div>
-      </div>
-
-      <!-- 4. สถานะการจ่ายค่าบ้านรายบุคคล (กระชับ & ตัดเงินกองกลางออกแล้ว) -->
-      <div class="space-y-3 pt-2">
-        <h2 class="font-bold text-base text-slate-200">ตรวจสอบสถานะการจ่ายเงินค่าบ้านประจำเดือน (<span id="statusMonthText">เดือนนี้</span>)</h2>
-        <div id="overviewMembersCardsCompact" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
       </div>
     </div>
 
@@ -369,7 +374,7 @@
     let currentMonth = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
     
     let members = {}, allMonthsData = {}, sharedBillsData = {}, settings = { fundRate: 0, initialFund: 0, defaultRent: 12000 };
-    let currentUploadConfig = null;
+    let currentUploadConfig = null, currentGallerySlips = [], currentGalleryIndex = 0, currentGalleryConfig = null;
     let chartInstance = null, donutChartInstance = null;
 
     window.cachedSlips = { house: {}, fund: {}, sharedBill: {} };
@@ -689,17 +694,32 @@
       container.innerHTML = '';
       const houseBillAmt = bd.total;
 
+      window.cachedSlips.house = {};
+
       Object.entries(members).filter(([_, m]) => m.active).forEach(([mId, m]) => {
-        const hPaid = Number(housePayObj[mId]?.paidAmount || 0);
+        const hData = housePayObj[mId] || { paidAmount: 0, slips: [] };
+        const hPaid = Number(hData.paidAmount || 0);
+        const hSlipsObj = hData.slips || {};
+        const hSlips = Array.isArray(hSlipsObj) ? hSlipsObj.map((s, i) => ({...s, id: i})) : Object.keys(hSlipsObj).map(key => ({...hSlipsObj[key], id: key}));
+        
+        window.cachedSlips.house[mId] = hSlips;
+
         let statusBadge = hPaid >= houseBillAmt && houseBillAmt > 0
           ? `<span class="bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-full text-[10px] font-bold">จ่ายครบ</span>`
-          : `<span class="bg-amber-950 text-amber-400 border border-amber-800 px-2 py-0.5 rounded-full text-[10px] font-bold">ค้าง ${houseBillAmt - hPaid}</span>`;
+          : (hPaid > 0 
+              ? `<span class="bg-amber-950 text-amber-400 border border-amber-800 px-2 py-0.5 rounded-full text-[10px] font-bold">ค้าง ${houseBillAmt - hPaid} ฿</span>` 
+              : `<span class="bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded-full text-[10px] font-bold">รอจ่าย ${houseBillAmt} ฿</span>`);
 
         container.innerHTML += `
-          <div class="bg-slate-900/90 border border-slate-800/90 p-3 rounded-2xl flex flex-col justify-between shadow-lg text-center">
-            <h3 class="text-sm font-bold text-slate-200 truncate mb-1">${m.name}</h3>
-            ${statusBadge}
-            <button onclick="triggerUploadSlip('${mId}', 'house', ${houseBillAmt - hPaid})" class="mt-3 bg-slate-800 hover:bg-slate-700 py-1.5 rounded-lg text-white text-[10px] transition border border-slate-700">+ แนบสลิป</button>
+          <div class="bg-slate-900/90 border border-slate-800/90 p-3.5 rounded-2xl flex flex-col justify-between shadow-lg text-center">
+            <div>
+              <h3 class="text-sm font-bold text-slate-200 truncate mb-1.5">${m.name}</h3>
+              ${statusBadge}
+            </div>
+            <div class="flex gap-1.5 mt-3 pt-2.5 border-t border-slate-800">
+              ${hSlips.length ? `<button onclick="openGalleryFromCache('house', '${mId}', '${m.name} (ค่าบ้าน)')" class="text-[10px] text-blue-400 underline flex-1 text-center py-1.5">ดูสลิป</button>` : ''}
+              <button onclick="triggerUploadSlip('${mId}', 'house', ${houseBillAmt - hPaid})" class="bg-slate-800 hover:bg-slate-700 py-1.5 rounded-xl text-white text-[10px] transition border border-slate-700 flex-1 text-center font-medium">+ แนบสลิป</button>
+            </div>
           </div>`;
       });
     }
@@ -708,6 +728,10 @@
       const container = document.getElementById('sharedBillsContainer');
       if (!container) return;
       container.innerHTML = '';
+      if (Object.keys(sharedBillsData).length === 0) {
+        container.innerHTML = `<div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 text-center text-slate-500 text-xs">ไม่มีบิลก้อนใหญ่ที่ต้องหารกันในขณะนี้</div>`;
+        return;
+      }
       Object.entries(sharedBillsData).forEach(([billId, bill]) => {
         container.innerHTML += `
           <div class="bg-amber-950/20 border border-amber-900/40 rounded-2xl p-4 flex justify-between items-center">
@@ -847,6 +871,53 @@
       } finally {
         if (overlay) overlay.classList.add('hidden');
         if (document.getElementById('slipInput')) document.getElementById('slipInput').value = '';
+      }
+    }
+
+    function openGalleryFromCache(cacheType, cacheKey, nameStr) {
+      const slips = window.cachedSlips[cacheType][cacheKey] || [];
+      currentGallerySlips = slips; currentGalleryIndex = 0; currentGalleryConfig = { memberId: cacheKey, paymentType: cacheType };
+      setSafeText('modalSlipTitle', nameStr);
+      const btnDel = document.getElementById('btnDeleteSlip');
+      if (btnDel) btnDel.onclick = () => deleteCurrentSlip();
+      updateGalleryUI();
+      const modal = document.getElementById('slipModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function updateGalleryUI() {
+      if (!currentGallerySlips.length) { closeSlipModal(); return; }
+      const s = currentGallerySlips[currentGalleryIndex];
+      const img = document.getElementById('modalSlipImg');
+      if (img) img.src = s.url;
+      setSafeHTML('modalSlipCount', `สลิปใบที่ ${currentGalleryIndex + 1} / ${currentGallerySlips.length}<br>ยอดโอน: ${s.amount > 0 ? s.amount + ' ฿' : 'ไม่ได้ระบุยอด'}`);
+      setSafeText('modalSlipNote', s.date ? `วันที่: ${s.date}` : '');
+      const btnPrev = document.getElementById('btnPrevSlip');
+      const btnNext = document.getElementById('btnNextSlip');
+      if (btnPrev) btnPrev.classList.toggle('hidden', currentGalleryIndex === 0);
+      if (btnNext) btnNext.classList.toggle('hidden', currentGalleryIndex === currentGallerySlips.length - 1);
+    }
+
+    function changeSlipView(dir) { currentGalleryIndex += dir; updateGalleryUI(); }
+    function closeSlipModal() { const modal = document.getElementById('slipModal'); if (modal) modal.classList.add('hidden'); }
+
+    async function deleteCurrentSlip() {
+      if (!currentGalleryConfig || currentGallerySlips.length === 0) return;
+      const slipToDelete = currentGallerySlips[currentGalleryIndex];
+      const { memberId, paymentType } = currentGalleryConfig;
+      let dbPath = `bills/${currentMonth}/payments/${memberId}`;
+      try {
+        const snap = await db.ref(dbPath).once('value');
+        const data = snap.val();
+        if (data) {
+          const newPaidAmount = Math.max(0, Number(data.paidAmount) - Number(slipToDelete.amount));
+          await db.ref(dbPath).update({ paidAmount: newPaidAmount });
+          await db.ref(`${dbPath}/slips/${slipToDelete.id}`).remove();
+        }
+        customAlert("ลบสลิปเรียบร้อย");
+        closeSlipModal();
+      } catch (err) {
+        customAlert("เกิดข้อผิดพลาดในการลบ: " + err.message, "❌");
       }
     }
 
