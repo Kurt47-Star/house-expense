@@ -18,7 +18,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen pb-16">
+<body class="bg-slate-950 text-slate-100 min-h-screen pb-16 selection:bg-emerald-500 selection:text-white">
 
   <!-- ================= OVERLAYS & MODALS ================= -->
   <input type="file" id="slipInput" accept="image/*" class="hidden" onchange="handleSlipSelected(event)">
@@ -150,27 +150,27 @@
   </div>
 
   <!-- ================= NAVIGATION ================= -->
-  <nav class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-40">
+  <nav class="bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 sticky top-0 z-40">
     <div class="max-w-4xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
       <div class="flex items-center gap-2">
-        <span class="text-2xl">🏡</span><span class="font-bold text-lg text-emerald-400">บ้านพักเรา</span>
+        <span class="text-2xl">🏡</span><span class="font-bold text-lg text-emerald-400 tracking-wide">บ้านพักเรา</span>
       </div>
-      <div class="flex items-center bg-slate-800/80 p-1 rounded-xl border border-slate-700/60 text-sm overflow-x-auto w-full sm:w-auto">
-        <button id="tabBtn-overview" onclick="switchTab('overview')" class="px-3 py-1.5 rounded-lg font-medium transition bg-emerald-600 text-white whitespace-nowrap">📊 ภาพรวมบิล</button>
-        <button id="tabBtn-tx" onclick="switchTab('tx')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white whitespace-nowrap">📑 รายการ & Excel</button>
-        <button id="tabBtn-board" onclick="switchTab('board')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white whitespace-nowrap">📌 บอร์ดบ้าน</button>
-        <button id="tabBtn-analytics" onclick="switchTab('analytics')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white whitespace-nowrap">📈 สถิติ</button>
-        <button id="tabBtn-admin" onclick="switchTab('admin')" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white whitespace-nowrap">📝 ตั้งค่า</button>
+      <div class="flex items-center bg-slate-900/90 p-1 rounded-2xl border border-slate-800 text-xs sm:text-sm overflow-x-auto w-full sm:w-auto">
+        <button id="tabBtn-overview" onclick="switchTab('overview')" class="px-3.5 py-1.5 rounded-xl font-medium transition bg-emerald-600 text-white whitespace-nowrap shadow-sm">📊 ภาพรวมบิล</button>
+        <button id="tabBtn-tx" onclick="switchTab('tx')" class="px-3.5 py-1.5 rounded-xl font-medium transition text-slate-400 hover:text-white whitespace-nowrap">📑 รายการ & Excel</button>
+        <button id="tabBtn-board" onclick="switchTab('board')" class="px-3.5 py-1.5 rounded-xl font-medium transition text-slate-400 hover:text-white whitespace-nowrap">📌 บอร์ดบ้าน</button>
+        <button id="tabBtn-analytics" onclick="switchTab('analytics')" class="px-3.5 py-1.5 rounded-xl font-medium transition text-slate-400 hover:text-white whitespace-nowrap">📈 สถิติ</button>
+        <button id="tabBtn-admin" onclick="switchTab('admin')" class="px-3.5 py-1.5 rounded-xl font-medium transition text-slate-400 hover:text-white whitespace-nowrap">📝 ตั้งค่า</button>
       </div>
       
-      <!-- ตัวเปลี่ยนเดือน: ลูกศร + กดเลือกเดือนได้ -->
-      <div class="flex items-center bg-slate-800/80 rounded-xl border border-slate-700/60 text-sm overflow-hidden shadow-inner w-full sm:w-auto justify-between">
-        <button onclick="changeMonthOffset(-1)" class="px-3.5 py-2 text-slate-400 hover:text-white hover:bg-slate-700 transition font-bold">◀</button>
-        <div class="relative cursor-pointer hover:bg-slate-700/50 transition flex-1 flex justify-center items-center">
-            <span id="currentMonthText" class="font-bold text-emerald-400 px-3 py-2 text-center inline-block min-w-[125px]"></span>
-            <input type="month" id="monthPicker" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+      <!-- ตัวเปลี่ยนเดือน -->
+      <div class="flex items-center bg-slate-900 border border-slate-800 rounded-2xl shadow-inner w-full sm:w-auto justify-between overflow-hidden">
+        <button onclick="changeMonthOffset(-1)" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition font-bold active:scale-95">◀</button>
+        <div class="relative cursor-pointer hover:bg-slate-800/50 rounded-xl transition px-3 py-1 flex items-center justify-center min-w-[130px]">
+          <span id="currentMonthText" class="font-bold text-emerald-400 text-xs sm:text-sm tracking-wide"></span>
+          <input type="month" id="monthPicker" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
         </div>
-        <button onclick="changeMonthOffset(1)" class="px-3.5 py-2 text-slate-400 hover:text-white hover:bg-slate-700 transition font-bold">▶</button>
+        <button onclick="changeMonthOffset(1)" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition font-bold active:scale-95">▶</button>
       </div>
     </div>
   </nav>
@@ -180,50 +180,59 @@
     <!-- ================= TAB 1: OVERVIEW ================= -->
     <div id="tab-overview" class="space-y-6">
       
-      <!-- ส่วนแสดงกราฟโดนัท -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+      <!-- การ์ดแสดงกราฟสัดส่วนค่าใช้จ่าย (RE-DESIGNED) -->
+      <div class="bg-slate-900/90 border border-slate-800/90 rounded-3xl p-5 sm:p-6 shadow-2xl backdrop-blur-sm">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="font-semibold text-slate-200">สัดส่วนค่าใช้จ่าย (<span id="donutMonthText">เดือนนี้</span>)</h2>
-          <select id="donutViewMode" class="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-300 outline-none" onchange="renderDonutChartMode()">
+          <div>
+            <h2 class="font-bold text-base text-slate-100 flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> สัดส่วนค่าใช้จ่าย
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5" id="donutMonthText">เดือนนี้</p>
+          </div>
+          <select id="donutViewMode" class="bg-slate-800/90 border border-slate-700/80 rounded-xl px-3 py-1.5 text-xs text-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer" onchange="renderDonutChartMode()">
             <option value="month">รายเดือน</option>
             <option value="quarter">รายไตรมาส (Quarter)</option>
             <option value="year">รายปี</option>
           </select>
         </div>
         
-        <!-- กราฟโดนัทเดี่ยวๆ ไม่ซ้อนทับตัวเลข -->
-        <div class="relative w-full h-64 flex justify-center items-center">
-            <canvas id="overviewDonutChart"></canvas>
+        <!-- ตัวกราฟโดนัทเดี่ยวๆ โล่งๆ ไม่มีตัวเลขมาบังเส้นรอบวง -->
+        <div class="relative w-full h-56 flex justify-center items-center my-1">
+          <canvas id="overviewDonutChart"></canvas>
         </div>
 
         <!-- ยอดรวมแสดงด้านล่างกราฟชัดเจน -->
-        <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center px-2">
-          <span class="text-xs text-slate-400">รวมค่าใช้จ่ายทั้งหมด:</span>
-          <span class="text-xl font-bold text-emerald-400" id="donutTotalText">0 ฿</span>
+        <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3.5 mb-3 flex justify-between items-center shadow-inner">
+          <span class="text-xs font-medium text-slate-400">รวมค่าใช้จ่ายทั้งหมด</span>
+          <span class="text-xl font-black text-emerald-400 tracking-tight" id="donutTotalText">0 ฿</span>
         </div>
+
+        <!-- รายการสัดส่วนค่าใช้จ่ายแบบ HTML คมชัด อ่านง่าย มีเปอร์เซ็นต์ชัดเจน -->
+        <div id="donutBreakdownList" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs"></div>
       </div>
 
+      <!-- การ์ด Quick Stats (2 คอลัมน์) -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- บิลบ้าน -->
-        <div class="bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-3xl p-5 shadow-xl flex flex-col justify-between">
-          <div class="text-emerald-400 font-medium text-sm mb-1">🏠 ค่าเช่าบ้าน/น้ำ/ไฟ (<span id="overviewMonthText">เดือนนี้</span>)</div>
-          <div class="text-3xl font-extrabold text-white" id="dashPerPerson">0 <span class="text-sm text-emerald-400 font-normal">บ./คน</span></div>
+        <div class="bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/20 rounded-3xl p-5 shadow-xl flex flex-col justify-between">
+          <div class="text-xs font-semibold uppercase tracking-wider text-emerald-400">🏠 ค่าเช่าบ้าน/น้ำ/ไฟ (<span id="overviewMonthText">เดือนนี้</span>)</div>
+          <div class="text-3xl font-black text-white mt-3" id="dashPerPerson">0 <span class="text-sm text-emerald-400 font-normal">บ./คน</span></div>
         </div>
 
         <!-- กองกลาง Super Card -->
-        <div class="bg-indigo-950/30 border border-indigo-500/30 rounded-3xl p-5 shadow-xl flex flex-col justify-between relative overflow-hidden">
+        <div class="bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-900 border border-indigo-500/20 rounded-3xl p-5 shadow-xl flex flex-col justify-between relative overflow-hidden">
           <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl"></div>
           <div class="flex justify-between items-start relative z-10 gap-2">
             <div>
-              <div class="text-indigo-400 font-medium text-sm mb-1">💎 กองกลางคงเหลือสุทธิ</div>
-              <div class="text-3xl font-extrabold text-indigo-300" id="dashFundBalance">0 <span class="text-sm font-normal">บาท</span></div>
+              <div class="text-xs font-semibold uppercase tracking-wider text-indigo-400">💎 กองกลางคงเหลือสุทธิ</div>
+              <div class="text-3xl font-black text-indigo-300 mt-2" id="dashFundBalance">0 <span class="text-sm font-normal">บาท</span></div>
               <div class="text-[10px] text-indigo-200/60 mt-1">เป้าหมายเก็บ <span id="fundPerPersonRate">0</span> บ./คน</div>
             </div>
             <div class="flex flex-col gap-2">
-              <button onclick="openFundDepositModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-xl shadow-lg transition flex items-center justify-center gap-1 border border-indigo-500">
+              <button onclick="openFundDepositModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-xl shadow-lg transition flex items-center justify-center gap-1 border border-indigo-500 active:scale-95">
                 <span class="font-medium">+ ฝากกองกลาง</span>
               </button>
-              <button onclick="openFundWithdrawModal()" class="bg-rose-700/80 hover:bg-rose-600 text-rose-100 text-xs px-3 py-1.5 rounded-xl shadow-lg transition flex items-center justify-center gap-1 border border-rose-500/60">
+              <button onclick="openFundWithdrawModal()" class="bg-rose-700/80 hover:bg-rose-600 text-rose-100 text-xs px-3 py-1.5 rounded-xl shadow-lg transition flex items-center justify-center gap-1 border border-rose-500/60 active:scale-95">
                 <span class="font-medium">- เบิกเงิน</span>
               </button>
             </div>
@@ -246,28 +255,28 @@
       <div class="space-y-3 pt-2">
         <div class="flex justify-between items-center px-1">
           <div>
-            <h2 class="font-semibold text-base text-amber-400 flex items-center gap-2">
+            <h2 class="font-bold text-base text-amber-400 flex items-center gap-2">
               <span>💸</span> บิลก้อนใหญ่ที่ต้องจ่ายร่วมกัน (Shared Bills)
             </h2>
-            <p class="text-[10px] text-slate-400 mt-1">รายการค่าใช้จ่ายพิเศษ เช่น ค่าประกันบ้าน หรือของชิ้นใหญ่ที่หารกัน</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">รายการค่าใช้จ่ายพิเศษ เช่น ค่าประกันบ้าน หรือของชิ้นใหญ่ที่หารกัน</p>
           </div>
         </div>
-        <div id="sharedBillsContainer" class="space-y-4"></div>
+        <div id="sharedBillsContainer" class="space-y-3"></div>
       </div>
 
       <!-- สถานะการจ่ายรายบุคคล -->
       <div class="space-y-3 pt-2">
         <div class="flex justify-between items-center px-1">
-          <h2 class="font-semibold text-base text-slate-200">ตรวจสอบสถานะการจ่ายเงินค่าบ้านประจำเดือน (<span id="statusMonthText">เดือนนี้</span>)</h2>
+          <h2 class="font-bold text-base text-slate-200">ตรวจสอบสถานะการจ่ายเงินค่าบ้านประจำเดือน (<span id="statusMonthText">เดือนนี้</span>)</h2>
         </div>
         <div id="overviewMembersCards" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
       </div>
 
       <!-- ประวัติการเบิก/ฝากกองกลาง -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-        <h2 class="font-semibold text-sm text-slate-200 mb-3 flex items-center justify-between">
+      <div class="bg-slate-900/90 border border-slate-800/90 rounded-3xl p-5 shadow-xl">
+        <h2 class="font-bold text-sm text-slate-200 mb-3 flex items-center justify-between">
           <span class="flex items-center gap-2"><span class="text-indigo-400">📋</span> ความเคลื่อนไหวกองกลาง (<span id="logMonthText">เดือนนี้</span>)</span>
-          <span class="text-[11px] text-slate-500">เข้า / ออก</span>
+          <span class="text-[10px] text-slate-500">ฝากเข้า / เบิกออก</span>
         </h2>
         <div id="fundDepositLog" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
       </div>
@@ -275,17 +284,17 @@
 
     <!-- ================= TAB 2: TRANSACTIONS & EXPORT EXCEL ================= -->
     <div id="tab-tx" class="hidden space-y-6">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 border border-slate-800 p-5 rounded-3xl shadow-xl">
         <div>
           <h2 class="text-lg font-bold text-emerald-400">📑 ข้อมูล Transaction & การวิเคราะห์</h2>
-          <p class="text-xs text-slate-400">ดูสรุปรายรับ-รายจ่ายทั้งหมด และส่งออกเป็นไฟล์ Excel เพื่อนำไปวิเคราะห์ต่อ</p>
+          <p class="text-xs text-slate-400 mt-0.5">ดูสรุปรายรับ-รายจ่ายทั้งหมด และส่งออกเป็นไฟล์ Excel เพื่อนำไปวิเคราะห์ต่อ</p>
         </div>
-        <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition flex items-center gap-2 shadow-lg shadow-emerald-600/20">
+        <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition flex items-center gap-2 shadow-lg shadow-emerald-600/20 active:scale-95">
           <span>📥</span> ส่งออก Excel (.xlsx)
         </button>
       </div>
 
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl">
         <h3 class="font-bold text-sm text-slate-200 mb-3">1. สรุปรายจ่ายประจำเดือน (<span id="txMonthName"></span>)</h3>
         <div class="overflow-x-auto">
           <table class="w-full text-xs text-left text-slate-300">
@@ -301,7 +310,7 @@
         </div>
       </div>
 
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl">
         <h3 class="font-bold text-sm text-slate-200 mb-3">2. ประวัติการฝากและเบิกกองกลาง (<span id="txFundMonthName"></span>)</h3>
         <div class="overflow-x-auto">
           <table class="w-full text-xs text-left text-slate-300">
@@ -321,19 +330,19 @@
 
     <!-- ================= TAB 3: BOARD ================= -->
     <div id="tab-board" class="hidden space-y-6">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col h-[500px]">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col h-[500px]">
         <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-4">
           <h2 class="text-lg font-bold text-purple-400">📌 บอร์ดประกาศ & กฎประจำบ้าน</h2>
           <span class="text-xs text-slate-500" id="boardSaveStatus">บันทึกอัตโนมัติ</span>
         </div>
-        <textarea id="houseBoardText" class="w-full flex-1 bg-slate-800/80 border border-slate-700 rounded-xl p-4 text-sm text-slate-200 resize-none outline-none focus:ring-1 focus:ring-purple-500 shadow-inner" placeholder="พิมพ์ข้อความที่นี่... (ข้อมูลจะเซฟให้ทุกคนเห็นทันที)"></textarea>
+        <textarea id="houseBoardText" class="w-full flex-1 bg-slate-800/80 border border-slate-700 rounded-2xl p-4 text-sm text-slate-200 resize-none outline-none focus:ring-1 focus:ring-purple-500 shadow-inner" placeholder="พิมพ์ข้อความที่นี่... (ข้อมูลจะเซฟให้ทุกคนเห็นทันที)"></textarea>
       </div>
     </div>
 
     <!-- ================= TAB 4: ANALYTICS ================= -->
     <div id="tab-analytics" class="hidden space-y-6">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
-        <h2 class="font-semibold text-slate-200 mb-4">📈 เทรนด์ค่าใช้จ่ายรายเดือน</h2>
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl">
+        <h2 class="font-bold text-slate-200 mb-4">📈 เทรนด์ค่าใช้จ่ายรายเดือน</h2>
         <div class="w-full h-72"><canvas id="expenseChart"></canvas></div>
       </div>
     </div>
@@ -341,26 +350,26 @@
     <!-- ================= TAB 5: ADMIN & SETTINGS ================= -->
     <div id="tab-admin" class="hidden space-y-6">
       
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
         <h2 class="text-lg font-bold text-emerald-400 border-b border-slate-800 pb-2">📝 1. ลงบิลค่าบ้านประจำเดือน</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div><label class="block text-xs mb-1">ค่าเช่าบ้านรวม</label><input type="number" id="inpRent" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm"></div>
-          <div><label class="block text-xs mb-1">ค่าน้ำประปา</label><input type="number" id="inpWater" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm"></div>
-          <div><label class="block text-xs mb-1 text-amber-400">ค่าไฟฟ้า (บาท)</label><input type="number" id="inpElectricDirect" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm"></div>
-          <div><label class="block text-xs mb-1">ค่าเน็ต/อื่นๆ</label><input type="number" id="inpOther" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm"></div>
+          <div><label class="block text-xs mb-1">ค่าเช่าบ้านรวม</label><input type="number" id="inpRent" class="w-full bg-slate-800 rounded-xl p-2.5 text-sm"></div>
+          <div><label class="block text-xs mb-1">ค่าน้ำประปา</label><input type="number" id="inpWater" class="w-full bg-slate-800 rounded-xl p-2.5 text-sm"></div>
+          <div><label class="block text-xs mb-1 text-amber-400">ค่าไฟฟ้า (บาท)</label><input type="number" id="inpElectricDirect" class="w-full bg-slate-800 rounded-xl p-2.5 text-sm"></div>
+          <div><label class="block text-xs mb-1">ค่าเน็ต/อื่นๆ</label><input type="number" id="inpOther" class="w-full bg-slate-800 rounded-xl p-2.5 text-sm"></div>
         </div>
-        <button onclick="saveBillsFromAdmin()" class="w-full bg-emerald-600 py-2.5 rounded-xl transition font-medium">บันทึกยอดบิลค่าบ้าน</button>
+        <button onclick="saveBillsFromAdmin()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl transition font-medium">บันทึกยอดบิลค่าบ้าน</button>
       </div>
 
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
         <h2 class="text-lg font-bold text-amber-400 border-b border-slate-800 pb-2">💸 2. สร้างบิลก้อนใหญ่สำหรับหาร (Shared Bills)</h2>
         <p class="text-[11px] text-slate-400">ใช้สำหรับค่าใช้จ่ายพิเศษ เช่น ค่าประกันบ้าน, ซื้อเครื่องซักผ้า</p>
         <div class="space-y-3">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <input type="text" id="sharedBillTitle" placeholder="ชื่อบิล (เช่น ค่าประกันบ้าน)" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm">
-            <input type="number" id="sharedBillAmount" placeholder="ยอดเงินรวมทั้งหมด (บาท)" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm">
+            <input type="text" id="sharedBillTitle" placeholder="ชื่อบิล (เช่น ค่าประกันบ้าน)" class="w-full bg-slate-800 rounded-xl p-2.5 text-sm">
+            <input type="number" id="sharedBillAmount" placeholder="ยอดเงินรวมทั้งหมด (บาท)" class="w-full bg-slate-800 rounded-xl p-2.5 text-sm">
           </div>
-          <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
+          <div class="p-3 bg-slate-800 rounded-xl border border-slate-700">
             <label class="block text-xs text-slate-300 mb-2">ใครต้องหารบิลนี้บ้าง? (ติ๊กคนที่จะต้องจ่าย)</label>
             <div id="sharedBillMembersCheckboxes" class="flex flex-wrap gap-3"></div>
           </div>
@@ -368,38 +377,27 @@
         <button onclick="createSharedBill()" class="bg-amber-600 hover:bg-amber-500 w-full py-2.5 rounded-xl text-sm transition font-medium">สร้างบิลหารร่วม</button>
       </div>
 
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-        <h2 class="text-lg font-bold text-indigo-400 border-b border-slate-800 pb-2">🛒 3. เบิกซื้อของ (หักจากกองกลาง)</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <input type="text" id="fundItemName" placeholder="ชื่อของที่ซื้อ (เช่น ทิชชู่)" class="w-full bg-slate-800 rounded-lg p-2 text-xs">
-          <input type="number" id="fundItemCost" placeholder="ราคา (บาท)" class="w-full bg-slate-800 rounded-lg p-2 text-xs">
-          <select id="fundBuyerSelect" class="w-full bg-slate-800 rounded-lg p-2 text-xs text-slate-300"></select>
-        </div>
-        <button onclick="addFundExpense()" class="bg-indigo-600 hover:bg-indigo-500 w-full py-2 rounded-xl text-sm transition">หักเงินกองกลาง</button>
-        <div id="fundExpenseAdminList" class="mt-3 pt-3 border-t border-slate-800 text-[11px] space-y-1 max-h-32 overflow-y-auto"></div>
-      </div>
-
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
           <h2 class="text-lg font-bold text-slate-200 border-b border-slate-800 pb-2">⚙️ ตั้งค่าเงินและกองกลาง</h2>
           <div class="space-y-3">
-            <div><label class="block text-[11px] text-slate-400 mb-1">เงินกองกลางยกมาตอนแรก (บาท)</label><input type="number" id="setInitialFund" class="w-full bg-slate-800 rounded-lg p-2 text-xs" placeholder="เช่น 0 หรือ 500"></div>
-            <div><label class="block text-[11px] text-slate-400 mb-1">เป้าหมายเก็บกองกลาง/คน/เดือน (บาท)</label><input type="number" id="setFundRate" class="w-full bg-slate-800 rounded-lg p-2 text-xs"></div>
+            <div><label class="block text-[11px] text-slate-400 mb-1">เงินกองกลางยกมาตอนแรก (บาท)</label><input type="number" id="setInitialFund" class="w-full bg-slate-800 rounded-xl p-2 text-xs" placeholder="เช่น 0 หรือ 500"></div>
+            <div><label class="block text-[11px] text-slate-400 mb-1">เป้าหมายเก็บกองกลาง/คน/เดือน (บาท)</label><input type="number" id="setFundRate" class="w-full bg-slate-800 rounded-xl p-2 text-xs"></div>
             <h3 class="text-xs font-bold text-indigo-400 mt-4 mb-2 border-t border-slate-800 pt-3">ข้อมูลบัญชีรับเงินกองกลาง</h3>
-            <div><input type="text" id="setFundBank" class="w-full bg-slate-800 rounded-lg p-2 text-xs mb-2" placeholder="ธนาคาร (เช่น กสิกรไทย)"></div>
-            <div><input type="text" id="setFundAccName" class="w-full bg-slate-800 rounded-lg p-2 text-xs mb-2" placeholder="ชื่อบัญชี (เช่น นาย สมชาย)"></div>
-            <div><input type="text" id="setFundAccNo" class="w-full bg-slate-800 rounded-lg p-2 text-xs mb-2" placeholder="เลขบัญชี"></div>
-            <div><input type="text" id="setFundQR" class="w-full bg-slate-800 rounded-lg p-2 text-xs" placeholder="ลิงก์รูป QR Code (ต้องเป็นลิงก์รูปตรง เช่น i.ibb.co/...)"></div>
-            <button onclick="saveSettings()" class="w-full bg-emerald-600 hover:bg-emerald-500 px-3 py-3 rounded-lg text-sm font-bold text-white mt-2 shadow-lg">💾 บันทึกการตั้งค่า</button>
+            <div><input type="text" id="setFundBank" class="w-full bg-slate-800 rounded-xl p-2 text-xs mb-2" placeholder="ธนาคาร (เช่น กสิกรไทย)"></div>
+            <div><input type="text" id="setFundAccName" class="w-full bg-slate-800 rounded-xl p-2 text-xs mb-2" placeholder="ชื่อบัญชี (เช่น นาย สมชาย)"></div>
+            <div><input type="text" id="setFundAccNo" class="w-full bg-slate-800 rounded-xl p-2 text-xs mb-2" placeholder="เลขบัญชี"></div>
+            <div><input type="text" id="setFundQR" class="w-full bg-slate-800 rounded-xl p-2 text-xs" placeholder="ลิงก์รูป QR Code (ต้องเป็นลิงก์รูปตรง เช่น i.ibb.co/...)"></div>
+            <button onclick="saveSettings()" class="w-full bg-emerald-600 hover:bg-emerald-500 px-3 py-3 rounded-xl text-sm font-bold text-white mt-2 shadow-lg">💾 บันทึกการตั้งค่า</button>
           </div>
         </div>
 
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
           <h2 class="text-lg font-bold text-slate-200 border-b border-slate-800 pb-2">👥 จัดการสมาชิก</h2>
           <div id="settingsMemberList" class="space-y-2 mb-3 max-h-60 overflow-y-auto pr-1"></div>
           <div class="flex gap-2 pt-2 border-t border-slate-800">
-            <input type="text" id="newMemberName" placeholder="ชื่อเรียก" class="w-full bg-slate-800 rounded-lg px-2 text-xs">
-            <button onclick="addNewMember()" class="bg-emerald-600 px-3 py-1 rounded-lg text-xs">+ เพิ่ม</button>
+            <input type="text" id="newMemberName" placeholder="ชื่อเรียก" class="w-full bg-slate-800 rounded-xl px-2 text-xs">
+            <button onclick="addNewMember()" class="bg-emerald-600 px-3 py-1 rounded-xl text-xs">+ เพิ่ม</button>
           </div>
         </div>
       </div>
@@ -530,8 +528,8 @@
       ['overview', 'tx', 'board', 'analytics', 'admin'].forEach(tab => {
         document.getElementById(`tab-${tab}`).classList.toggle('hidden', tab !== tabId);
         document.getElementById(`tabBtn-${tab}`).className = tab === tabId 
-          ? "px-3 py-1.5 rounded-lg font-medium transition bg-emerald-600 text-white" 
-          : "px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white";
+          ? "px-3.5 py-1.5 rounded-xl font-medium transition bg-emerald-600 text-white shadow-sm" 
+          : "px-3.5 py-1.5 rounded-xl font-medium transition text-slate-400 hover:text-white";
       });
       if (tabId === 'analytics') renderChart();
     }
@@ -650,7 +648,7 @@
         }
       });
       
-      document.getElementById('dashFundBalance').innerHTML = `${(totalFundPaidIn - totalFundOut).toLocaleString()} <span class="text-sm">บาท</span>`;
+      document.getElementById('dashFundBalance').innerHTML = `${(totalFundPaidIn - totalFundOut).toLocaleString()} <span class="text-sm font-normal">บาท</span>`;
 
       const depLog = document.getElementById('fundDepositLog'); depLog.innerHTML = '';
       let hasFundActivity = false;
@@ -659,7 +657,7 @@
         Object.entries(curData.fundExpenses).forEach(([expId, e]) => {
           hasFundActivity = true;
           depLog.innerHTML += `
-            <div class="flex justify-between items-center bg-rose-950/20 p-2.5 rounded-lg border border-rose-900/30">
+            <div class="flex justify-between items-center bg-rose-950/20 p-2.5 rounded-xl border border-rose-900/30">
               <div>
                 <div class="text-xs text-rose-300 font-medium">📤 เบิกโดย: ${e.buyer}</div>
                 <div class="text-[10px] text-slate-400">${e.name} ${e.date ? '• '+e.date : ''}</div>
@@ -677,7 +675,7 @@
           hasFundActivity = true;
           const mName = members[dep.memberId]?.name || '?';
           depLog.innerHTML += `
-            <div class="flex justify-between items-center bg-indigo-950/20 p-2.5 rounded-lg border border-indigo-900/30">
+            <div class="flex justify-between items-center bg-indigo-950/20 p-2.5 rounded-xl border border-indigo-900/30">
               <div>
                 <div class="text-xs text-indigo-300 font-medium">📥 ฝากโดย: ${mName}</div>
                 <div class="text-[10px] text-slate-400">${dep.note || 'สมทบกองกลาง'} • ${dep.date}</div>
@@ -696,7 +694,7 @@
       renderDonutChartMode();
     }
 
-    // --- RENDER DONUT CHART ---
+    // --- RENDER DONUT CHART (NEW LAYOUT & MODERN COLORS) ---
     function renderDonutChartMode() {
       const mode = document.getElementById('donutViewMode').value;
       const monthsTh = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
@@ -772,18 +770,51 @@
       // อัปเดตตัวเลขรวมด้านล่าง
       document.getElementById('donutTotalText').innerText = total > 0 ? `${total.toLocaleString()} ฿` : '0 ฿';
 
+      // กำหนดสีและข้อมูลแต่ละหมวดหมู่
+      const categories = [
+        { name: 'ค่าเช่าบ้าน', amount: rent, color: '#6366f1' },
+        { name: 'ค่าไฟฟ้า', amount: electric, color: '#f59e0b' },
+        { name: 'ค่าน้ำประปา', amount: water, color: '#06b6d4' },
+        { name: 'ค่าเน็ต/อื่นๆ', amount: other, color: '#10b981' },
+        { name: 'บิลก้อนใหญ่ (Shared)', amount: totalSharedBill, color: '#f43f5e' },
+        { name: 'กองกลาง (เบิกใช้)', amount: totalFundExp, color: '#a855f7' }
+      ];
+
+      // อัปเดต HTML Breakdown List คมชัด อ่านง่าย มีเปอร์เซ็นต์
+      const breakdownContainer = document.getElementById('donutBreakdownList');
+      if (breakdownContainer) {
+        breakdownContainer.innerHTML = '';
+        categories.forEach(cat => {
+          const pct = total > 0 ? ((cat.amount / total) * 100).toFixed(1) : '0.0';
+          const isZero = cat.amount === 0;
+          breakdownContainer.innerHTML += `
+            <div class="flex items-center justify-between p-2.5 rounded-xl ${isZero ? 'bg-slate-950/20 opacity-40' : 'bg-slate-950/60'} border border-slate-800/60 transition">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${cat.color}"></span>
+                <span class="text-slate-300 font-medium truncate">${cat.name}</span>
+              </div>
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <span class="text-slate-100 font-bold">${cat.amount.toLocaleString()} ฿</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded-md font-bold text-slate-300 bg-slate-800 border border-slate-700/60">${pct}%</span>
+              </div>
+            </div>
+          `;
+        });
+      }
+
       if (total === 0) {
         donutChartInstance = new Chart(ctx, {
             type: 'doughnut',
-            data: { labels: ['ไม่มีข้อมูล'], datasets: [{ data: [1], backgroundColor: ['#334155'], borderWidth: 0 }] },
-            options: { cutout: '65%', plugins: { tooltip: { enabled: false }, legend: { display: false } } }
+            data: { labels: ['ไม่มีข้อมูล'], datasets: [{ data: [1], backgroundColor: ['#1e293b'], borderWidth: 0 }] },
+            options: { cutout: '72%', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } } }
         });
         return;
       }
 
-      const labels = ['ค่าเช่าบ้าน', 'ค่าน้ำประปา', 'ค่าไฟฟ้า', 'ค่าเน็ต/อื่นๆ', 'กองกลาง (เบิกใช้)', 'บิลก้อนใหญ่ (Shared)'];
-      const data = [rent, water, electric, other, totalFundExp, totalSharedBill];
-      const backgroundColors = ['#f43f5e', '#0ea5e9', '#f59e0b', '#14b8a6', '#a855f7', '#f97316'];
+      const activeCategories = categories.filter(c => c.amount > 0);
+      const labels = (activeCategories.length > 0 ? activeCategories : categories).map(c => c.name);
+      const data = (activeCategories.length > 0 ? activeCategories : categories).map(c => c.amount);
+      const bgColors = (activeCategories.length > 0 ? activeCategories : categories).map(c => c.color);
 
       donutChartInstance = new Chart(ctx, {
         type: 'doughnut',
@@ -791,46 +822,32 @@
           labels: labels,
           datasets: [{
             data: data,
-            backgroundColor: backgroundColors,
+            backgroundColor: bgColors,
             borderWidth: 2,
-            borderColor: '#0f172a',
-            hoverOffset: 6,
-            borderRadius: 15
+            borderColor: '#090d16',
+            borderRadius: 6,
+            spacing: 3,
+            hoverOffset: 6
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          cutout: '65%',
+          cutout: '72%',
+          layout: { padding: 8 },
           plugins: {
-            legend: {
-              position: 'bottom',
-              labels: {
-                color: '#e2e8f0',
-                padding: 10,
-                usePointStyle: true,
-                pointStyle: 'circle',
-                font: { size: 11, family: 'Kanit' },
-                // คำนวณเปอร์เซ็นต์กำกับไว้ที่ Legend ด้านล่าง
-                generateLabels: function(chart) {
-                  const dataset = chart.data.datasets[0];
-                  return chart.data.labels.map((label, i) => {
-                    const val = dataset.data[i] || 0;
-                    const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
-                    return {
-                      text: `${label} (${pct}%)`,
-                      fillStyle: dataset.backgroundColor[i],
-                      strokeStyle: dataset.backgroundColor[i],
-                      hidden: false,
-                      index: i
-                    };
-                  });
-                }
-              }
-            },
+            legend: { display: false }, // ซ่อน Canvas Legend ไปใช้ HTML ด้านล่างแทน คมชัดกว่า 100%
             tooltip: {
+              backgroundColor: '#0f172a',
+              titleColor: '#f8fafc',
+              bodyColor: '#e2e8f0',
+              borderColor: '#334155',
+              borderWidth: 1,
+              padding: 10,
+              boxPadding: 4,
+              usePointStyle: true,
               titleFont: { family: 'Kanit' },
-              bodyFont: { family: 'Kanit', size: 13 },
+              bodyFont: { family: 'Kanit', size: 12 },
               callbacks: {
                 label: function(context) {
                   const val = context.parsed || 0;
@@ -869,22 +886,22 @@
         window.cachedSlips.fund[mId] = fSlips;
 
         container.innerHTML += `
-          <div class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl flex flex-col">
-            <h3 class="text-base font-bold text-slate-200 border-b border-slate-700 pb-2 mb-3 flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> ${m.name}</h3>
+          <div class="bg-slate-900/90 border border-slate-800/90 p-4 rounded-3xl flex flex-col shadow-lg">
+            <h3 class="text-base font-bold text-slate-200 border-b border-slate-800 pb-2 mb-3 flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> ${m.name}</h3>
             
-            <div class="flex justify-between items-start bg-slate-900/50 p-2.5 rounded-lg border border-slate-800">
+            <div class="flex justify-between items-start bg-slate-950/50 p-2.5 rounded-2xl border border-slate-800/80">
               <div><div class="text-[11px] text-emerald-400/80">🏠 ค่าบ้าน/น้ำ/ไฟ (รวม ${houseBillAmt} ฿)</div><div class="text-[10px] text-slate-400 mt-0.5">${houseDetailStr}</div><div class="text-sm font-medium mt-1">${hStatus}</div></div>
               <div class="flex flex-col gap-1 items-end pt-1">
                 ${hSlips.length ? `<button onclick="openGalleryFromCache('house', '${mId}', '${m.name} (ค่าบ้าน)')" class="text-[10px] text-blue-400 underline">ดูสลิป</button>` : ''}
-                <button onclick="triggerUploadSlip('${mId}', 'house', ${houseBillAmt - hPaid})" class="text-[10px] bg-slate-700 hover:bg-slate-600 px-2 py-1.5 rounded text-white">+ แนบสลิป</button>
+                <button onclick="triggerUploadSlip('${mId}', 'house', ${houseBillAmt - hPaid})" class="text-[10px] bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded-xl text-white transition">+ แนบสลิป</button>
               </div>
             </div>
 
-            <div class="flex justify-between items-start bg-indigo-950/20 p-2.5 rounded-lg border border-indigo-900/30 mt-2">
+            <div class="flex justify-between items-start bg-indigo-950/20 p-2.5 rounded-2xl border border-indigo-900/30 mt-2">
               <div><div class="text-[11px] text-indigo-400/80">💎 เงินกองกลาง (เป้าหมาย ${fundAmt} ฿)</div><div class="text-sm font-medium mt-1">${fStatus}</div></div>
               <div class="flex flex-col gap-1 items-end pt-1">
                 ${fSlips.length ? `<button onclick="openGalleryFromCache('fund', '${mId}', '${m.name} (กองกลาง)')" class="text-[10px] text-blue-400 underline">ดูสลิป</button>` : ''}
-                <button onclick="openFundDepositModal('${mId}')" class="text-[10px] bg-indigo-900/80 border border-indigo-700 hover:bg-indigo-700 px-2 py-1.5 rounded text-indigo-200">+ ฝากกองกลาง</button>
+                <button onclick="openFundDepositModal('${mId}')" class="text-[10px] bg-indigo-900/80 border border-indigo-700 hover:bg-indigo-700 px-2 py-1.5 rounded-xl text-indigo-200 transition">+ ฝากกองกลาง</button>
               </div>
             </div>
           </div>
@@ -926,13 +943,13 @@
               </div>
               <div class="flex items-center gap-2">
                 ${slips.length ? `<button onclick="openGalleryFromCache('sharedBill', '${billId}_${mId}', '${m.name} (${bill.title})', '${billId}', '${mId}')" class="text-[10px] text-blue-400 underline">ดูสลิป</button>` : ''}
-                <button onclick="triggerUploadSlip('${mId}', 'sharedBill', ${perPersonAmt - pAmt}, '${billId}')" class="text-[10px] bg-amber-900/60 hover:bg-amber-800/80 px-2 py-1 rounded border border-amber-700/50 text-amber-300">+ แนบสลิป</button>
+                <button onclick="triggerUploadSlip('${mId}', 'sharedBill', ${perPersonAmt - pAmt}, '${billId}')" class="text-[10px] bg-amber-900/60 hover:bg-amber-800/80 px-2 py-1 rounded-xl border border-amber-700/50 text-amber-300 transition">+ แนบสลิป</button>
               </div>
             </div>`;
         });
 
         container.innerHTML += `
-          <div class="bg-amber-950/20 border border-amber-900/40 rounded-2xl overflow-hidden shadow-lg">
+          <div class="bg-amber-950/20 border border-amber-900/40 rounded-3xl overflow-hidden shadow-lg">
             <div class="bg-amber-900/40 px-4 py-3 flex justify-between items-center">
               <div>
                 <h3 class="text-sm font-bold text-amber-400">${bill.title}</h3>
@@ -1330,7 +1347,7 @@
     function renderMembersSettings() {
       const div = document.getElementById('settingsMemberList'); div.innerHTML = '';
       Object.entries(members).forEach(([id, m]) => {
-        div.innerHTML += `<div class="flex flex-col sm:flex-row justify-between p-2 bg-slate-800 rounded text-xs gap-2"><div class="flex items-center gap-2"><input type="checkbox" ${m.active?'checked':''} onchange="db.ref('members/${id}/active').set(!${m.active})"> ${m.name}</div><button onclick="if(checkAdminPasscode('ลบสมาชิก')) db.ref('members/${id}').remove()" class="text-rose-400">ลบ</button></div>`;
+        div.innerHTML += `<div class="flex flex-col sm:flex-row justify-between p-2 bg-slate-800 rounded-xl text-xs gap-2"><div class="flex items-center gap-2"><input type="checkbox" ${m.active?'checked':''} onchange="db.ref('members/${id}/active').set(!${m.active})"> ${m.name}</div><button onclick="if(checkAdminPasscode('ลบสมาชิก')) db.ref('members/${id}').remove()" class="text-rose-400">ลบ</button></div>`;
       });
     }
     
