@@ -180,7 +180,7 @@
     <!-- ================= TAB 1: OVERVIEW ================= -->
     <div id="tab-overview" class="space-y-6">
       
-      <!-- ส่วนแสดงกราฟโดนัท (แยกตัวเลขไว้ข้างล่าง ไม่ซ้อนทับ 100%) -->
+      <!-- ส่วนแสดงกราฟโดนัท -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
         <div class="flex justify-between items-center mb-4">
           <h2 class="font-semibold text-slate-200">สัดส่วนค่าใช้จ่าย (<span id="donutMonthText">เดือนนี้</span>)</h2>
@@ -366,6 +366,17 @@
           </div>
         </div>
         <button onclick="createSharedBill()" class="bg-amber-600 hover:bg-amber-500 w-full py-2.5 rounded-xl text-sm transition font-medium">สร้างบิลหารร่วม</button>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <h2 class="text-lg font-bold text-indigo-400 border-b border-slate-800 pb-2">🛒 3. เบิกซื้อของ (หักจากกองกลาง)</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <input type="text" id="fundItemName" placeholder="ชื่อของที่ซื้อ (เช่น ทิชชู่)" class="w-full bg-slate-800 rounded-lg p-2 text-xs">
+          <input type="number" id="fundItemCost" placeholder="ราคา (บาท)" class="w-full bg-slate-800 rounded-lg p-2 text-xs">
+          <select id="fundBuyerSelect" class="w-full bg-slate-800 rounded-lg p-2 text-xs text-slate-300"></select>
+        </div>
+        <button onclick="addFundExpense()" class="bg-indigo-600 hover:bg-indigo-500 w-full py-2 rounded-xl text-sm transition">หักเงินกองกลาง</button>
+        <div id="fundExpenseAdminList" class="mt-3 pt-3 border-t border-slate-800 text-[11px] space-y-1 max-h-32 overflow-y-auto"></div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -783,7 +794,8 @@
             backgroundColor: backgroundColors,
             borderWidth: 2,
             borderColor: '#0f172a',
-            hoverOffset: 6
+            hoverOffset: 6,
+            borderRadius: 15
           }]
         },
         options: {
@@ -799,6 +811,7 @@
                 usePointStyle: true,
                 pointStyle: 'circle',
                 font: { size: 11, family: 'Kanit' },
+                // คำนวณเปอร์เซ็นต์กำกับไว้ที่ Legend ด้านล่าง
                 generateLabels: function(chart) {
                   const dataset = chart.data.datasets[0];
                   return chart.data.labels.map((label, i) => {
