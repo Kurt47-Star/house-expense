@@ -90,7 +90,7 @@
     </div>
   </div>
 
-  <!-- Modal เบิกเงินกองกลาง -->
+  <!-- Modal เบิกเงินกองกลาง (บังคับแนบสลิป/ใบเสร็จ) -->
   <div id="fundWithdrawModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-rose-500/50 rounded-2xl max-w-sm w-full shadow-2xl p-4">
       <div class="flex justify-between items-center mb-3">
@@ -110,8 +110,8 @@
           <label class="block text-xs text-slate-400 mb-1">เบิกไปใช้ทำอะไร</label>
           <input type="text" id="fundWithReason" placeholder="เช่น ค่าน้ำมันรถ, ของใช้" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm text-slate-200 border border-slate-700 outline-none">
         </div>
-        <button onclick="submitFundWithdraw()" class="w-full bg-rose-600 hover:bg-rose-500 py-3 rounded-xl text-sm font-bold transition text-white">
-          ยืนยันการเบิกเงิน
+        <button onclick="submitFundWithdraw()" class="w-full bg-rose-600 hover:bg-rose-500 py-3 rounded-xl text-sm font-bold transition text-white flex items-center justify-center gap-1.5 shadow-lg shadow-rose-600/20">
+          <span>📤</span> เลือกสลิป/ใบเสร็จเพื่อยืนยันการเบิก
         </button>
       </div>
     </div>
@@ -181,7 +181,6 @@
       
       <!-- อันดับที่ 1: บิลค่าบ้าน & สถานะการจ่าย + แนบสลิปของสมาชิก -->
       <div class="bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-3xl p-6 shadow-xl space-y-5">
-        <!-- สรุปยอดรวมค่าบ้านต่อคน -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
           <div>
             <div class="text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-1">🏠 ค่าเช่าบ้าน/น้ำ/ไฟ (<span id="overviewMonthText">เดือนนี้</span>)</div>
@@ -192,12 +191,8 @@
           </div>
         </div>
 
-        <!-- รายละเอียดบิลย่อย -->
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3" id="houseBillDetails">
-          <!-- แทรกเนื้อหาด้วย JS -->
-        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3" id="houseBillDetails"></div>
 
-        <!-- สถานะการจ่าย & ปุ่มแนบสลิปของสมาชิกแต่ละคน -->
         <div class="pt-4 border-t border-slate-800">
           <div class="flex justify-between items-center mb-3">
             <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
@@ -208,7 +203,7 @@
         </div>
       </div>
 
-      <!-- อันดับที่ 2: กองกลางคงเหลือสุทธิ (ยกขึ้นมาเป็นอันดับ 2 ตามคำขอ) -->
+      <!-- อันดับที่ 2: กองกลางคงเหลือสุทธิ -->
       <div class="bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-3xl p-6 shadow-xl relative overflow-hidden">
         <div class="flex flex-col justify-between relative z-10 space-y-4">
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-indigo-500/20 pb-4">
@@ -223,7 +218,6 @@
             </div>
           </div>
 
-          <!-- ความเคลื่อนไหวกองกลางล่าสุด -->
           <div class="pt-1">
              <h4 class="text-xs text-slate-400 mb-2.5 flex justify-between items-center">
                <span class="font-medium text-slate-300">📋 ความเคลื่อนไหวกองกลางล่าสุด</span>
@@ -232,7 +226,6 @@
              <div id="fundDepositLog" class="space-y-2 overflow-y-auto max-h-[140px] pr-1"></div>
           </div>
 
-          <!-- รายละเอียดบัญชีธนาคารกองกลาง -->
           <div class="pt-3 border-t border-indigo-500/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <div class="text-xs text-slate-300">
               <span class="text-slate-400">บัญชีกองกลาง:</span> 
@@ -251,7 +244,7 @@
         <div id="sharedBillsContainer" class="space-y-3"></div>
       </div>
 
-      <!-- อันดับที่ 4: สัดส่วนค่าใช้จ่าย (ย้ายลงมาไว้ล่างสุด) -->
+      <!-- อันดับที่ 4: สัดส่วนค่าใช้จ่าย (ล่างสุด) -->
       <div class="bg-slate-900/90 border border-slate-800/90 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
         <div class="flex justify-between items-center mb-3">
           <h2 class="font-bold text-sm text-slate-100 flex items-center gap-2">
@@ -317,7 +310,7 @@
     <!-- ================= TAB 5: ADMIN & SETTINGS ================= -->
     <div id="tab-admin" class="hidden space-y-6">
 
-      <!-- กล่องจัดการระบบล็อกรหัสผ่าน (LOCK MANAGER) -->
+      <!-- กล่องจัดการระบบล็อกรหัสผ่าน -->
       <div class="bg-slate-900 border border-amber-500/30 rounded-3xl p-6 space-y-4 shadow-xl">
         <div class="border-b border-slate-800 pb-3 flex justify-between items-center">
           <div>
@@ -459,7 +452,6 @@
 
     window.cachedSlips = { house: {}, fund: {}, sharedBill: {} };
 
-    // ฟังก์ชันช่วยจัดการ DOM ป้องกัน JavaScript ขัดข้อง
     function setSafeText(id, text) {
       const el = document.getElementById(id);
       if (el) el.innerText = text;
@@ -480,7 +472,6 @@
       if (modal) modal.classList.remove('hidden');
     }
 
-    // ฟังก์ชันขอรหัสผ่านผู้ดูแล
     function askPasscode(title="ยืนยันรหัสผ่านผู้ดูแล", desc="ส่วนนี้ถูกล็อกไว้ กรุณากรอกรหัสผ่านเพื่อดำเนินการ") {
       return new Promise((resolve) => {
         const modal = document.getElementById('passcodeModal');
@@ -511,7 +502,6 @@
       });
     }
 
-    // ตรวจสอบสิทธิ์ว่าต้องใส่รหัสหรือไม่
     async function verifyPermission(lockKey) {
       const locks = settings.locks || {};
       if (!locks[lockKey]) {
@@ -711,7 +701,6 @@
 
       setSafeHTML('dashPerPerson', `${breakdown.total.toLocaleString()} <span class="text-sm text-emerald-400 font-normal">บ./คน</span>`);
       
-      // การ์ดแสดงรายละเอียดบิลย่อยบนสุด
       setSafeHTML('houseBillDetails', `
         <div class="bg-slate-950/60 border border-slate-800 p-3 rounded-2xl">
           <div class="text-[11px] text-slate-400">ค่าเช่าบ้าน</div>
@@ -761,9 +750,10 @@
         if (curData.fundExpenses) {
           Object.entries(curData.fundExpenses).forEach(([expId, e]) => {
             hasLog = true;
+            const slipBtn = e.url ? `<button onclick="viewSingleSlip('${e.url}', 'เบิก: ${e.buyer} (${e.name})')" class="text-blue-400 hover:underline ml-1 font-medium">ดูสลิป</button>` : '';
             depLog.innerHTML += `
               <div class="flex justify-between items-center bg-rose-950/20 p-2.5 rounded-xl border border-rose-900/30 text-xs">
-                <span class="text-rose-300">📤 เบิก: <strong>${e.buyer}</strong> (${e.name})</span>
+                <span class="text-rose-300">📤 เบิก: <strong>${e.buyer}</strong> (${e.name}) ${slipBtn}</span>
                 <span class="text-rose-400 font-bold">-${Number(e.amount).toLocaleString()} ฿</span>
               </div>`;
           });
@@ -771,7 +761,7 @@
         if (curData.fundDeposits) {
           Object.entries(curData.fundDeposits).forEach(([depId, dep]) => {
             hasLog = true;
-            const slipBtn = dep.url ? `<button onclick="viewSingleSlip('${dep.url}', '${members[dep.memberId]?.name || 'สมาชิก'} (ฝากกองกลาง)')" class="text-blue-400 hover:underline ml-1">ดูสลิป</button>` : '';
+            const slipBtn = dep.url ? `<button onclick="viewSingleSlip('${dep.url}', 'ฝาก: ${members[dep.memberId]?.name || 'สมาชิก'} (${dep.note || 'สมทบกองกลาง'})')" class="text-blue-400 hover:underline ml-1 font-medium">ดูสลิป</button>` : '';
             depLog.innerHTML += `
               <div class="flex justify-between items-center bg-indigo-950/30 p-2.5 rounded-xl border border-indigo-900/40 text-xs">
                 <span class="text-indigo-300">📥 ฝาก: <strong>${members[dep.memberId]?.name || 'สมาชิก'}</strong> (${dep.note || 'สมทบกองกลาง'}) ${slipBtn}</span>
@@ -785,7 +775,6 @@
         }
       }
 
-      // Sync ข้อมูลบัญชีธนาคารและการตั้งค่า
       setSafeValue('setFundRate', settings.fundRate || 0);
       setSafeValue('setInitialFund', settings.initialFund || 0);
       setSafeText('fundPerPersonRate', (settings.fundRate || 0).toLocaleString());
@@ -1058,8 +1047,16 @@
       const file = e.target.files[0];
       if (!file || !currentUploadConfig) return;
 
-      const { expectedAmt, memberId, paymentType, note } = currentUploadConfig;
-      let finalAmountStr = await askAmount("📌 ระบุยอดเงิน", "พิมพ์ยอดเงินตามสลิปโอน:", expectedAmt > 0 ? expectedAmt : '');
+      const { expectedAmt, memberId, paymentType, note, buyer, reason } = currentUploadConfig;
+      
+      let promptTitle = "📌 ระบุยอดเงิน";
+      let promptDesc = "พิมพ์ยอดเงินตามสลิปโอน:";
+      if (paymentType === 'fundWithdraw') {
+        promptTitle = "📌 ยืนยันยอดเงินที่เบิก";
+        promptDesc = `ระบุยอดเงินที่เบิกตามสลิป/ใบเสร็จ (${buyer}):`;
+      }
+
+      let finalAmountStr = await askAmount(promptTitle, promptDesc, expectedAmt > 0 ? expectedAmt : '');
       if (finalAmountStr === null) { 
         if (document.getElementById('slipInput')) document.getElementById('slipInput').value = ''; 
         return; 
@@ -1075,9 +1072,8 @@
         const resData = await res.json();
         if (!resData.success) throw new Error("อัปโหลดรูปภาพไม่สำเร็จ");
 
-        // แยกบันทึกตามประเภทการทำรายการ (กองกลาง vs ค่าบ้าน)
         if (paymentType === 'fundDeposit') {
-          // 💎 ฝากเงินเข้ากองกลาง: บันทึกเข้า fundDeposits เท่านั้น (ไม่ยุ่งกับค่าเช่าบ้าน)
+          // 💎 ฝากเงินเข้ากองกลาง
           await db.ref(`bills/${currentMonth}/fundDeposits`).push({
             memberId: memberId,
             amount: finalAmount,
@@ -1086,8 +1082,18 @@
             date: new Date().toLocaleDateString('th-TH')
           });
           customAlert(`บันทึกสลิปนำเงินเข้ากองกลางเรียบร้อย!\nยอดเงิน: ${finalAmount.toLocaleString()} บาท`, "💎");
+        } else if (paymentType === 'fundWithdraw') {
+          // 💸 เบิกเงินกองกลาง (พร้อมสลิป)
+          await db.ref(`bills/${currentMonth}/fundExpenses`).push({
+            buyer: buyer,
+            name: reason,
+            amount: finalAmount,
+            url: resData.data.url,
+            date: new Date().toLocaleDateString('th-TH')
+          });
+          customAlert(`เบิกเงินและบันทึกสลิปเรียบร้อย!\nจำนวน: ${finalAmount.toLocaleString()} บาท`, "💸");
         } else {
-          // 🏠 จ่ายค่าเช่าบ้าน/น้ำ/ไฟ: บันทึกเข้า payments ของสมาชิก
+          // 🏠 จ่ายค่าเช่าบ้าน/น้ำ/ไฟ
           const dbPath = `bills/${currentMonth}/payments/${memberId}`;
           const snap = await db.ref(dbPath).once('value');
           const d = snap.val() || { paidAmount: 0 };
@@ -1208,6 +1214,8 @@
           if (m.active) sel.innerHTML += `<option value="${m.name}">${m.name}</option>`;
         });
       }
+      setSafeValue('fundWithAmount', '');
+      setSafeValue('fundWithReason', '');
       const modal = document.getElementById('fundWithdrawModal');
       if (modal) modal.classList.remove('hidden');
     }
@@ -1220,14 +1228,22 @@
       const buyer = document.getElementById('fundWithBuyer')?.value;
       const amt = Number(document.getElementById('fundWithAmount')?.value);
       const reason = document.getElementById('fundWithReason')?.value.trim();
-      if (!buyer || !amt || !reason) return customAlert("กรุณากรอกข้อมูลให้ครบถ้วน", "⚠️");
+      
+      if (!buyer || !amt || !reason) {
+        return customAlert("กรุณากรอกข้อมูลให้ครบถ้วนก่อนเลือกสลิป/ใบเสร็จ", "⚠️");
+      }
 
-      db.ref(`bills/${currentMonth}/fundExpenses`).push({
-        name: reason, amount: amt, buyer: buyer, date: new Date().toLocaleDateString('th-TH')
-      }).then(() => {
-        closeFundWithdrawModal();
-        customAlert(`เบิกเงินกองกลางสำเร็จ!\nจำนวน: ${amt.toLocaleString()} บาท`, "✅");
-      }).catch(err => customAlert("เกิดข้อผิดพลาด: " + err.message, "❌"));
+      // บังคับแนบสลิป/ใบเสร็จก่อนทำการบันทึก
+      currentUploadConfig = {
+        paymentType: 'fundWithdraw',
+        buyer: buyer,
+        expectedAmt: amt,
+        reason: reason
+      };
+      
+      closeFundWithdrawModal();
+      const fileInput = document.getElementById('slipInput');
+      if (fileInput) fileInput.click();
     }
 
     function triggerFundSlipUpload() {
