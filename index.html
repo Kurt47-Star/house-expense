@@ -451,18 +451,19 @@
     let chartInstance = null, donutChartInstance = null;
 
     window.cachedSlips = { house: {}, fund: {}, sharedBill: {} };
+    window.cachedFundSlips = {};
 
     function setSafeText(id, text) {
       const el = document.getElementById(id);
-      if (el) el.innerText = text;
+      if (el) el.innerText = (text !== undefined && text !== null) ? text : '';
     }
     function setSafeHTML(id, html) {
       const el = document.getElementById(id);
-      if (el) el.innerHTML = html;
+      if (el) el.innerHTML = (html !== undefined && html !== null) ? html : '';
     }
     function setSafeValue(id, val) {
       const el = document.getElementById(id);
-      if (el) el.value = val;
+      if (el) el.value = (val !== undefined && val !== null) ? val : '';
     }
 
     function customAlert(msg, icon="✅") {
@@ -481,24 +482,24 @@
 
         setSafeText('passcodeModalTitle', title);
         setSafeText('passcodeModalDesc', desc);
-        input.value = '';
-        modal.classList.remove('hidden');
-        input.focus();
+        if (input) input.value = '';
+        if (modal) modal.classList.remove('hidden');
+        if (input) input.focus();
 
         const handleKey = (e) => {
-          if (e.key === 'Enter') btnConfirm.click();
+          if (e.key === 'Enter' && btnConfirm) btnConfirm.click();
         };
-        input.addEventListener('keydown', handleKey);
+        if (input) input.addEventListener('keydown', handleKey);
 
         const cleanup = () => {
-          modal.classList.add('hidden');
-          input.removeEventListener('keydown', handleKey);
-          btnConfirm.onclick = null;
-          btnCancel.onclick = null;
+          if (modal) modal.classList.add('hidden');
+          if (input) input.removeEventListener('keydown', handleKey);
+          if (btnConfirm) btnConfirm.onclick = null;
+          if (btnCancel) btnCancel.onclick = null;
         };
 
-        btnConfirm.onclick = () => { cleanup(); resolve(input.value); };
-        btnCancel.onclick = () => { cleanup(); resolve(null); };
+        if (btnConfirm) btnConfirm.onclick = () => { cleanup(); resolve(input ? input.value : ''); };
+        if (btnCancel) btnCancel.onclick = () => { cleanup(); resolve(null); };
       });
     }
 
@@ -550,7 +551,7 @@
     function updateMonthDisplay() {
       const [yy, mm] = currentMonth.split('-');
       const monthsTh = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-      const displayStr = `${monthsTh[parseInt(mm, 10) - 1]}${yy}`;
+      const displayStr = `${monthsTh[parseInt(mm, 10) - 1]} ${yy}`;
       
       setSafeText('currentMonthText', displayStr);
       setSafeText('overviewMonthText', displayStr);
@@ -685,7 +686,7 @@
     }
 
     function listenToCurrentMonth() {
-      const md = allMonthsData[currentMonth] || {};
+      const md = (allMonthsData && allMonthsData[currentMonth]) || {};
       setSafeValue('inpRent', md.rent || settings.defaultRent);
       setSafeValue('inpWater', md.water || '');
       setSafeValue('inpElectricDirect', md.electricDirect || '');
@@ -694,8 +695,8 @@
     }
 
     function calculateAndRender() {
-      const activeCount = Object.values(members).filter(m => m.active).length || 1;
-      const curData = allMonthsData[currentMonth] || {};
+      const activeCount = Object.values(members).filter(m => m && m.active).length || 1;
+      const curData = (allMonthsData && allMonthsData[currentMonth]) || {};
       
       const rent = Number(curData.rent) || 0, water = Number(curData.water) || 0;
       const electric = Number(curData.electricDirect) || 0, other = Number(curData.other) || 0;
@@ -734,14 +735,16 @@
       let totalFundPaidIn = Number(settings.initialFund) || 0, totalFundOut = 0;
       
       Object.keys(allMonthsData).forEach(mth => {
-        if (allMonthsData[mth].fundDeposits) {
-          Object.values(allMonthsData[mth].fundDeposits).forEach(dep => {
-            totalFundPaidIn += Number(dep.amount || 0);
+        const mData = allMonthsData[mth];
+        if (!mData || typeof mData !== 'object') return;
+        if (mData.fundDeposits && typeof mData.fundDeposits === 'object') {
+          Object.values(mData.fundDeposits).forEach(dep => {
+            if (dep && dep.amount) totalFundPaidIn += Number(dep.amount || 0);
           });
         }
-        if (allMonthsData[mth].fundExpenses) {
-          Object.values(allMonthsData[mth].fundExpenses).forEach(e => {
-            totalFundOut += Number(e.amount || 0);
+        if (mData.fundExpenses && typeof mData.fundExpenses === 'object') {
+          Object.values(mData.fundExpenses).forEach(e => {
+            if (e && e.amount) totalFundOut += Number(e.amount || 0);
           });
         }
       });
@@ -753,26 +756,46 @@
       if (depLog) {
         depLog.innerHTML = '';
         let hasLog = false;
+        window.cachedFundSlips = {};
 
-        if (curData.fundExpenses) {
+        if (curData.fundExpenses && typeof curData.fundExpenses === 'object') {
           Object.entries(curData.fundExpenses).forEach(([expId, e]) => {
+            if (!e) return;
             hasLog = true;
-            const slipBtn = e.url ? `<button onclick="viewSingleSlip('${e.url}', 'เบิก: ${e.buyer} (${e.name})')" class="text-blue-400 hover:underline ml-1 font-medium">ดูสลิป</button>` : '';
+            let slipBtn = '';
+            if (e.url) {
+              const cKey = `exp_${expId}`;
+              window.cachedFundSlips[cKey] = {
+                url: e.url,
+                title: `เบิก: ${e.buyer || ''} (${e.name || ''})`
+              };
+              slipBtn = `<button onclick="viewSingleFundSlip('${cKey}')" class="text-blue-400 hover:underline ml-1 font-medium">ดูสลิป</button>`;
+            }
             depLog.innerHTML += `
               <div class="flex justify-between items-center bg-rose-950/20 p-2.5 rounded-xl border border-rose-900/30 text-xs">
-                <span class="text-rose-300">📤 เบิก: <strong>${e.buyer}</strong> (${e.name})${slipBtn}</span>
-                <span class="text-rose-400 font-bold">-${Number(e.amount).toLocaleString()} ฿</span>
+                <span class="text-rose-300">📤 เบิก: <strong>${e.buyer || '-'}</strong> (${e.name || '-'}) ${slipBtn}</span>
+                <span class="text-rose-400 font-bold">-${Number(e.amount || 0).toLocaleString()} ฿</span>
               </div>`;
           });
         }
-        if (curData.fundDeposits) {
+        if (curData.fundDeposits && typeof curData.fundDeposits === 'object') {
           Object.entries(curData.fundDeposits).forEach(([depId, dep]) => {
+            if (!dep) return;
             hasLog = true;
-            const slipBtn = dep.url ? `<button onclick="viewSingleSlip('${dep.url}', 'ฝาก: ${members[dep.memberId]?.name \vert{}\vert{} 'สมาชิก'} (${dep.note || 'สมทบกองกลาง'})')" class="text-blue-400 hover:underline ml-1 font-medium">ดูสลิป</button>` : '';
+            let slipBtn = '';
+            const mName = (members[dep.memberId] && members[dep.memberId].name) || 'สมาชิก';
+            if (dep.url) {
+              const cKey = `dep_${depId}`;
+              window.cachedFundSlips[cKey] = {
+                url: dep.url,
+                title: `ฝาก: ${mName} (${dep.note || 'สมทบกองกลาง'})`
+              };
+              slipBtn = `<button onclick="viewSingleFundSlip('${cKey}')" class="text-blue-400 hover:underline ml-1 font-medium">ดูสลิป</button>`;
+            }
             depLog.innerHTML += `
               <div class="flex justify-between items-center bg-indigo-950/30 p-2.5 rounded-xl border border-indigo-900/40 text-xs">
-                <span class="text-indigo-300">📥 ฝาก: <strong>${members[dep.memberId]?.name || 'สมาชิก'}</strong> (${dep.note \vert{}\vert{} 'สมทบกองกลาง'}) ${slipBtn}</span>
-                <span class="text-emerald-400 font-bold">+${Number(dep.amount).toLocaleString()} ฿</span>
+                <span class="text-indigo-300">📥 ฝาก: <strong>${mName}</strong> (${dep.note || 'สมทบกองกลาง'}) ${slipBtn}</span>
+                <span class="text-emerald-400 font-bold">+${Number(dep.amount || 0).toLocaleString()} ฿</span>
               </div>`;
           });
         }
@@ -823,14 +846,18 @@
 
       let r = 0, w = 0, e = 0, o = 0, fe = 0, sb = 0;
       targetMonths.forEach(mth => {
-        const md = allMonthsData[mth] || {};
+        const md = (allMonthsData && allMonthsData[mth]) || {};
         r += Number(md.rent || 0); w += Number(md.water || 0);
         e += Number(md.electricDirect || 0); o += Number(md.other || 0);
-        if (md.fundExpenses) Object.values(md.fundExpenses).forEach(exp => fe += Number(exp.amount));
+        if (md.fundExpenses && typeof md.fundExpenses === 'object') {
+          Object.values(md.fundExpenses).forEach(exp => {
+            if (exp && exp.amount) fe += Number(exp.amount);
+          });
+        }
       });
 
       const monthsTh = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-      if (mode === 'month') setSafeText('donutMonthText', `เดือน ${monthsTh[mInt - 1]}${yInt}`);
+      if (mode === 'month') setSafeText('donutMonthText', `เดือน ${monthsTh[mInt - 1]} ${yInt}`);
       else if (mode === 'quarter') setSafeText('donutMonthText', `ไตรมาส ${Math.ceil(mInt / 3)} ปี ${yInt}`);
       else if (mode === 'year') setSafeText('donutMonthText', `ตลอดปี ${yInt}`);
 
@@ -838,10 +865,8 @@
     }
 
     function renderDonutChart(rent, water, electric, other, totalFundExp, totalSharedBill) {
-      if (donutChartInstance) donutChartInstance.destroy();
       const canvasEl = document.getElementById('overviewDonutChart');
       if (!canvasEl) return;
-      const ctx = canvasEl.getContext('2d');
       const total = rent + water + electric + other + totalFundExp + totalSharedBill;
       setSafeText('donutTotalText', total > 0 ? `${total.toLocaleString()} ฿` : '0 ฿');
 
@@ -867,14 +892,22 @@
         });
       }
 
-      donutChartInstance = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: categories.map(c => c.name),
-          datasets: [{ data: categories.map(c => c.amount), backgroundColor: categories.map(c => c.color), borderWidth: 2, borderColor: '#0f172a', borderRadius: 6 }]
-        },
-        options: { cutout: '70%', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-      });
+      if (typeof Chart === 'undefined') return;
+
+      try {
+        if (donutChartInstance) donutChartInstance.destroy();
+        const ctx = canvasEl.getContext('2d');
+        donutChartInstance = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: categories.map(c => c.name),
+            datasets: [{ data: categories.map(c => c.amount), backgroundColor: categories.map(c => c.color), borderWidth: 2, borderColor: '#0f172a', borderRadius: 6 }]
+          },
+          options: { cutout: '70%', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+      } catch (err) {
+        console.error("Donut chart error:", err);
+      }
     }
 
     function renderPersonalCardsCompact(bd, housePayObj) {
@@ -885,8 +918,8 @@
 
       window.cachedSlips.house = {};
 
-      Object.entries(members).filter(([_, m]) => m.active).forEach(([mId, m]) => {
-        const hData = housePayObj[mId] || { paidAmount: 0, slips: [] };
+      Object.entries(members).filter(([_, m]) => m && m.active).forEach(([mId, m]) => {
+        const hData = (housePayObj && housePayObj[mId]) || { paidAmount: 0, slips: [] };
         const hPaid = Number(hData.paidAmount || 0);
         const hSlipsObj = hData.slips || {};
         const hSlips = Array.isArray(hSlipsObj) ? hSlipsObj.map((s, i) => ({...s, id: i})) : Object.keys(hSlipsObj).map(key => ({...hSlipsObj[key], id: key}));
@@ -902,11 +935,12 @@
         container.innerHTML += `
           <div class="bg-slate-900/90 border border-slate-800/90 p-3.5 rounded-2xl flex flex-col justify-between shadow-lg text-center">
             <div>
-              <h3 class="text-sm font-bold text-slate-200 truncate mb-1.5">${m.name}</h3>${statusBadge}
+              <h3 class="text-sm font-bold text-slate-200 truncate mb-1.5">${m.name || 'สมาชิก'}</h3>
+              ${statusBadge}
             </div>
             <div class="flex gap-1.5 mt-3 pt-2.5 border-t border-slate-800">
-              ${hSlips.length ? `<button onclick="openGalleryFromCache('house', '${mId}', '${m.name} (ค่าบ้าน)')" class="text-[10px] text-blue-400 underline flex-1 text-center py-1.5">ดูสลิป</button>` : ''}
-              <button onclick="triggerUploadSlip('${mId}', 'house',${houseBillAmt - hPaid})" class="bg-slate-800 hover:bg-slate-700 py-1.5 rounded-xl text-white text-[10px] transition border border-slate-700 flex-1 text-center font-medium">+ แนบสลิป</button>
+              ${hSlips.length ? `<button onclick="openGalleryFromCache('house', '${mId}')" class="text-[10px] text-blue-400 underline flex-1 text-center py-1.5">ดูสลิป</button>` : ''}
+              <button onclick="triggerUploadSlip('${mId}', 'house', ${houseBillAmt - hPaid})" class="bg-slate-800 hover:bg-slate-700 py-1.5 rounded-xl text-white text-[10px] transition border border-slate-700 flex-1 text-center font-medium">+ แนบสลิป</button>
             </div>
           </div>`;
       });
@@ -916,14 +950,15 @@
       const container = document.getElementById('sharedBillsContainer');
       if (!container) return;
       container.innerHTML = '';
-      if (Object.keys(sharedBillsData).length === 0) {
+      if (!sharedBillsData || Object.keys(sharedBillsData).length === 0) {
         container.innerHTML = `<div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 text-center text-slate-500 text-xs">ไม่มีบิลก้อนใหญ่ที่ต้องหารกันในขณะนี้</div>`;
         return;
       }
       Object.entries(sharedBillsData).forEach(([billId, bill]) => {
+        if (!bill) return;
         container.innerHTML += `
           <div class="bg-amber-950/20 border border-amber-900/40 rounded-2xl p-4 flex justify-between items-center">
-            <div><h3 class="text-sm font-bold text-amber-400">${bill.title}</h3><div class="text-[10px] text-slate-400">ยอดรวม ${Number(bill.amount).toLocaleString()} ฿</div></div>
+            <div><h3 class="text-sm font-bold text-amber-400">${bill.title || 'บิลร่วม'}</h3><div class="text-[10px] text-slate-400">ยอดรวม ${Number(bill.amount || 0).toLocaleString()} ฿</div></div>
             <button onclick="deleteSharedBill('${billId}')" class="text-xs text-rose-400 hover:underline">ลบ</button>
           </div>`;
       });
@@ -948,7 +983,7 @@
     function updateDropdowns() {
       let sbChecks = '';
       Object.entries(members).forEach(([id, m]) => { 
-        if(m.active) {
+        if(m && m.active) {
           sbChecks += `<label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="${id}" class="shared-member-cb w-4 h-4 accent-amber-500"> ${m.name}</label>`;
         }
       });
@@ -982,9 +1017,10 @@
       }).catch(err => customAlert("เกิดข้อผิดพลาด: " + err.message, "❌"));
     }
 
-    async function editMemberName(id, currentName) {
+    async function editMemberName(id) {
       if (!(await verifyPermission('members'))) return;
 
+      const currentName = (members[id] && members[id].name) || '';
       const newName = await askPrompt("✏️ แก้ไขชื่อสมาชิก", "พิมพ์ชื่อใหม่ที่ต้องการเปลี่ยน:", currentName, "text");
       if (newName === null) return;
       const trimmed = newName.trim();
@@ -1008,5 +1044,329 @@
       if (!div) return;
       div.innerHTML = '';
       Object.entries(members).forEach(([id, m]) => {
+        if (!m) return;
         div.innerHTML += `
-          <div class="flex justify-between items-center p-
+          <div class="flex justify-between items-center p-2.5 bg-slate-800 rounded-xl text-xs">
+            <span class="font-medium text-slate-200">${m.name || 'สมาชิก'}</span>
+            <div class="flex gap-2">
+              <button onclick="editMemberName('${id}')" class="text-amber-400 hover:underline">แก้ไข</button>
+              <button onclick="deleteMember('${id}')" class="text-rose-400 hover:underline">ลบ</button>
+            </div>
+          </div>`;
+      });
+    }
+
+    async function saveSettings() {
+      if (!(await verifyPermission('fund'))) return;
+
+      db.ref('settings').update({
+        fundRate: Number(document.getElementById('setFundRate')?.value) || 0,
+        initialFund: Number(document.getElementById('setInitialFund')?.value) || 0,
+        fundBank: document.getElementById('setFundBank')?.value.trim() || '',
+        fundAccName: document.getElementById('setFundAccName')?.value.trim() || '',
+        fundAccNo: document.getElementById('setFundAccNo')?.value.trim() || '',
+        fundQrUrl: document.getElementById('setFundQR')?.value.trim() || ''
+      }).then(() => {
+        customAlert("บันทึกการตั้งค่ากองกลางสำเร็จ!");
+        calculateAndRender();
+      }).catch(err => customAlert("เกิดข้อผิดพลาด: " + err.message, "❌"));
+    }
+
+    async function createSharedBill() {
+      if (!(await verifyPermission('shared'))) return;
+
+      const title = document.getElementById('sharedBillTitle')?.value.trim();
+      const amt = Number(document.getElementById('sharedBillAmount')?.value);
+      const cbs = document.querySelectorAll('.shared-member-cb:checked');
+      const reqMembers = Array.from(cbs).map(cb => cb.value);
+
+      if (!title || !amt || reqMembers.length === 0) return customAlert("กรุณากรอกข้อมูลให้ครบถ้วนและเลือกสมาชิก", "⚠️");
+
+      db.ref(`sharedBills`).push({
+        title: title,
+        amount: amt,
+        requiredMembers: reqMembers,
+        date: new Date().toLocaleDateString('th-TH')
+      }).then(() => {
+        setSafeValue('sharedBillTitle', '');
+        setSafeValue('sharedBillAmount', '');
+        cbs.forEach(cb => cb.checked = false);
+        customAlert("สร้างบิลหารร่วมเรียบร้อย!");
+        switchTab('overview');
+      }).catch(err => customAlert("เกิดข้อผิดพลาด: " + err.message, "❌"));
+    }
+
+    function triggerUploadSlip(memberId, paymentType, expectedAmt) {
+      currentUploadConfig = { memberId, paymentType, expectedAmt: expectedAmt > 0 ? expectedAmt : 0 };
+      const fileInput = document.getElementById('slipInput');
+      if (fileInput) fileInput.click();
+    }
+
+    async function handleSlipSelected(e) {
+      const file = e.target.files[0];
+      if (!file || !currentUploadConfig) return;
+
+      const { expectedAmt, memberId, paymentType, note, buyer, reason } = currentUploadConfig;
+      
+      let promptTitle = "📌 ระบุยอดเงิน";
+      let promptDesc = "พิมพ์ยอดเงินตามสลิปโอน:";
+      if (paymentType === 'fundWithdraw') {
+        promptTitle = "📌 ยืนยันยอดเงินที่เบิก";
+        promptDesc = `ระบุยอดเงินที่เบิกตามสลิป/ใบเสร็จ (${buyer || ''}):`;
+      }
+
+      let finalAmountStr = await askAmount(promptTitle, promptDesc, expectedAmt > 0 ? expectedAmt : '');
+      if (finalAmountStr === null) { 
+        if (document.getElementById('slipInput')) document.getElementById('slipInput').value = ''; 
+        return; 
+      }
+
+      let finalAmount = Number(String(finalAmountStr).replace(/,/g, '')) || 0;
+      const overlay = document.getElementById('loadingOverlay');
+      if (overlay) overlay.classList.remove('hidden');
+
+      try {
+        const formData = new FormData(); formData.append('image', file);
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
+        const resData = await res.json();
+        if (!resData.success) throw new Error("อัปโหลดรูปภาพไม่สำเร็จ");
+
+        if (paymentType === 'fundDeposit') {
+          await db.ref(`bills/${currentMonth}/fundDeposits`).push({
+            memberId: memberId,
+            amount: finalAmount,
+            note: note || 'สมทบเงินกองกลาง',
+            url: resData.data.url,
+            date: new Date().toLocaleDateString('th-TH')
+          });
+          customAlert(`บันทึกสลิปนำเงินเข้ากองกลางเรียบร้อย!\nยอดเงิน: ${finalAmount.toLocaleString()} บาท`, "💎");
+        } else if (paymentType === 'fundWithdraw') {
+          await db.ref(`bills/${currentMonth}/fundExpenses`).push({
+            buyer: buyer || '-',
+            name: reason || '-',
+            amount: finalAmount,
+            url: resData.data.url,
+            date: new Date().toLocaleDateString('th-TH')
+          });
+          customAlert(`เบิกเงินและบันทึกสลิปเรียบร้อย!\nจำนวน: ${finalAmount.toLocaleString()} บาท`, "💸");
+        } else {
+          const dbPath = `bills/${currentMonth}/payments/${memberId}`;
+          const snap = await db.ref(dbPath).once('value');
+          const d = snap.val() || { paidAmount: 0 };
+          await db.ref(dbPath).update({ paidAmount: Number(d.paidAmount) + finalAmount });
+          await db.ref(`${dbPath}/slips`).push({ url: resData.data.url, amount: finalAmount, date: new Date().toLocaleDateString('th-TH') });
+          customAlert("บันทึกสลิปและยอดเงินค่าบ้านเรียบร้อย!");
+        }
+      } catch (err) {
+        customAlert(err.message, "❌");
+      } finally {
+        if (overlay) overlay.classList.add('hidden');
+        if (document.getElementById('slipInput')) document.getElementById('slipInput').value = '';
+      }
+    }
+
+    function openGalleryFromCache(cacheType, cacheKey) {
+      const slips = (window.cachedSlips[cacheType] && window.cachedSlips[cacheType][cacheKey]) || [];
+      currentGallerySlips = slips; currentGalleryIndex = 0; currentGalleryConfig = { memberId: cacheKey, paymentType: cacheType };
+      const mName = (members[cacheKey] && members[cacheKey].name) || 'สมาชิก';
+      setSafeText('modalSlipTitle', `${mName} (สลิปค่าบ้าน)`);
+      const btnDel = document.getElementById('btnDeleteSlip');
+      if (btnDel) {
+        btnDel.classList.remove('hidden');
+        btnDel.onclick = () => deleteCurrentSlip();
+      }
+      updateGalleryUI();
+      const modal = document.getElementById('slipModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function viewSingleFundSlip(cacheKey) {
+      const item = window.cachedFundSlips && window.cachedFundSlips[cacheKey];
+      if (!item || !item.url) return;
+      viewSingleSlip(item.url, item.title);
+    }
+
+    function viewSingleSlip(url, titleStr) {
+      currentGallerySlips = [{ url: url, amount: 0, date: '' }];
+      currentGalleryIndex = 0;
+      currentGalleryConfig = null;
+      setSafeText('modalSlipTitle', titleStr || 'หลักฐานการโอนเงิน');
+      const btnDel = document.getElementById('btnDeleteSlip');
+      if (btnDel) btnDel.classList.add('hidden');
+      updateGalleryUI();
+      const modal = document.getElementById('slipModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function updateGalleryUI() {
+      if (!currentGallerySlips.length) { closeSlipModal(); return; }
+      const s = currentGallerySlips[currentGalleryIndex];
+      const img = document.getElementById('modalSlipImg');
+      if (img) img.src = s.url;
+      setSafeHTML('modalSlipCount', `สลิปใบที่ ${currentGalleryIndex + 1} / ${currentGallerySlips.length}${s.amount > 0 ? `<br>ยอดโอน: ${s.amount} ฿` : ''}`);
+      setSafeText('modalSlipNote', s.date ? `วันที่: ${s.date}` : '');
+      const btnPrev = document.getElementById('btnPrevSlip');
+      const btnNext = document.getElementById('btnNextSlip');
+      if (btnPrev) btnPrev.classList.toggle('hidden', currentGalleryIndex === 0);
+      if (btnNext) btnNext.classList.toggle('hidden', currentGalleryIndex === currentGallerySlips.length - 1);
+    }
+
+    function changeSlipView(dir) { currentGalleryIndex += dir; updateGalleryUI(); }
+    function closeSlipModal() { const modal = document.getElementById('slipModal'); if (modal) modal.classList.add('hidden'); }
+
+    async function deleteCurrentSlip() {
+      if (!currentGalleryConfig || currentGallerySlips.length === 0) return;
+      const slipToDelete = currentGallerySlips[currentGalleryIndex];
+      const { memberId } = currentGalleryConfig;
+      let dbPath = `bills/${currentMonth}/payments/${memberId}`;
+      try {
+        const snap = await db.ref(dbPath).once('value');
+        const data = snap.val();
+        if (data) {
+          const newPaidAmount = Math.max(0, Number(data.paidAmount) - Number(slipToDelete.amount));
+          await db.ref(dbPath).update({ paidAmount: newPaidAmount });
+          await db.ref(`${dbPath}/slips/${slipToDelete.id}`).remove();
+        }
+        customAlert("ลบสลิปเรียบร้อย");
+        closeSlipModal();
+      } catch (err) {
+        customAlert("เกิดข้อผิดพลาดในการลบ: " + err.message, "❌");
+      }
+    }
+
+    function exportToExcel() {
+      if (typeof XLSX === 'undefined') {
+        customAlert("กำลังโหลดระบบ Excel กรุณาลองใหม่อีกครั้ง", "⚠️");
+        return;
+      }
+      const curData = (allMonthsData && allMonthsData[currentMonth]) || {};
+      const activeCount = Object.values(members).filter(m => m && m.active).length || 1;
+      const rent = Number(curData.rent) || 0, water = Number(curData.water) || 0, electric = Number(curData.electricDirect) || 0, other = Number(curData.other) || 0;
+      const wb = XLSX.utils.book_new();
+      const expenseData = [
+        ["รายงานค่าใช้จ่ายบ้านพักประจำเดือน", currentMonth], [],
+        ["รายการ", "ยอดรวม (บาท)", "จำนวนคนหาร", "ยอดต่อคน (บาท)"],
+        ["ค่าเช่าบ้าน", rent, activeCount, Math.round(rent / activeCount)],
+        ["ค่าน้ำประปา", water, activeCount, Math.round(water / activeCount)],
+        ["ค่าไฟฟ้า", electric, activeCount, Math.round(electric / activeCount)],
+        ["ค่าเน็ต/อื่นๆ", other, activeCount, Math.round(other / activeCount)],
+        ["ยอดรวมทั้งสิ้น", rent + water + electric + other, activeCount, Math.round((rent + water + electric + other) / activeCount)]
+      ];
+      const wsExpenses = XLSX.utils.aoa_to_sheet(expenseData);
+      XLSX.utils.book_append_sheet(wb, wsExpenses, "สรุปบิลประจำเดือน");
+      XLSX.writeFile(wb, `รายงานค่าใช้จ่ายบ้านพัก_${currentMonth}.xlsx`);
+    }
+
+    function openFundDepositModal() {
+      const sel = document.getElementById('fundDepMember');
+      if (sel) {
+        sel.innerHTML = '<option value="">-- เลือกผู้ฝากเงิน --</option>';
+        Object.entries(members).forEach(([id, m]) => {
+          if (m && m.active) sel.innerHTML += `<option value="${id}">${m.name}</option>`;
+        });
+      }
+      const modal = document.getElementById('fundDepositModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+    function closeFundDepositModal() {
+      const modal = document.getElementById('fundDepositModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function openFundWithdrawModal() {
+      const sel = document.getElementById('fundWithBuyer');
+      if (sel) {
+        sel.innerHTML = '<option value="">-- เลือกสมาชิกที่เบิก --</option>';
+        Object.entries(members).forEach(([id, m]) => {
+          if (m && m.active) sel.innerHTML += `<option value="${m.name}">${m.name}</option>`;
+        });
+      }
+      setSafeValue('fundWithAmount', '');
+      setSafeValue('fundWithReason', '');
+      const modal = document.getElementById('fundWithdrawModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+    function closeFundWithdrawModal() {
+      const modal = document.getElementById('fundWithdrawModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function submitFundWithdraw() {
+      const buyer = document.getElementById('fundWithBuyer')?.value;
+      const amt = Number(document.getElementById('fundWithAmount')?.value);
+      const reason = document.getElementById('fundWithReason')?.value.trim();
+      
+      if (!buyer || !amt || !reason) {
+        return customAlert("กรุณากรอกข้อมูลให้ครบถ้วนก่อนเลือกสลิป/ใบเสร็จ", "⚠️");
+      }
+
+      currentUploadConfig = {
+        paymentType: 'fundWithdraw',
+        buyer: buyer,
+        expectedAmt: amt,
+        reason: reason
+      };
+      
+      closeFundWithdrawModal();
+      const fileInput = document.getElementById('slipInput');
+      if (fileInput) fileInput.click();
+    }
+
+    function triggerFundSlipUpload() {
+      const mId = document.getElementById('fundDepMember')?.value;
+      const note = document.getElementById('fundDepNote')?.value.trim();
+      if (!mId) return customAlert("กรุณาเลือกสมาชิกที่เป็นเจ้าของเงิน", "⚠️");
+      currentUploadConfig = { memberId: mId, paymentType: 'fundDeposit', expectedAmt: 0, note: note };
+      closeFundDepositModal();
+      const fileInput = document.getElementById('slipInput');
+      if (fileInput) fileInput.click();
+    }
+
+    function showFundQR() {
+      const modal = document.getElementById('qrModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function renderChart() {
+      if (typeof Chart === 'undefined') return;
+      const canvasEl = document.getElementById('expenseChart');
+      if (!canvasEl) return;
+      try {
+        if (chartInstance) chartInstance.destroy();
+        const ctx = canvasEl.getContext('2d');
+        const labels = [], waterData = [], elecData = [];
+        Object.keys(allMonthsData).sort().forEach(m => {
+          const mData = allMonthsData[m];
+          if (!mData || typeof mData !== 'object') return;
+          labels.push(m);
+          waterData.push(Number(mData.water) || 0);
+          elecData.push(Number(mData.electricDirect) || 0);
+        });
+        chartInstance = new Chart(ctx, { 
+          type: 'bar', 
+          data: { 
+            labels, 
+            datasets: [ 
+              { label: 'ค่าไฟฟ้า', data: elecData, backgroundColor: '#f59e0b' }, 
+              { label: 'ค่าน้ำประปา', data: waterData, backgroundColor: '#0ea5e9' } 
+            ] 
+          }, 
+          options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            scales: { 
+              x: { grid: { color: '#334155' } }, 
+              y: { grid: { color: '#334155' } } 
+            }, 
+            plugins: { 
+              legend: { labels: { color: '#e2e8f0' } } 
+            } 
+          } 
+        });
+      } catch (err) {
+        console.error("Bar chart error:", err);
+      }
+    }
+  </script>
+</body>
+</html>
