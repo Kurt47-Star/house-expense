@@ -303,7 +303,9 @@
             <div class="text-xs font-semibold uppercase tracking-wider text-indigo-400">💎 กองกลางคงเหลือสุทธิ</div>
             <div class="text-4xl font-black mt-1" id="dashFundBalance">0 <span class="text-sm font-normal text-indigo-300">บาท</span></div>
             <div class="text-xs text-indigo-300/70 mt-1">เป้าหมายเก็บ <span id="fundPerPersonRate" class="font-bold text-indigo-200">0</span> บ./คน/เดือน</div>
-            <div id="fundNegativeNotice" class="hidden mt-2 p-2.5 bg-rose-950/80 border border-rose-800 text-rose-300 text-xs rounded-xl font-medium"></div>
+            
+            <!-- ป้ายแจ้งเตือนเงินกองกลางติดลบ (ระบุชื่อคนสำรองจ่ายที่ต้องโอนคืน) -->
+            <div id="fundNegativeNotice" class="hidden mt-3 p-3 bg-rose-950/90 border border-rose-800 text-rose-300 text-xs rounded-2xl font-medium shadow-lg leading-relaxed"></div>
           </div>
           <div class="flex gap-2 w-full sm:w-auto">
             <button onclick="openFundDepositModal()" class="flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-4 py-2.5 rounded-xl shadow-lg transition font-medium">+ ฝากเงินเข้ากองกลาง</button>
@@ -1167,7 +1169,7 @@
         reader.onload = (e) => {
           const img = new Image();
           img.onload = () => {
-            const maxDim = 1200; // ปรับขนาดภาพให้พอดีช่วยให้ OCR เร็วขึ้น 5 เท่า
+            const maxDim = 1200;
             let w = img.width;
             let h = img.height;
             if (w > maxDim || h > maxDim) {
@@ -1195,19 +1197,15 @@
     }
 
     function extractSlipTime(text) {
-      // 1. ค้นหาเวลาที่ตามหลังหรือมีคำว่า น. (เช่น 11:46 น. หรือ 11.46น.)
       let m = text.match(/\b([01]?\d|2[0-3])[:.]([0-5]\d)\s*(?:น\.|น)\b/i);
       if (m) return `${m[1].padStart(2, '0')}:${m[2]}`;
 
-      // 2. ค้นหาเวลาหลังคำว่า "เวลา"
       m = text.match(/เวลา\s*[:.]?\s*([01]?\d|2[0-3])[:.]([0-5]\d)/i);
       if (m) return `${m[1].padStart(2, '0')}:${m[2]}`;
 
-      // 3. ค้นหาเวลาที่อยู่หลังชื่อเดือน
       m = text.match(/(?:ต\.ค\.|พ\.ย\.|ธ\.ค\.|ม\.ค\.|ก\.พ\.|มี\.ค\.|เม\.ย\.|พ\.ค\.|มิ\.ย\.|ก\.ค\.|ส\.ค\.|ก\.ย\.|\d{4}|\d{2})\s+([01]?\d|2[0-3])[:.]([0-5]\d)/i);
       if (m) return `${m[1].padStart(2, '0')}:${m[2]}`;
 
-      // 4. ค้นหารูปแบบ HH:mm ทั่วไป
       m = text.match(/\b([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?\b/);
       if (m) return `${m[1].padStart(2, '0')}:${m[2]}`;
 
@@ -1230,7 +1228,6 @@
         'ธ.ค.': 12, 'ธันวาคม': 12, 'dec': 12
       };
 
-      // รูปแบบวันที่ภาษาไทย เช่น 23 ต.ค. 69 หรือ 23 ต.ค. 2569
       const thaiMonthRegex = /(\d{1,2})\s*(ม\.?ค\.?|ก\.?พ\.?|มี\.?ค\.?|เม\.?ย\.?|พ\.?ค\.?|มิ\.?ย\.?|ก\.?ค\.?|ส\.?ค\.?|ก\.?ย\.?|ต\.?ค\.?|พ\.?ย\.?|ธ\.?ค\.?|[A-Za-z]{3,})\s*(\d{2,4})?/i;
       let m = text.match(thaiMonthRegex);
       if (m) {
@@ -1256,7 +1253,6 @@
         }
       }
 
-      // รูปแบบตัวเลข 23/10/2026 หรือ 23-10-2569
       const numDateRegex = /(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/;
       m = text.match(numDateRegex);
       if (m) {
@@ -1276,7 +1272,6 @@
     function extractSlipAmount(text) {
       const clean = text.replace(/(\d)\s*\.\s*(\d{2})\b/g, '$1.$2');
 
-      // ยอดเงินที่ตามหลังคำว่า จำนวนเงิน/ยอดเงิน/Amount
       const amountWithLabel = /(?:จำนวนเงิน|จำนวน|ยอดเงิน|amount|total)\s*[:.]?\s*([0-9,]+\.[0-9]{2})/i;
       let m = clean.match(amountWithLabel);
       if (m) {
@@ -1284,7 +1279,6 @@
         if (!isNaN(val) && val > 0) return val;
       }
 
-      // ยอดเงินที่อยู่หน้าคำว่า บาท/THB
       const amountBeforeBaht = /([0-9,]+\.[0-9]{2})\s*(?:บาท|thb)/gi;
       let match;
       let candidates = [];
@@ -1294,7 +1288,6 @@
       }
       if (candidates.length > 0) return candidates[0];
 
-      // ยอดตัวเลขทศนิยมทั่วไปในสลิป
       const genericFloats = /\b([1-9]\d{0,2}(?:,\d{3})*\.\d{2})\b/g;
       candidates = [];
       while ((match = genericFloats.exec(clean)) !== null) {
@@ -1380,6 +1373,17 @@
       return fallbackDateStr || 'ไม่ระบุเวลา';
     }
 
+    // ลบรายการในประวัติกองกลาง
+    async function deleteFundLogItem(type, id) {
+      if (!(await verifyPermission('fund'))) return;
+      if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?")) return;
+
+      const path = type === 'expense' ? `bills/${currentMonth}/fundExpenses/${id}` : `bills/${currentMonth}/fundDeposits/${id}`;
+      db.ref(path).remove().then(() => {
+        customAlert("ลบรายการเรียบร้อยแล้ว!", "✅");
+      }).catch(err => customAlert("เกิดข้อผิดพลาด: " + err.message, "❌"));
+    }
+
     // DB Listeners
     db.ref('settings').on('value', snap => {
       if (snap.exists()) settings = { ...settings, ...snap.val() };
@@ -1428,7 +1432,7 @@
     }
 
     // ==========================================
-    // 📊 คำนวณยอดเงิน + ลำดับตามเวลาสลิป + กราฟกองกลาง
+    // 📊 คำนวณยอดเงิน + ลำดับตามเวลาสลิป + กราฟกองกลาง + ระบุชื่อคนสำรองจ่าย
     // ==========================================
     function calculateAndRender() {
       const activeCount = Object.values(members).filter(m => m && m.active).length || 1;
@@ -1505,8 +1509,10 @@
           </div>`;
       }
 
-      // 2. คำนวณเงินกองกลางคงเหลือสุทธิ
+      // 2. คำนวณเงินกองกลางคงเหลือสุทธิ (รองรับยอดติดลบ & คำนวณผู้ที่ต้องโอนคืน)
       let totalFundPaidIn = Number(settings.initialFund) || 0, totalFundOut = 0;
+      const allExpensesForDeficit = [];
+
       Object.keys(allMonthsData).forEach(mth => {
         const mData = allMonthsData[mth];
         if (!mData || typeof mData !== 'object') return;
@@ -1516,8 +1522,16 @@
           });
         }
         if (mData.fundExpenses && typeof mData.fundExpenses === 'object') {
-          Object.values(mData.fundExpenses).forEach(e => {
-            if (e && e.amount) totalFundOut += Number(e.amount || 0);
+          Object.entries(mData.fundExpenses).forEach(([expId, e]) => {
+            if (e && e.amount) {
+              const amt = Number(e.amount || 0);
+              totalFundOut += amt;
+              allExpensesForDeficit.push({
+                buyer: e.buyer || 'ไม่ระบุชื่อ',
+                amount: amt,
+                sortKey: parseTimestamp(e.slipTime, e.date, expId)
+              });
+            }
           });
         }
       });
@@ -1530,7 +1544,29 @@
       if (noticeEl) {
         if (netFund < 0) {
           noticeEl.classList.remove('hidden');
-          noticeEl.innerHTML = `⚠️ เงินกองกลางติดลบ <strong>${Math.abs(netFund).toLocaleString()} ฿</strong> (มียอดสำรองจ่ายออกไปก่อน รอเงินสมทบคืน)`;
+          let deficit = Math.abs(netFund);
+
+          // เรียงรายการเบิกจากล่าสุดไปเก่าสุด เพื่อดูว่ายอดเงินที่ติดลบนั้นใครเป็นคนออกไป
+          allExpensesForDeficit.sort((a, b) => b.sortKey - a.sortKey);
+
+          const creditors = {};
+          for (const exp of allExpensesForDeficit) {
+            if (deficit <= 0) break;
+            const owed = Math.min(deficit, exp.amount);
+            creditors[exp.buyer] = (creditors[exp.buyer] || 0) + owed;
+            deficit -= owed;
+          }
+
+          const creditorTexts = Object.entries(creditors).map(([name, amt]) => {
+            return `<strong>${name}</strong> (${amt.toLocaleString()} ฿)`;
+          });
+
+          noticeEl.innerHTML = `
+            <div>⚠️ เงินกองกลางติดลบ <strong>${Math.abs(netFund).toLocaleString()} ฿</strong></div>
+            <div class="mt-1 text-rose-200 text-[11px]">
+              👉 <strong>ต้องโอนคืน:</strong> ${creditorTexts.join(', ')} (เป็นผู้สำรองจ่ายออกไปก่อน)
+            </div>
+          `;
         } else {
           noticeEl.classList.add('hidden');
         }
@@ -1713,17 +1749,6 @@
       renderPersonalCardsCompact(totalPerPerson, curData.payments || {});
       renderTransactionsTab(breakdownItems, totalHouseBill, activeCount, totalPerPerson);
       renderDonutChartMode();
-    }
-
-    // ลบรายการในประวัติกองกลาง
-    async function deleteFundLogItem(type, id) {
-      if (!(await verifyPermission('fund'))) return;
-      if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?")) return;
-
-      const path = type === 'expense' ? `bills/${currentMonth}/fundExpenses/${id}` : `bills/${currentMonth}/fundDeposits/${id}`;
-      db.ref(path).remove().then(() => {
-        customAlert("ลบรายการเรียบร้อยแล้ว!", "✅");
-      }).catch(err => customAlert("เกิดข้อผิดพลาด: " + err.message, "❌"));
     }
 
     function renderFundWithdrawDonut(categorySpendTotals, totalSpend) {
@@ -1982,6 +2007,15 @@
         }
       });
       setSafeHTML('sharedBillMembersCheckboxes', sbChecks); 
+
+      const catSelect = document.getElementById('fundWithCategory');
+      if (catSelect) {
+        catSelect.innerHTML = '';
+        const cats = getActiveFundCategories();
+        Object.values(cats).forEach(c => {
+          catSelect.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+        });
+      }
     }
 
     async function saveBillsFromAdmin() {
@@ -2119,14 +2153,11 @@
       const { expectedAmt, memberId, paymentType, note, buyer, items } = currentUploadConfig;
 
       try {
-        // 1. ปรับขนาดภาพเพื่อความรวดเร็วและแม่นยำ
         const resizedImage = await prepareImageForOCR(file);
 
-        // 2. สแกนตัวอักษรและเวลาจากสลิป (Tesseract OCR)
         setSafeText('loadingStatusText', '🔍 กำลังสแกนเวลาและยอดเงินในสลิป...');
         const ocr = await scanSlipWithTesseract(resizedImage);
 
-        // 3. ปิด Overlay แล้วเปิดหน้าต่างยืนยันข้อมูลที่สแกนได้
         if (overlay) overlay.classList.add('hidden');
 
         const now = new Date();
@@ -2145,7 +2176,6 @@
         const finalAmount = confirmed.amount;
         const finalSlipTime = confirmed.dateTime;
 
-        // 4. อัปโหลดรูปภาพไปยัง ImgBB
         if (overlay) overlay.classList.remove('hidden');
         setSafeText('loadingStatusText', '☁️ กำลังอัปโหลดสลิปไปยังระบบ...');
 
@@ -2155,7 +2185,6 @@
         const resData = await res.json();
         if (!resData.success) throw new Error("อัปโหลดรูปภาพไม่สำเร็จ");
 
-        // 5. บันทึกข้อมูลลง Firebase พร้อมเวลาจริงในสลิป
         if (paymentType === 'fundDeposit') {
           await db.ref(`bills/${currentMonth}/fundDeposits`).push({
             memberId: memberId,
@@ -2170,7 +2199,6 @@
           const itemSummary = items.map(it => it.name).filter(Boolean).join(', ') || 'เบิกเงินกองกลาง';
           const primaryCatId = items[0]?.categoryId || 'fc_other';
 
-          // ปรับยอดเงินรายการย่อยให้สัมพันธ์กับยอดรวมหากมีรายการเดียว
           let finalItems = items;
           if (items.length === 1 && (Number(items[0].amount) === 0 || !items[0].amount)) {
             finalItems = [{ ...items[0], amount: finalAmount }];
