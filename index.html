@@ -31,7 +31,7 @@
     <div class="text-xs text-slate-400 mt-2">ห้ามปิดหน้าจอจนกว่าจะเสร็จสิ้น</div>
   </div>
 
-  <!-- Modal ตรวจสอบรหัสผ่านผู้ดูแล (Passcode Modal) -->
+  <!-- Modal ตรวจสอบรหัสผ่านผู้ดูแล -->
   <div id="passcodeModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[95] hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-amber-500/50 rounded-3xl max-w-sm w-full shadow-2xl p-6 text-center">
       <div class="text-4xl mb-2">🔒</div>
@@ -45,18 +45,38 @@
     </div>
   </div>
 
-  <!-- Modal เพิ่ม/แก้ไขประเภทบิลค่าใช้จ่ายประจำ -->
+  <!-- Modal จัดการหมวดหมู่การเบิกกองกลาง -->
+  <div id="fundCatModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-indigo-500/50 rounded-3xl max-w-sm w-full shadow-2xl p-6 relative overflow-hidden">
+      <h3 class="text-base font-bold text-indigo-400 mb-1" id="fundCatModalTitle">หมวดหมู่การเบิกกองกลาง</h3>
+      <p class="text-xs text-slate-400 mb-4">กำหนดชื่อหมวดและสีแสดงผล</p>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">ชื่อหมวดหมู่</label>
+          <input type="text" id="fundCatNameInput" placeholder="เช่น 🍳 อาหาร/วัตถุดิบ, 🛒 ของใช้" class="w-full bg-slate-950 rounded-xl p-3 text-sm text-slate-200 border border-slate-700 outline-none focus:border-indigo-500">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">สีประจำหมวด</label>
+          <input type="color" id="fundCatColorInput" value="#6366f1" class="w-full h-10 bg-slate-950 rounded-xl p-1 border border-slate-700 cursor-pointer">
+        </div>
+      </div>
+      <div class="flex gap-2 mt-5">
+        <button onclick="closeFundCatModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 py-2.5 rounded-xl text-xs font-medium text-slate-300">ยกเลิก</button>
+        <button onclick="saveFundCategorySubmit()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-xl text-xs font-bold text-white shadow-lg">บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal จัดการประเภทบิลค่าใช้จ่ายประจำ -->
   <div id="billCatModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-emerald-500/50 rounded-3xl max-w-sm w-full shadow-2xl p-6 relative overflow-hidden">
       <h3 class="text-base font-bold text-emerald-400 mb-1" id="billCatModalTitle">จัดการรายการบิลค่าใช้จ่ายประจำ</h3>
       <p class="text-xs text-slate-400 mb-4">ระบุชื่อและรูปแบบการเรียกเก็บ</p>
-      
       <div class="space-y-3">
         <div>
           <label class="block text-xs text-slate-400 mb-1">ชื่อรายการค่าใช้จ่าย</label>
-          <input type="text" id="catNameInput" placeholder="เช่น ค่าเช่าบ้าน, ค่าส่วนกลาง, ค่าขยะ" class="w-full bg-slate-950 rounded-xl p-3 text-sm text-slate-200 border border-slate-700 outline-none focus:border-emerald-500">
+          <input type="text" id="catNameInput" placeholder="เช่น ค่าเช่าบ้าน, ค่าส่วนกลาง" class="w-full bg-slate-950 rounded-xl p-3 text-sm text-slate-200 border border-slate-700 outline-none focus:border-emerald-500">
         </div>
-
         <div>
           <label class="block text-xs text-slate-400 mb-1">รูปแบบค่าใช้จ่าย</label>
           <select id="catIsFixedSelect" onchange="toggleCatDefaultAmountUI()" class="w-full bg-slate-950 rounded-xl p-3 text-sm text-slate-200 border border-slate-700 outline-none focus:border-emerald-500">
@@ -64,22 +84,20 @@
             <option value="variable">⚡ ผันแปรตามมิเตอร์/การใช้งาน (เช่น ค่าน้ำ, ค่าไฟ)</option>
           </select>
         </div>
-
         <div id="catDefaultAmountContainer">
           <label class="block text-xs text-slate-400 mb-1">ยอดเงินคงที่ประจำเดือน (บาท)</label>
           <input type="number" id="catDefaultAmountInput" placeholder="เช่น 12000" class="w-full bg-slate-950 rounded-xl p-3 text-sm text-slate-200 border border-slate-700 outline-none focus:border-emerald-500">
-          <span class="text-[10px] text-slate-500 mt-0.5 block">*จะใส่เป็นยอดเริ่มต้นให้อัตโนมัติในทุกๆ เดือน</span>
+          <span class="text-[10px] text-slate-500 mt-0.5 block">*จะใส่เป็นยอดเริ่มต้นให้อัตโนมัติในทุกเดือน</span>
         </div>
       </div>
-
       <div class="flex gap-2 mt-5">
         <button onclick="closeBillCatModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 py-2.5 rounded-xl text-xs font-medium text-slate-300">ยกเลิก</button>
-        <button onclick="saveBillCategorySubmit()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl text-xs font-bold text-white shadow-lg shadow-emerald-600/20">บันทึก</button>
+        <button onclick="saveBillCategorySubmit()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl text-xs font-bold text-white shadow-lg">บันทึก</button>
       </div>
     </div>
   </div>
 
-  <!-- Custom Prompt Modal สำหรับใส่ยอดเงินและข้อความ -->
+  <!-- Custom Prompt Modal -->
   <div id="customPromptModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-emerald-500/50 rounded-3xl max-w-sm w-full shadow-2xl p-6 relative overflow-hidden">
       <h3 class="text-lg font-bold text-emerald-400 mb-2" id="customPromptTitle">ระบุข้อมูล</h3>
@@ -87,12 +105,12 @@
       <input type="text" id="customPromptInput" class="w-full bg-slate-950 rounded-xl p-3.5 text-xl text-emerald-400 font-bold text-center border border-slate-700 outline-none focus:border-emerald-500 mb-5 shadow-inner">
       <div class="flex gap-3">
         <button id="customPromptCancel" class="flex-1 bg-slate-800 hover:bg-slate-700 py-3.5 rounded-xl text-sm font-medium text-white transition border border-slate-700">ยกเลิก</button>
-        <button id="customPromptConfirm" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-3.5 rounded-xl text-sm font-bold text-white transition shadow-lg shadow-emerald-600/20">ยืนยัน</button>
+        <button id="customPromptConfirm" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-3.5 rounded-xl text-sm font-bold text-white transition shadow-lg">ยืนยัน</button>
       </div>
     </div>
   </div>
 
-  <!-- Custom Alert Modal แจ้งเตือนสถานะ -->
+  <!-- Custom Alert Modal -->
   <div id="customAlertModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-sm w-full shadow-2xl p-6 text-center">
       <div class="text-5xl mb-4" id="customAlertIcon">✅</div>
@@ -108,10 +126,14 @@
         <h3 class="text-sm font-bold text-indigo-400">💎 นำเงินเข้ากองกลาง</h3>
         <button onclick="closeFundDepositModal()" class="text-slate-400 hover:text-white">✕</button>
       </div>
-      <div class="space-y-4">
+      <div class="space-y-3">
         <div>
           <label class="block text-xs text-slate-400 mb-1">เลือกสมาชิก (เจ้าของเงิน)</label>
           <select id="fundDepMember" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm text-slate-200 border border-slate-700 outline-none"></select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">วันและเวลาที่โอนจริง (ตามสลิป)</label>
+          <input type="datetime-local" id="fundDepDateTime" class="w-full bg-slate-800 rounded-lg p-2 text-sm text-slate-200 border border-slate-700 outline-none">
         </div>
         <div>
           <label class="block text-xs text-slate-400 mb-1">วัตถุประสงค์ / หมายเหตุ</label>
@@ -131,21 +153,29 @@
         <h3 class="text-sm font-bold text-rose-400">💸 เบิกเงินจากกองกลาง</h3>
         <button onclick="closeFundWithdrawModal()" class="text-slate-400 hover:text-white">✕</button>
       </div>
-      <div class="space-y-4">
+      <div class="space-y-3">
         <div>
-          <label class="block text-xs text-slate-400 mb-1">ใครเป็นคนเบิกเงิน?</label>
+          <label class="block text-xs text-slate-400 mb-1">ใครเป็นคนเบิก / สำรองจ่าย?</label>
           <select id="fundWithBuyer" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm text-slate-200 border border-slate-700 outline-none"></select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">หมวดหมู่ค่าใช้จ่าย</label>
+          <select id="fundWithCategory" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm text-slate-200 border border-slate-700 outline-none"></select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">วันและเวลาที่จ่าย (ตามสลิป/ใบเสร็จ)</label>
+          <input type="datetime-local" id="fundWithDateTime" class="w-full bg-slate-800 rounded-lg p-2 text-sm text-slate-200 border border-slate-700 outline-none">
         </div>
         <div>
           <label class="block text-xs text-slate-400 mb-1">จำนวนเงินที่เบิก (บาท)</label>
           <input type="number" id="fundWithAmount" placeholder="เช่น 250" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm text-slate-200 border border-slate-700 outline-none">
         </div>
         <div>
-          <label class="block text-xs text-slate-400 mb-1">เบิกไปใช้ทำอะไร</label>
-          <input type="text" id="fundWithReason" placeholder="เช่น ค่าน้ำมันรถ, ของใช้" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm text-slate-200 border border-slate-700 outline-none">
+          <label class="block text-xs text-slate-400 mb-1">เบิกไปซื้ออะไร / รายละเอียด</label>
+          <input type="text" id="fundWithReason" placeholder="เช่น น้ำยาล้างจาน, ถุงขยะ, หมูสับ" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm text-slate-200 border border-slate-700 outline-none">
         </div>
         <button onclick="submitFundWithdraw()" class="w-full bg-rose-600 hover:bg-rose-500 py-3 rounded-xl text-sm font-bold transition text-white flex items-center justify-center gap-1.5 shadow-lg shadow-rose-600/20">
-          <span>📤</span> เลือกสลิป/ใบเสร็จเพื่อยืนยันการเบิก
+          <span>📤</span> แนบสลิป/ใบเสร็จเพื่อยืนยันการเบิก
         </button>
       </div>
     </div>
@@ -213,7 +243,7 @@
     <!-- ================= TAB 1: OVERVIEW ================= -->
     <div id="tab-overview" class="space-y-6">
       
-      <!-- อันดับที่ 1: บิลค่าบ้าน & สถานะการจ่าย + แสดงการหารต่อคนในแต่ละรายการ -->
+      <!-- 1. บิลค่าบ้าน & แสดงอัตราหารรายบุคคล -->
       <div class="bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-3xl p-6 shadow-xl space-y-5">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
           <div>
@@ -225,7 +255,6 @@
           </div>
         </div>
 
-        <!-- รายละเอียดบิลย่อย (แสดงยอดรวม + แท็บหารแล้วตกคนละกี่บาท) -->
         <div>
           <div class="text-xs text-slate-400 font-medium mb-2.5 flex items-center gap-1.5">
             <span>📊</span> ยอดรวมและอัตราหารเฉลี่ยรายบุคคล:
@@ -233,7 +262,6 @@
           <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" id="houseBillDetails"></div>
         </div>
 
-        <!-- สถานะการจ่าย & ปุ่มแนบสลิปของสมาชิกแต่ละคน -->
         <div class="pt-4 border-t border-slate-800">
           <div class="flex justify-between items-center mb-3">
             <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
@@ -244,52 +272,67 @@
         </div>
       </div>
 
-      <!-- อันดับที่ 2: กองกลางคงเหลือสุทธิ -->
-      <div class="bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-3xl p-6 shadow-xl relative overflow-hidden">
-        <div class="flex flex-col justify-between relative z-10 space-y-4">
-          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-indigo-500/20 pb-4">
-            <div>
-              <div class="text-xs font-semibold uppercase tracking-wider text-indigo-400">💎 กองกลางคงเหลือสุทธิ</div>
-              <div class="text-4xl font-black text-indigo-200 mt-1" id="dashFundBalance">0 <span class="text-sm font-normal text-indigo-300">บาท</span></div>
-              <div class="text-xs text-indigo-300/70 mt-1">เป้าหมายเก็บ <span id="fundPerPersonRate" class="font-bold text-indigo-200">0</span> บ./คน/เดือน</div>
-            </div>
-            <div class="flex gap-2 w-full sm:w-auto">
-              <button onclick="openFundDepositModal()" class="flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-4 py-2 rounded-xl shadow-lg transition font-medium">+ ฝากเงินเข้ากองกลาง</button>
-              <button onclick="openFundWithdrawModal()" class="flex-1 sm:flex-initial bg-rose-700/80 hover:bg-rose-600 text-rose-100 text-xs px-4 py-2 rounded-xl shadow-lg transition font-medium">- เบิกเงินกองกลาง</button>
-            </div>
+      <!-- 2. กองกลางคงเหลือสุทธิ + กราฟโดนัทแสดงการเบิก -->
+      <div class="bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-3xl p-6 shadow-xl relative overflow-hidden space-y-5">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-indigo-500/20 pb-4">
+          <div>
+            <div class="text-xs font-semibold uppercase tracking-wider text-indigo-400">💎 กองกลางคงเหลือสุทธิ</div>
+            <div class="text-4xl font-black mt-1" id="dashFundBalance">0 <span class="text-sm font-normal text-indigo-300">บาท</span></div>
+            <div class="text-xs text-indigo-300/70 mt-1">เป้าหมายเก็บ <span id="fundPerPersonRate" class="font-bold text-indigo-200">0</span> บ./คน/เดือน</div>
+            <div id="fundNegativeNotice" class="hidden mt-2 p-2 bg-rose-950/60 border border-rose-800 text-rose-300 text-xs rounded-xl font-medium"></div>
           </div>
+          <div class="flex gap-2 w-full sm:w-auto">
+            <button onclick="openFundDepositModal()" class="flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-4 py-2.5 rounded-xl shadow-lg transition font-medium">+ ฝากเงินเข้ากองกลาง</button>
+            <button onclick="openFundWithdrawModal()" class="flex-1 sm:flex-initial bg-rose-700/80 hover:bg-rose-600 text-rose-100 text-xs px-4 py-2.5 rounded-xl shadow-lg transition font-medium">- เบิกเงินกองกลาง</button>
+          </div>
+        </div>
 
-          <div class="pt-1">
-             <h4 class="text-xs text-slate-400 mb-2.5 flex justify-between items-center">
-               <span class="font-medium text-slate-300">📋 ความเคลื่อนไหวกองกลางล่าสุด</span>
-               <span id="logMonthText" class="text-[10px] text-slate-500"></span>
-             </h4>
-             <div id="fundDepositLog" class="space-y-2 overflow-y-auto max-h-[140px] pr-1"></div>
-          </div>
-
-          <div class="pt-3 border-t border-indigo-500/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-            <div class="text-xs text-slate-300">
-              <span class="text-slate-400">บัญชีกองกลาง:</span> 
-              <span id="displayFundBank" class="font-semibold text-indigo-300 ml-1"></span> 
-              <span id="displayFundAccNo" class="text-white font-mono font-medium ml-1"></span>
-              <span class="text-slate-400 ml-1">(<span id="displayFundAccName" class="text-slate-300"></span>)</span>
+        <!-- กราฟโดนัทสรุปหมวดหมู่การเบิกกองกลาง -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-slate-950/60 p-4 rounded-2xl border border-indigo-500/20">
+          <div class="md:col-span-5 flex flex-col items-center justify-center">
+            <div class="text-xs font-bold text-slate-300 mb-2">📊 สัดส่วนการเบิกเงินกองกลางเดือนนี้</div>
+            <div class="relative w-full flex justify-center items-center" style="height: 150px;">
+              <canvas id="fundWithdrawDonutChart"></canvas>
             </div>
-            <button onclick="showFundQR()" id="btnShowFundQr" class="hidden text-xs border border-indigo-500/50 text-indigo-300 px-3 py-1.5 rounded-xl bg-indigo-950/60 hover:bg-indigo-900/80 transition">ดู QR Code บัญชี</button>
+            <div class="text-xs text-slate-400 mt-2">ยอดเบิกทั้งหมด: <span id="fundWithdrawTotalText" class="font-bold text-rose-400">0 ฿</span></div>
           </div>
+          <div class="md:col-span-7">
+            <div class="text-[11px] font-semibold text-slate-400 mb-2">แจกแจงตามหมวดหมู่:</div>
+            <div id="fundWithdrawCategoryBreakdown" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs max-h-36 overflow-y-auto pr-1"></div>
+          </div>
+        </div>
+
+        <!-- รายการความเคลื่อนไหว (เรียงตามเวลาที่ขึ้นในสลิปจริง) -->
+        <div class="pt-1">
+           <h4 class="text-xs text-slate-400 mb-2.5 flex justify-between items-center">
+             <span class="font-medium text-slate-300">📋 ความเคลื่อนไหวกองกลาง (เรียงตามเวลาในสลิป)</span>
+             <span id="logMonthText" class="text-[10px] text-slate-500"></span>
+           </h4>
+           <div id="fundDepositLog" class="space-y-2 overflow-y-auto max-h-[170px] pr-1"></div>
+        </div>
+
+        <div class="pt-3 border-t border-indigo-500/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div class="text-xs text-slate-300">
+            <span class="text-slate-400">บัญชีกองกลาง:</span> 
+            <span id="displayFundBank" class="font-semibold text-indigo-300 ml-1"></span> 
+            <span id="displayFundAccNo" class="text-white font-mono font-medium ml-1"></span>
+            <span class="text-slate-400 ml-1">(<span id="displayFundAccName" class="text-slate-300"></span>)</span>
+          </div>
+          <button onclick="showFundQR()" id="btnShowFundQr" class="hidden text-xs border border-indigo-500/50 text-indigo-300 px-3 py-1.5 rounded-xl bg-indigo-950/60 hover:bg-indigo-900/80 transition">ดู QR Code บัญชี</button>
         </div>
       </div>
 
-      <!-- อันดับที่ 3: บิลก้อนใหญ่ (Shared Bills) -->
+      <!-- 3. บิลก้อนใหญ่ (Shared Bills) -->
       <div class="space-y-3 pt-1">
         <h2 class="font-bold text-base text-amber-400">💸 บิลก้อนใหญ่ที่ต้องจ่ายร่วมกัน (Shared Bills)</h2>
         <div id="sharedBillsContainer" class="space-y-3"></div>
       </div>
 
-      <!-- อันดับที่ 4: สัดส่วนค่าใช้จ่าย (ล่างสุด) -->
+      <!-- 4. สัดส่วนค่าใช้จ่ายรวมทั้งหมด (ล่างสุด) -->
       <div class="bg-slate-900/90 border border-slate-800/90 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
         <div class="flex justify-between items-center mb-3">
           <h2 class="font-bold text-sm text-slate-100 flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> สัดส่วนค่าใช้จ่าย 
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> สัดส่วนค่าใช้จ่ายรวมทั้งหมด 
             <span id="donutMonthText" class="text-xs text-slate-400 font-normal ml-1"></span>
           </h2>
           <select id="donutViewMode" class="bg-slate-800/90 border border-slate-700/80 rounded-xl px-2.5 py-1 text-[11px] text-slate-200 outline-none" onchange="renderDonutChartMode()">
@@ -299,7 +342,7 @@
           </select>
         </div>
 
-        <div class="relative w-full flex justify-center items-center my-3" style="height: 200px;">
+        <div class="relative w-full flex justify-center items-center my-3" style="height: 190px;">
           <canvas id="overviewDonutChart"></canvas>
         </div>
 
@@ -385,7 +428,7 @@
             <input type="checkbox" id="lockFundCb" class="w-5 h-5 accent-amber-500 rounded cursor-pointer">
             <div>
               <div class="font-bold text-slate-200 text-xs">⚙️ ล็อกการตั้งค่ากองกลาง & บัญชี</div>
-              <div class="text-[10px] text-slate-400">ต้องใส่รหัสเมื่อเปลี่ยนเลขบัญชี/เรตกองกลาง</div>
+              <div class="text-[10px] text-slate-400">ต้องใส่รหัสเมื่อเปลี่ยนเลขบัญชี/เรตกองกลาง/หมวดเบิก</div>
             </div>
           </label>
 
@@ -403,7 +446,7 @@
         </button>
       </div>
 
-      <!-- 1. ลงบิลค่าบ้านประจำเดือน (ไดนามิกตามประเภทที่ตั้งไว้) -->
+      <!-- 1. ลงบิลค่าบ้านประจำเดือน -->
       <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
         <div class="flex justify-between items-center border-b border-slate-800 pb-2">
           <div>
@@ -412,28 +455,38 @@
           </div>
           <span id="badgeLockBills" class="text-[10px] px-2.5 py-0.5 rounded-full font-bold"></span>
         </div>
-        
-        <!-- รายการฟิลด์กรอกบิล (สร้างไดนามิก) -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="adminBillInputsContainer"></div>
-
         <button onclick="saveBillsFromAdmin()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-2xl transition font-bold text-sm shadow-lg shadow-emerald-600/20">
           💾 บันทึกยอดบิลค่าบ้านประจำเดือนนี้
         </button>
       </div>
 
-      <!-- 1.1 จัดการประเภทค่าใช้จ่ายประจำ (เพิ่ม/ลด/เปลี่ยนชื่อ/กำหนดคงที่) -->
+      <!-- 1.1 จัดการประเภทค่าใช้จ่ายประจำ -->
       <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
         <div class="flex justify-between items-center border-b border-slate-800 pb-2">
           <div>
             <h2 class="text-base font-bold text-slate-200">⚙️ ตั้งค่ารายการค่าใช้จ่ายประจำบ้าน (เพิ่ม/ลด/คงที่)</h2>
             <p class="text-xs text-slate-400 mt-0.5">เพิ่มรายการบิล หรือกำหนดว่ารายการไหนคงที่ทุกเดือน</p>
           </div>
-          <button onclick="openBillCatModal('new')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition">
+          <button onclick="openBillCatModal('new')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition">
             + เพิ่มรายการบิลใหม่
           </button>
         </div>
-
         <div id="billCategoriesList" class="space-y-2"></div>
+      </div>
+
+      <!-- 1.2 จัดการหมวดหมู่การเบิกเงินกองกลาง -->
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+          <div>
+            <h2 class="text-base font-bold text-indigo-300">🏷️ ตั้งค่าหมวดหมู่การเบิกเงินกองกลาง</h2>
+            <p class="text-xs text-slate-400 mt-0.5">เพิ่ม/ลด/เปลี่ยนชื่อหมวดหมู่ที่สมาชิกใช้เบิกเงินกองกลาง</p>
+          </div>
+          <button onclick="openFundCatModal('new')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition">
+            + เพิ่มหมวดหมู่เบิกเงิน
+          </button>
+        </div>
+        <div id="fundCategoriesList" class="space-y-2"></div>
       </div>
 
       <!-- 2. สร้างบิลก้อนใหญ่ -->
@@ -505,7 +558,6 @@
     let d = new Date();
     let currentMonth = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
     
-    // โครงสร้างประเภทบิลเริ่มต้น (ถ้าในฐานข้อมูลยังไม่มี)
     const defaultCategoriesPreset = {
       'c_rent': { id: 'c_rent', name: 'ค่าเช่าบ้าน', isFixed: true, defaultAmount: 12000, color: '#6366f1', order: 1 },
       'c_water': { id: 'c_water', name: 'ค่าน้ำประปา', isFixed: false, defaultAmount: 0, color: '#06b6d4', order: 2 },
@@ -513,10 +565,21 @@
       'c_other': { id: 'c_other', name: 'ค่าเน็ต/อื่นๆ', isFixed: true, defaultAmount: 0, color: '#10b981', order: 4 }
     };
 
-    let members = {}, allMonthsData = {}, sharedBillsData = {}, settings = { fundRate: 0, initialFund: 0, locks: {}, billCategories: null };
+    const defaultFundCategoriesPreset = {
+      'fc_supplies': { id: 'fc_supplies', name: '🛒 ของใช้ในบ้าน/ของสิ้นเปลือง', color: '#10b981' },
+      'fc_food': { id: 'fc_food', name: '🍳 อาหาร/วัตถุดิบ/น้ำดื่ม', color: '#f59e0b' },
+      'fc_clean': { id: 'fc_clean', name: '🧹 อุปกรณ์ทำความสะอาด', color: '#06b6d4' },
+      'fc_repair': { id: 'fc_repair', name: '🛠️ ซ่อมบำรุง/ของใช้ชำรุด', color: '#ec4899' },
+      'fc_gas': { id: 'fc_gas', name: '⚡ สาธารณูปโภคเสริม (ถังแก๊ส/น้ำถัง)', color: '#6366f1' },
+      'fc_med': { id: 'fc_med', name: '💊 ยาสามัญ/ปฐมพยาบาล', color: '#ef4444' },
+      'fc_other': { id: 'fc_other', name: '📦 อื่นๆ', color: '#8b5cf6' }
+    };
+
+    let members = {}, allMonthsData = {}, sharedBillsData = {};
+    let settings = { fundRate: 0, initialFund: 0, locks: {}, billCategories: null, fundCategories: null };
     let currentUploadConfig = null, currentGallerySlips = [], currentGalleryIndex = 0, currentGalleryConfig = null;
-    let chartInstance = null, donutChartInstance = null;
-    let activeEditingCatId = null;
+    let chartInstance = null, donutChartInstance = null, fundDonutInstance = null;
+    let activeEditingCatId = null, activeEditingFundCatId = null;
 
     window.cachedSlips = { house: {}, fund: {}, sharedBill: {} };
     window.cachedFundSlips = {};
@@ -526,6 +589,13 @@
         return settings.billCategories;
       }
       return defaultCategoriesPreset;
+    }
+
+    function getActiveFundCategories() {
+      if (settings.fundCategories && Object.keys(settings.fundCategories).length > 0) {
+        return settings.fundCategories;
+      }
+      return defaultFundCategoriesPreset;
     }
 
     function setSafeText(id, text) {
@@ -580,9 +650,7 @@
 
     async function verifyPermission(lockKey) {
       const locks = settings.locks || {};
-      if (!locks[lockKey]) {
-        return true;
-      }
+      if (!locks[lockKey]) return true;
       const entered = await askPasscode();
       if (entered === null) return false;
       if (entered === ADMIN_PASSCODE) {
@@ -659,7 +727,6 @@
       currentMonth = `${newY}-${(newM + 1).toString().padStart(2, '0')}`;
       updateMonthDisplay(); listenToCurrentMonth();
     }
-    updateMonthDisplay();
 
     function switchTab(tabId) {
       ['overview', 'tx', 'board', 'analytics', 'admin'].forEach(tab => {
@@ -671,6 +738,13 @@
           : "px-3.5 py-1.5 rounded-xl font-medium transition text-slate-400 hover:text-white";
       });
       if (tabId === 'analytics') renderChart();
+      if (tabId === 'admin') {
+        renderBillCategoriesManager();
+        renderFundCategoriesManager();
+        renderAdminBillInputs();
+        renderMembersSettings();
+        updateLockBadges();
+      }
     }
 
     function updateLockBadges() {
@@ -709,9 +783,7 @@
     async function saveLockSettings() {
       const entered = await askPasscode("ยืนยันรหัสผ่านเพื่อตั้งค่าล็อก", "กรุณาใส่รหัสผ่านผู้ดูแลเพื่อบันทึกการตั้งค่าล็อก");
       if (entered === null) return;
-      if (entered !== ADMIN_PASSCODE) {
-        return customAlert("รหัสผ่านไม่ถูกต้อง!", "❌");
-      }
+      if (entered !== ADMIN_PASSCODE) return customAlert("รหัสผ่านไม่ถูกต้อง!", "❌");
 
       const locks = {
         bills: document.getElementById('lockBillsCb')?.checked || false,
@@ -726,7 +798,86 @@
     }
 
     // ==========================================
-    // ⚙️ จัดการประเภทค่าใช้จ่ายประจำ (Categories Manager)
+    // 🏷️ จัดการหมวดหมู่การเบิกเงินกองกลาง (Fund Categories)
+    // ==========================================
+    async function openFundCatModal(catId = 'new') {
+      if (!(await verifyPermission('fund'))) return;
+      activeEditingFundCatId = catId;
+      const cats = getActiveFundCategories();
+      const modal = document.getElementById('fundCatModal');
+
+      if (catId === 'new') {
+        setSafeText('fundCatModalTitle', 'เพิ่มหมวดหมู่เบิกเงินกองกลาง');
+        setSafeValue('fundCatNameInput', '');
+        setSafeValue('fundCatColorInput', '#6366f1');
+      } else {
+        const c = cats[catId];
+        if (!c) return;
+        setSafeText('fundCatModalTitle', 'แก้ไขหมวดหมู่เบิกเงิน');
+        setSafeValue('fundCatNameInput', c.name || '');
+        setSafeValue('fundCatColorInput', c.color || '#6366f1');
+      }
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeFundCatModal() {
+      const modal = document.getElementById('fundCatModal');
+      if (modal) modal.classList.add('hidden');
+      activeEditingFundCatId = null;
+    }
+
+    async function saveFundCategorySubmit() {
+      const name = document.getElementById('fundCatNameInput')?.value.trim();
+      const color = document.getElementById('fundCatColorInput')?.value || '#6366f1';
+      if (!name) return customAlert("กรุณาระบุชื่อหมวดหมู่", "⚠️");
+
+      const cats = { ...getActiveFundCategories() };
+      const catId = activeEditingFundCatId === 'new' ? `fc_${Date.now()}` : activeEditingFundCatId;
+
+      cats[catId] = { id: catId, name, color };
+
+      db.ref('settings/fundCategories').set(cats).then(() => {
+        closeFundCatModal();
+        customAlert("บันทึกหมวดหมู่การเบิกเงินเรียบร้อย!", "✅");
+      }).catch(err => customAlert("เกิดข้อผิดพลาด: " + err.message, "❌"));
+    }
+
+    async function deleteFundCategory(catId) {
+      if (!(await verifyPermission('fund'))) return;
+      const cats = { ...getActiveFundCategories() };
+      if (Object.keys(cats).length <= 1) {
+        return customAlert("ต้องมีหมวดหมู่การเบิกเงินอย่างน้อย 1 หมวด", "⚠️");
+      }
+      delete cats[catId];
+      db.ref('settings/fundCategories').set(cats).then(() => {
+        customAlert("ลบหมวดหมู่เรียบร้อย!", "✅");
+      }).catch(err => customAlert("เกิดข้อผิดพลาด: " + err.message, "❌"));
+    }
+
+    function renderFundCategoriesManager() {
+      const container = document.getElementById('fundCategoriesList');
+      if (!container) return;
+      container.innerHTML = '';
+      const cats = getActiveFundCategories();
+
+      Object.values(cats).forEach(c => {
+        if (!c) return;
+        container.innerHTML += `
+          <div class="flex justify-between items-center p-3 bg-slate-950/70 border border-slate-800/80 rounded-2xl text-xs">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full shadow" style="background-color: ${c.color}"></span>
+              <span class="font-medium text-slate-200">${c.name}</span>
+            </div>
+            <div class="flex gap-2.5">
+              <button onclick="openFundCatModal('${c.id}')" class="text-amber-400 hover:underline">แก้ไข</button>
+              <button onclick="deleteFundCategory('${c.id}')" class="text-rose-400 hover:underline">ลบ</button>
+            </div>
+          </div>`;
+      });
+    }
+
+    // ==========================================
+    // ⚙️ จัดการประเภทค่าใช้จ่ายประจำ (Bill Categories)
     // ==========================================
     function toggleCatDefaultAmountUI() {
       const isFixed = document.getElementById('catIsFixedSelect')?.value === 'fixed';
@@ -736,7 +887,6 @@
 
     async function openBillCatModal(catId = 'new') {
       if (!(await verifyPermission('bills'))) return;
-
       activeEditingCatId = catId;
       const cats = getActiveCategories();
       const modal = document.getElementById('billCatModal');
@@ -768,12 +918,10 @@
       const name = document.getElementById('catNameInput')?.value.trim();
       const isFixed = document.getElementById('catIsFixedSelect')?.value === 'fixed';
       const defaultAmount = isFixed ? (Number(document.getElementById('catDefaultAmountInput')?.value) || 0) : 0;
-
       if (!name) return customAlert("กรุณาระบุชื่อรายการค่าใช้จ่าย", "⚠️");
 
       const cats = { ...getActiveCategories() };
       const catId = activeEditingCatId === 'new' ? `cat_${Date.now()}` : activeEditingCatId;
-      
       const palette = ['#6366f1', '#06b6d4', '#f59e0b', '#10b981', '#ec4899', '#8b5cf6', '#14b8a6', '#f97316'];
       const chosenColor = cats[catId]?.color || palette[Object.keys(cats).length % palette.length];
 
@@ -795,9 +943,7 @@
     async function deleteBillCategory(catId) {
       if (!(await verifyPermission('bills'))) return;
       const cats = { ...getActiveCategories() };
-      if (Object.keys(cats).length <= 1) {
-        return customAlert("ต้องมีรายการค่าใช้จ่ายประจำอย่างน้อย 1 รายการ", "⚠️");
-      }
+      if (Object.keys(cats).length <= 1) return customAlert("ต้องมีรายการค่าใช้จ่ายประจำอย่างน้อย 1 รายการ", "⚠️");
       delete cats[catId];
       db.ref('settings/billCategories').set(cats).then(() => {
         customAlert("ลบรายการค่าใช้จ่ายเรียบร้อย!", "✅");
@@ -831,9 +977,6 @@
       });
     }
 
-    // ==========================================
-    // 📝 สร้างฟอร์มกรอกบิลรายเดือนในหน้า Admin (Dynamic)
-    // ==========================================
     function renderAdminBillInputs() {
       const container = document.getElementById('adminBillInputsContainer');
       if (!container) return;
@@ -845,7 +988,6 @@
 
       Object.values(cats).forEach(c => {
         if (!c) return;
-        // หาค่ายอดเงินที่เคยบันทึกไว้ หรือถ้ายังไม่มีให้ใช้ค่ายอดคงที่ (Default Amount)
         let val = '';
         if (savedItems[c.id] !== undefined) {
           val = savedItems[c.id];
@@ -861,7 +1003,7 @@
           val = c.defaultAmount || 0;
         }
 
-        const tagText = c.isFixed ? `<span class="text-indigo-400">(คงที่)</span>` : `<span class="text-amber-400">(ตามมิเตอร์)</span>`;
+        const tagText = c.isFixed ? `<span class="text-indigo-400 font-normal">(คงที่)</span>` : `<span class="text-amber-400 font-normal">(ตามมิเตอร์)</span>`;
 
         container.innerHTML += `
           <div>
@@ -873,11 +1015,55 @@
       });
     }
 
+    // ==========================================
+    // ⏰ แปลงเวลาสลิปแบบกันพลาด (No NaN)
+    // ==========================================
+    function parseTimestamp(timeStr, fallbackDateStr, key) {
+      if (timeStr && typeof timeStr === 'string') {
+        const t = Date.parse(timeStr);
+        if (!isNaN(t)) return t;
+      }
+      if (fallbackDateStr && typeof fallbackDateStr === 'string') {
+        const parts = fallbackDateStr.split('/');
+        if (parts.length === 3) {
+          const day = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10) - 1;
+          let year = parseInt(parts[2], 10);
+          if (year > 2400) year -= 543; // แปลง พ.ศ. เป็น ค.ศ.
+          const d = new Date(year, month, day).getTime();
+          if (!isNaN(d)) return d;
+        }
+      }
+      // ดึง timestamp จาก Firebase Push ID
+      if (key && typeof key === 'string' && key.startsWith('-')) {
+        const PUSH_CHARS = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz';
+        let time = 0;
+        for (let i = 1; i < 9; i++) {
+          const c = key.charAt(i);
+          const idx = PUSH_CHARS.indexOf(c);
+          if (idx !== -1) time = time * 64 + idx;
+        }
+        if (time > 0) return time;
+      }
+      return 0;
+    }
+
+    function formatDisplayDateTime(timeStr, fallbackDateStr) {
+      if (timeStr && timeStr.includes('T')) {
+        const [dPart, tPart] = timeStr.split('T');
+        const [y, m, d] = dPart.split('-');
+        return `${d}/${m}/${y} เวลา ${tPart} น.`;
+      }
+      return fallbackDateStr || 'ไม่ระบุเวลา';
+    }
+
     // DB Listeners
     db.ref('settings').on('value', snap => {
       if (snap.exists()) settings = { ...settings, ...snap.val() };
       renderBillCategoriesManager();
+      renderFundCategoriesManager();
       renderAdminBillInputs();
+      updateDropdowns();
       calculateAndRender();
       updateLockBadges();
     });
@@ -919,7 +1105,7 @@
     }
 
     // ==========================================
-    // 📊 คำนวณและแสดงผลรวม + อัตราหารต่อคนในแต่ละรายการ
+    // 📊 คำนวณยอดเงิน + ลำดับตามเวลาสลิป + กราฟกองกลาง
     // ==========================================
     function calculateAndRender() {
       const activeCount = Object.values(members).filter(m => m && m.active).length || 1;
@@ -935,19 +1121,12 @@
       Object.values(cats).forEach(c => {
         if (!c) return;
         let amt = 0;
-        if (savedItems[c.id] !== undefined) {
-          amt = Number(savedItems[c.id]) || 0;
-        } else if (c.id === 'c_rent' && curData.rent !== undefined) {
-          amt = Number(curData.rent) || 0;
-        } else if (c.id === 'c_water' && curData.water !== undefined) {
-          amt = Number(curData.water) || 0;
-        } else if (c.id === 'c_electric' && curData.electricDirect !== undefined) {
-          amt = Number(curData.electricDirect) || 0;
-        } else if (c.id === 'c_other' && curData.other !== undefined) {
-          amt = Number(curData.other) || 0;
-        } else if (c.isFixed) {
-          amt = Number(c.defaultAmount) || 0;
-        }
+        if (savedItems[c.id] !== undefined) amt = Number(savedItems[c.id]) || 0;
+        else if (c.id === 'c_rent' && curData.rent !== undefined) amt = Number(curData.rent) || 0;
+        else if (c.id === 'c_water' && curData.water !== undefined) amt = Number(curData.water) || 0;
+        else if (c.id === 'c_electric' && curData.electricDirect !== undefined) amt = Number(curData.electricDirect) || 0;
+        else if (c.id === 'c_other' && curData.other !== undefined) amt = Number(curData.other) || 0;
+        else if (c.isFixed) amt = Number(c.defaultAmount) || 0;
 
         totalHouseBill += amt;
         const perPersonShare = Math.round(amt / activeCount);
@@ -965,7 +1144,7 @@
       const totalPerPerson = Math.round(totalHouseBill / activeCount);
       setSafeHTML('dashPerPerson', `${totalPerPerson.toLocaleString()} <span class="text-sm text-emerald-400 font-normal">บ./คน</span>`);
 
-      // 1. เรนเดอร์การ์ดรายละเอียดบิลย่อย พร้อมแสดงยอดหารต่อคนอย่างชัดเจน
+      // 1. เรนเดอร์การ์ดรายละเอียดบิลย่อย
       const detailsContainer = document.getElementById('houseBillDetails');
       if (detailsContainer) {
         detailsContainer.innerHTML = '';
@@ -990,7 +1169,6 @@
             </div>`;
         });
 
-        // การ์ดรวมยอดทั้งหมด
         detailsContainer.innerHTML += `
           <div class="bg-emerald-950/30 border border-emerald-500/40 p-3 rounded-2xl flex flex-col justify-between col-span-2 sm:col-span-1">
             <div>
@@ -1004,7 +1182,7 @@
           </div>`;
       }
 
-      // 2. คำนวณเงินกองกลาง
+      // 2. คำนวณเงินกองกลางคงเหลือสุทธิ (รองรับยอดติดลบ)
       let totalFundPaidIn = Number(settings.initialFund) || 0, totalFundOut = 0;
       Object.keys(allMonthsData).forEach(mth => {
         const mData = allMonthsData[mth];
@@ -1020,61 +1198,129 @@
           });
         }
       });
-      setSafeHTML('dashFundBalance', `${(totalFundPaidIn - totalFundOut).toLocaleString()} <span class="text-sm font-normal text-indigo-300">บาท</span>`);
+      
+      const netFund = totalFundPaidIn - totalFundOut;
+      const fundBalanceColor = netFund >= 0 ? 'text-indigo-200' : 'text-rose-400 animate-pulse';
+      setSafeHTML('dashFundBalance', `<span class="${fundBalanceColor}">${netFund.toLocaleString()}</span> <span class="text-sm font-normal text-indigo-300">บาท</span>`);
 
-      // 3. ประวัติกองกลาง
-      const depLog = document.getElementById('fundDepositLog');
-      if (depLog) {
-        depLog.innerHTML = '';
-        let hasLog = false;
-        window.cachedFundSlips = {};
-
-        if (curData.fundExpenses && typeof curData.fundExpenses === 'object') {
-          Object.entries(curData.fundExpenses).forEach(([expId, e]) => {
-            if (!e) return;
-            hasLog = true;
-            let slipBtn = '';
-            if (e.url) {
-              const cKey = `exp_${expId}`;
-              window.cachedFundSlips[cKey] = {
-                url: e.url,
-                title: `เบิก: ${e.buyer || ''} (${e.name || ''})`
-              };
-              slipBtn = `<button onclick="viewSingleFundSlip('${cKey}')" class="text-blue-400 hover:underline ml-1 font-medium">ดูสลิป</button>`;
-            }
-            depLog.innerHTML += `
-              <div class="flex justify-between items-center bg-rose-950/20 p-2.5 rounded-xl border border-rose-900/30 text-xs">
-                <span class="text-rose-300">📤 เบิก: <strong>${e.buyer || '-'}</strong> (${e.name || '-'}) ${slipBtn}</span>
-                <span class="text-rose-400 font-bold">-${Number(e.amount || 0).toLocaleString()} ฿</span>
-              </div>`;
-          });
-        }
-        if (curData.fundDeposits && typeof curData.fundDeposits === 'object') {
-          Object.entries(curData.fundDeposits).forEach(([depId, dep]) => {
-            if (!dep) return;
-            hasLog = true;
-            let slipBtn = '';
-            const mName = (members[dep.memberId] && members[dep.memberId].name) || 'สมาชิก';
-            if (dep.url) {
-              const cKey = `dep_${depId}`;
-              window.cachedFundSlips[cKey] = {
-                url: dep.url,
-                title: `ฝาก: ${mName} (${dep.note || 'สมทบกองกลาง'})`
-              };
-              slipBtn = `<button onclick="viewSingleFundSlip('${cKey}')" class="text-blue-400 hover:underline ml-1 font-medium">ดูสลิป</button>`;
-            }
-            depLog.innerHTML += `
-              <div class="flex justify-between items-center bg-indigo-950/30 p-2.5 rounded-xl border border-indigo-900/40 text-xs">
-                <span class="text-indigo-300">📥 ฝาก: <strong>${mName}</strong> (${dep.note || 'สมทบกองกลาง'}) ${slipBtn}</span>
-                <span class="text-emerald-400 font-bold">+${Number(dep.amount || 0).toLocaleString()} ฿</span>
-              </div>`;
-          });
-        }
-
-        if (!hasLog) {
-          depLog.innerHTML = `<div class="text-[11px] text-slate-500 text-center py-2">ยังไม่มีรายการฝากหรือเบิกเงินกองกลางในเดือนนี้</div>`;
+      const noticeEl = document.getElementById('fundNegativeNotice');
+      if (noticeEl) {
+        if (netFund < 0) {
+          noticeEl.classList.remove('hidden');
+          noticeEl.innerHTML = `⚠️ เงินกองกลางติดลบ <strong>${Math.abs(netFund).toLocaleString()} ฿</strong> (มียอดสำรองจ่ายออกไปก่อน รอเงินสมทบคืน)`;
+        } else {
+          noticeEl.classList.add('hidden');
         }
       }
+
+      // 3. กองกลางความเคลื่อนไหว (เรียงตามเวลาสลิปจริง)
+      const depLog = document.getElementById('fundDepositLog');
+      const fundCats = getActiveFundCategories();
+      const combinedLogs = [];
+      const categorySpendTotals = {};
+      Object.keys(fundCats).forEach(k => categorySpendTotals[k] = 0);
+      let totalWithdrawInMonth = 0;
+
+      window.cachedFundSlips = {};
+
+      if (curData.fundExpenses && typeof curData.fundExpenses === 'object') {
+        Object.entries(curData.fundExpenses).forEach(([expId, e]) => {
+          if (!e) return;
+          const amt = Number(e.amount || 0);
+          totalWithdrawInMonth += amt;
+          const catId = e.categoryId || 'fc_other';
+          categorySpendTotals[catId] = (categorySpendTotals[catId] || 0) + amt;
+
+          const sortTime = parseTimestamp(e.slipTime, e.date, expId);
+
+          combinedLogs.push({
+            type: 'expense',
+            id: expId,
+            buyer: e.buyer || '-',
+            name: e.name || '-',
+            amount: amt,
+            categoryId: catId,
+            url: e.url,
+            slipTime: e.slipTime,
+            date: e.date,
+            sortKey: sortTime
+          });
+        });
+      }
+
+      if (curData.fundDeposits && typeof curData.fundDeposits === 'object') {
+        Object.entries(curData.fundDeposits).forEach(([depId, dep]) => {
+          if (!dep) return;
+          const mName = (members[dep.memberId] && members[dep.memberId].name) || 'สมาชิก';
+          const sortTime = parseTimestamp(dep.slipTime, dep.date, depId);
+
+          combinedLogs.push({
+            type: 'deposit',
+            id: depId,
+            buyer: mName,
+            name: dep.note || 'สมทบเงินกองกลาง',
+            amount: Number(dep.amount || 0),
+            url: dep.url,
+            slipTime: dep.slipTime,
+            date: dep.date,
+            sortKey: sortTime
+          });
+        });
+      }
+
+      combinedLogs.sort((a, b) => b.sortKey - a.sortKey);
+
+      if (depLog) {
+        depLog.innerHTML = '';
+        if (combinedLogs.length === 0) {
+          depLog.innerHTML = `<div class="text-[11px] text-slate-500 text-center py-2">ยังไม่มีรายการฝากหรือเบิกเงินกองกลางในเดือนนี้</div>`;
+        } else {
+          combinedLogs.forEach(log => {
+            let slipBtn = '';
+            if (log.url) {
+              const cKey = `${log.type}_${log.id}`;
+              window.cachedFundSlips[cKey] = {
+                url: log.url,
+                title: `${log.type === 'expense' ? 'เบิก' : 'ฝาก'}: ${log.buyer} (${log.name})`
+              };
+              slipBtn = `<button onclick="viewSingleFundSlip('${cKey}')" class="text-blue-400 hover:underline ml-1 font-medium">ดูสลิป</button>`;
+            }
+
+            const timeLabel = formatDisplayDateTime(log.slipTime, log.date);
+
+            if (log.type === 'expense') {
+              const catObj = fundCats[log.categoryId] || { name: 'อื่นๆ', color: '#8b5cf6' };
+              depLog.innerHTML += `
+                <div class="flex justify-between items-center bg-rose-950/20 p-2.5 rounded-xl border border-rose-900/30 text-xs">
+                  <div>
+                    <div class="text-rose-300">
+                      <span class="inline-block w-2 h-2 rounded-full mr-1" style="background-color: ${catObj.color}"></span>
+                      📤 เบิก: <strong>${log.buyer}</strong> (${log.name}) 
+                      <span class="text-[10px] px-1.5 py-0.2 rounded-md bg-rose-900/50 text-rose-200 border border-rose-800">${catObj.name}</span>
+                      ${slipBtn}
+                    </div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">⏰ ${timeLabel}</div>
+                  </div>
+                  <span class="text-rose-400 font-bold whitespace-nowrap">-${log.amount.toLocaleString()} ฿</span>
+                </div>`;
+            } else {
+              depLog.innerHTML += `
+                <div class="flex justify-between items-center bg-indigo-950/30 p-2.5 rounded-xl border border-indigo-900/40 text-xs">
+                  <div>
+                    <div class="text-indigo-300">
+                      📥 ฝาก: <strong>${log.buyer}</strong> (${log.name}) ${slipBtn}
+                    </div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">⏰ ${timeLabel}</div>
+                  </div>
+                  <span class="text-emerald-400 font-bold whitespace-nowrap">+${log.amount.toLocaleString()} ฿</span>
+                </div>`;
+            }
+          });
+        }
+      }
+
+      // 4. เรนเดอร์กราฟโดนัทการเบิกกองกลาง
+      renderFundWithdrawDonut(categorySpendTotals, totalWithdrawInMonth);
 
       setSafeValue('setFundRate', settings.fundRate || 0);
       setSafeValue('setInitialFund', settings.initialFund || 0);
@@ -1099,6 +1345,70 @@
       renderPersonalCardsCompact(totalPerPerson, curData.payments || {});
       renderTransactionsTab(breakdownItems, totalHouseBill, activeCount, totalPerPerson);
       renderDonutChartMode();
+    }
+
+    // กราฟโดนัทการเบิกกองกลาง
+    function renderFundWithdrawDonut(categorySpendTotals, totalSpend) {
+      const canvasEl = document.getElementById('fundWithdrawDonutChart');
+      const breakdownEl = document.getElementById('fundWithdrawCategoryBreakdown');
+      setSafeText('fundWithdrawTotalText', `${totalSpend.toLocaleString()} ฿`);
+
+      if (!canvasEl || !breakdownEl) return;
+      const fundCats = getActiveFundCategories();
+
+      const items = Object.values(fundCats).map(c => ({
+        id: c.id,
+        name: c.name,
+        amount: categorySpendTotals[c.id] || 0,
+        color: c.color || '#6366f1'
+      })).filter(item => item.amount > 0);
+
+      breakdownEl.innerHTML = '';
+      if (items.length === 0) {
+        breakdownEl.innerHTML = `<div class="text-[11px] text-slate-500 col-span-2">ยังไม่มีรายการเบิกจ่ายในเดือนนี้</div>`;
+      } else {
+        items.forEach(it => {
+          const pct = totalSpend > 0 ? ((it.amount / totalSpend) * 100).toFixed(1) : 0;
+          breakdownEl.innerHTML += `
+            <div class="flex items-center justify-between p-1.5 rounded-xl bg-slate-900 border border-slate-800 text-[11px]">
+              <span class="flex items-center gap-1.5 truncate text-slate-300">
+                <span class="w-2 h-2 rounded-full flex-shrink-0" style="background-color: ${it.color}"></span>
+                <span class="truncate">${it.name}</span>
+              </span>
+              <span class="font-bold text-slate-100 flex-shrink-0 ml-1">${it.amount.toLocaleString()} ฿ (${pct}%)</span>
+            </div>`;
+        });
+      }
+
+      if (typeof Chart === 'undefined') return;
+
+      try {
+        if (fundDonutInstance) fundDonutInstance.destroy();
+        const ctx = canvasEl.getContext('2d');
+        const chartData = items.length > 0 ? items : [{ name: 'ไม่มีการเบิกจ่าย', amount: 1, color: '#334155' }];
+
+        fundDonutInstance = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: chartData.map(c => c.name),
+            datasets: [{
+              data: chartData.map(c => c.amount),
+              backgroundColor: chartData.map(c => c.color),
+              borderWidth: 2,
+              borderColor: '#0f172a',
+              borderRadius: 4
+            }]
+          },
+          options: {
+            cutout: '68%',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } }
+          }
+        });
+      } catch (err) {
+        console.error("Fund donut error:", err);
+      }
     }
 
     function renderDonutChartMode() {
@@ -1185,11 +1495,20 @@
       try {
         if (donutChartInstance) donutChartInstance.destroy();
         const ctx = canvasEl.getContext('2d');
+        const hasData = categories.some(c => c.amount > 0);
+        const chartData = hasData ? categories : [{ name: 'ไม่มีข้อมูล', amount: 1, color: '#334155' }];
+
         donutChartInstance = new Chart(ctx, {
           type: 'doughnut',
           data: {
-            labels: categories.map(c => c.name),
-            datasets: [{ data: categories.map(c => c.amount), backgroundColor: categories.map(c => c.color), borderWidth: 2, borderColor: '#0f172a', borderRadius: 6 }]
+            labels: chartData.map(c => c.name),
+            datasets: [{
+              data: chartData.map(c => c.amount),
+              backgroundColor: chartData.map(c => c.color),
+              borderWidth: 2,
+              borderColor: '#0f172a',
+              borderRadius: 6
+            }]
           },
           options: { cutout: '70%', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
@@ -1285,9 +1604,17 @@
         }
       });
       setSafeHTML('sharedBillMembersCheckboxes', sbChecks); 
+
+      const catSelect = document.getElementById('fundWithCategory');
+      if (catSelect) {
+        catSelect.innerHTML = '';
+        const cats = getActiveFundCategories();
+        Object.values(cats).forEach(c => {
+          catSelect.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+        });
+      }
     }
 
-    // บันทึกยอดบิลค่าบ้านของเดือนปัจจุบัน
     async function saveBillsFromAdmin() {
       if (!(await verifyPermission('bills'))) return;
 
@@ -1300,7 +1627,6 @@
         const val = Number(document.getElementById(`inpCat_${c.id}`)?.value) || 0;
         updatedItems[c.id] = val;
 
-        // ซิงก์ฟิลด์ Legacy เผื่อไว้
         if (c.id === 'c_rent') rentLegacy = val;
         if (c.id === 'c_water') waterLegacy = val;
         if (c.id === 'c_electric') elecLegacy = val;
@@ -1322,7 +1648,6 @@
 
     async function addNewMember() {
       if (!(await verifyPermission('members'))) return;
-
       const input = document.getElementById('newMemberName');
       const name = input ? input.value.trim() : '';
       if (!name) return customAlert("กรุณาระบุชื่อสมาชิก", "⚠️");
@@ -1334,7 +1659,6 @@
 
     async function editMemberName(id) {
       if (!(await verifyPermission('members'))) return;
-
       const currentName = (members[id] && members[id].name) || '';
       const newName = await askPrompt("✏️ แก้ไขชื่อสมาชิก", "พิมพ์ชื่อใหม่ที่ต้องการเปลี่ยน:", currentName, "text");
       if (newName === null) return;
@@ -1348,7 +1672,6 @@
 
     async function deleteMember(id) {
       if (!(await verifyPermission('members'))) return;
-
       db.ref(`members/${id}`).remove().then(() => {
         customAlert("ลบสมาชิกสำเร็จ!");
       }).catch(err => customAlert("เกิดข้อผิดพลาด: " + err.message, "❌"));
@@ -1373,7 +1696,6 @@
 
     async function saveSettings() {
       if (!(await verifyPermission('fund'))) return;
-
       db.ref('settings').update({
         fundRate: Number(document.getElementById('setFundRate')?.value) || 0,
         initialFund: Number(document.getElementById('setInitialFund')?.value) || 0,
@@ -1389,7 +1711,6 @@
 
     async function createSharedBill() {
       if (!(await verifyPermission('shared'))) return;
-
       const title = document.getElementById('sharedBillTitle')?.value.trim();
       const amt = Number(document.getElementById('sharedBillAmount')?.value);
       const cbs = document.querySelectorAll('.shared-member-cb:checked');
@@ -1421,7 +1742,7 @@
       const file = e.target.files[0];
       if (!file || !currentUploadConfig) return;
 
-      const { expectedAmt, memberId, paymentType, note, buyer, reason } = currentUploadConfig;
+      const { expectedAmt, memberId, paymentType, note, buyer, reason, categoryId, slipTime } = currentUploadConfig;
       
       let promptTitle = "📌 ระบุยอดเงิน";
       let promptDesc = "พิมพ์ยอดเงินตามสลิปโอน:";
@@ -1452,6 +1773,7 @@
             amount: finalAmount,
             note: note || 'สมทบเงินกองกลาง',
             url: resData.data.url,
+            slipTime: slipTime || new Date().toISOString(),
             date: new Date().toLocaleDateString('th-TH')
           });
           customAlert(`บันทึกสลิปนำเงินเข้ากองกลางเรียบร้อย!\nยอดเงิน: ${finalAmount.toLocaleString()} บาท`, "💎");
@@ -1460,7 +1782,9 @@
             buyer: buyer || '-',
             name: reason || '-',
             amount: finalAmount,
+            categoryId: categoryId || 'fc_other',
             url: resData.data.url,
+            slipTime: slipTime || new Date().toISOString(),
             date: new Date().toLocaleDateString('th-TH')
           });
           customAlert(`เบิกเงินและบันทึกสลิปเรียบร้อย!\nจำนวน: ${finalAmount.toLocaleString()} บาท`, "💸");
@@ -1595,6 +1919,11 @@
           if (m && m.active) sel.innerHTML += `<option value="${id}">${m.name}</option>`;
         });
       }
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      setSafeValue('fundDepDateTime', now.toISOString().slice(0, 16));
+      setSafeValue('fundDepNote', '');
+
       const modal = document.getElementById('fundDepositModal');
       if (modal) modal.classList.remove('hidden');
     }
@@ -1611,8 +1940,22 @@
           if (m && m.active) sel.innerHTML += `<option value="${m.name}">${m.name}</option>`;
         });
       }
+
+      const catSelect = document.getElementById('fundWithCategory');
+      if (catSelect) {
+        catSelect.innerHTML = '';
+        const cats = getActiveFundCategories();
+        Object.values(cats).forEach(c => {
+          catSelect.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+        });
+      }
+
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      setSafeValue('fundWithDateTime', now.toISOString().slice(0, 16));
       setSafeValue('fundWithAmount', '');
       setSafeValue('fundWithReason', '');
+
       const modal = document.getElementById('fundWithdrawModal');
       if (modal) modal.classList.remove('hidden');
     }
@@ -1623,8 +1966,10 @@
 
     function submitFundWithdraw() {
       const buyer = document.getElementById('fundWithBuyer')?.value;
+      const categoryId = document.getElementById('fundWithCategory')?.value;
       const amt = Number(document.getElementById('fundWithAmount')?.value);
       const reason = document.getElementById('fundWithReason')?.value.trim();
+      const slipTime = document.getElementById('fundWithDateTime')?.value;
       
       if (!buyer || !amt || !reason) {
         return customAlert("กรุณากรอกข้อมูลให้ครบถ้วนก่อนเลือกสลิป/ใบเสร็จ", "⚠️");
@@ -1633,8 +1978,10 @@
       currentUploadConfig = {
         paymentType: 'fundWithdraw',
         buyer: buyer,
+        categoryId: categoryId,
         expectedAmt: amt,
-        reason: reason
+        reason: reason,
+        slipTime: slipTime
       };
       
       closeFundWithdrawModal();
@@ -1645,8 +1992,10 @@
     function triggerFundSlipUpload() {
       const mId = document.getElementById('fundDepMember')?.value;
       const note = document.getElementById('fundDepNote')?.value.trim();
+      const slipTime = document.getElementById('fundDepDateTime')?.value;
+
       if (!mId) return customAlert("กรุณาเลือกสมาชิกที่เป็นเจ้าของเงิน", "⚠️");
-      currentUploadConfig = { memberId: mId, paymentType: 'fundDeposit', expectedAmt: 0, note: note };
+      currentUploadConfig = { memberId: mId, paymentType: 'fundDeposit', expectedAmt: 0, note: note, slipTime: slipTime };
       closeFundDepositModal();
       const fileInput = document.getElementById('slipInput');
       if (fileInput) fileInput.click();
@@ -1697,6 +2046,18 @@
         console.error("Bar chart error:", err);
       }
     }
+
+    // ==========================================
+    // 🚀 รันระบบทันทีที่โหลดหน้าจอ (ป้องกันหน้าขาวว่างเปล่า)
+    // ==========================================
+    updateMonthDisplay();
+    renderBillCategoriesManager();
+    renderFundCategoriesManager();
+    renderAdminBillInputs();
+    renderMembersSettings();
+    updateDropdowns();
+    calculateAndRender();
+    updateLockBadges();
   </script>
 </body>
 </html>
