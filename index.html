@@ -14,21 +14,50 @@
     body { font-family: 'Kanit', sans-serif; }
   </style>
   
-  <!-- Firebase & Chart.js & SheetJS -->
+  <!-- Firebase & Chart.js & SheetJS & Tesseract OCR -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen pb-16 selection:bg-emerald-500 selection:text-white">
 
   <!-- File Input สำหรับแนบสลิป -->
   <input type="file" id="slipInput" accept="image/*" class="hidden" onchange="handleSlipSelected(event)">
   
+  <!-- Loading Overlay -->
   <div id="loadingOverlay" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[100] hidden flex flex-col items-center justify-center p-4 text-center">
     <div class="w-12 h-12 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin mb-4"></div>
     <div id="loadingStatusText" class="text-base font-semibold text-emerald-400">กำลังประมวลผล...</div>
     <div class="text-xs text-slate-400 mt-2">ห้ามปิดหน้าจอจนกว่าจะเสร็จสิ้น</div>
+  </div>
+
+  <!-- Modal ยืนยันข้อมูลที่สแกนได้จากสลิป (OCR Verification) -->
+  <div id="slipConfirmModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[95] hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-emerald-500/50 rounded-3xl max-w-sm w-full shadow-2xl p-6 relative">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-2xl">🔍</span>
+        <h3 class="text-base font-bold text-emerald-400" id="slipConfirmTitle">ผลการสแกนสลิป</h3>
+      </div>
+      <p class="text-xs text-slate-300 mb-4" id="slipConfirmDesc">ระบบอ่านข้อมูลจากภาพสลิปเรียบร้อยแล้ว โปรดตรวจสอบความถูกต้อง:</p>
+      
+      <div class="space-y-3 mb-5">
+        <div>
+          <label class="block text-[11px] text-slate-400 mb-1">ยอดเงินตามสลิป (บาท)</label>
+          <input type="number" step="any" id="slipConfirmAmount" class="w-full bg-slate-950 rounded-xl p-3 text-2xl text-emerald-400 font-bold text-center border border-slate-700 outline-none focus:border-emerald-500">
+        </div>
+        <div>
+          <label class="block text-[11px] text-slate-400 mb-1">วันและเวลาที่ทำรายการ (ตามเวลาในสลิป)</label>
+          <input type="datetime-local" id="slipConfirmDateTime" class="w-full bg-slate-950 rounded-xl p-2.5 text-xs text-slate-200 border border-slate-700 outline-none focus:border-emerald-500 text-center font-medium">
+        </div>
+      </div>
+      
+      <div class="flex gap-2">
+        <button id="slipConfirmCancelBtn" class="flex-1 bg-slate-800 hover:bg-slate-700 py-3 rounded-xl text-xs font-medium text-slate-300 transition">ยกเลิก</button>
+        <button id="slipConfirmOkBtn" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl text-xs font-bold text-white transition shadow-lg shadow-emerald-600/20">ยืนยันบันทึก</button>
+      </div>
+    </div>
   </div>
 
   <!-- Modal ตรวจสอบรหัสผ่านผู้ดูแล -->
@@ -97,19 +126,6 @@
     </div>
   </div>
 
-  <!-- Custom Prompt Modal -->
-  <div id="customPromptModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-emerald-500/50 rounded-3xl max-w-sm w-full shadow-2xl p-6 relative overflow-hidden">
-      <h3 class="text-lg font-bold text-emerald-400 mb-2" id="customPromptTitle">ระบุข้อมูล</h3>
-      <p class="text-sm text-slate-300 mb-5 whitespace-pre-line" id="customPromptDesc">โปรดระบุข้อมูล</p>
-      <input type="text" id="customPromptInput" class="w-full bg-slate-950 rounded-xl p-3.5 text-xl text-emerald-400 font-bold text-center border border-slate-700 outline-none focus:border-emerald-500 mb-5 shadow-inner">
-      <div class="flex gap-3">
-        <button id="customPromptCancel" class="flex-1 bg-slate-800 hover:bg-slate-700 py-3.5 rounded-xl text-sm font-medium text-white transition border border-slate-700">ยกเลิก</button>
-        <button id="customPromptConfirm" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-3.5 rounded-xl text-sm font-bold text-white transition shadow-lg">ยืนยัน</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Custom Alert Modal -->
   <div id="customAlertModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-sm w-full shadow-2xl p-6 text-center">
@@ -132,15 +148,11 @@
           <select id="fundDepMember" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm text-slate-200 border border-slate-700 outline-none"></select>
         </div>
         <div>
-          <label class="block text-xs text-slate-400 mb-1">วันและเวลาที่โอนจริง (ตามสลิป)</label>
-          <input type="datetime-local" id="fundDepDateTime" class="w-full bg-slate-800 rounded-lg p-2 text-sm text-slate-200 border border-slate-700 outline-none">
-        </div>
-        <div>
           <label class="block text-xs text-slate-400 mb-1">วัตถุประสงค์ / หมายเหตุ</label>
           <input type="text" id="fundDepNote" placeholder="เช่น สมทบรายเดือน" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm text-slate-200 border border-slate-700 outline-none">
         </div>
         <button onclick="triggerFundSlipUpload()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl text-sm font-medium transition text-white">
-          📤 เลือกสลิปเพื่ออัปโหลด
+          📤 เลือกสลิปเพื่อสแกนและอัปโหลด
         </button>
       </div>
     </div>
@@ -152,24 +164,18 @@
       <div class="flex justify-between items-center mb-3">
         <div>
           <h3 class="text-sm font-bold text-rose-400">💸 เบิกเงินจากกองกลาง</h3>
-          <p class="text-[10px] text-slate-400">รองรับการซื้อของหลายอย่าง/หลายหมวดในสลิปเดียว</p>
+          <p class="text-[10px] text-slate-400">ระบบจะสแกนเวลาและยอดเงินจากสลิปอัตโนมัติ</p>
         </div>
         <button onclick="closeFundWithdrawModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
       </div>
       
       <div class="space-y-3">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <div>
-            <label class="block text-[11px] text-slate-400 mb-1">ใครเป็นคนเบิก / สำรองจ่าย?</label>
-            <select id="fundWithBuyer" class="w-full bg-slate-800 rounded-xl p-2 text-xs text-slate-200 border border-slate-700 outline-none"></select>
-          </div>
-          <div>
-            <label class="block text-[11px] text-slate-400 mb-1">วัน-เวลาตามสลิป/ใบเสร็จ</label>
-            <input type="datetime-local" id="fundWithDateTime" class="w-full bg-slate-800 rounded-xl p-2 text-xs text-slate-200 border border-slate-700 outline-none">
-          </div>
+        <div>
+          <label class="block text-[11px] text-slate-400 mb-1">ใครเป็นคนเบิก / สำรองจ่าย?</label>
+          <select id="fundWithBuyer" class="w-full bg-slate-800 rounded-xl p-2 text-xs text-slate-200 border border-slate-700 outline-none"></select>
         </div>
 
-        <!-- กล่องรายการสินค้าในสลิป (Itemized Split Container) -->
+        <!-- กล่องรายการสินค้าในสลิป -->
         <div class="pt-2 border-t border-slate-800">
           <div class="flex justify-between items-center mb-2">
             <span class="text-xs font-bold text-rose-300 flex items-center gap-1">
@@ -186,14 +192,14 @@
         <!-- สรุปยอดรวมอัตโนมัติ -->
         <div class="p-3 bg-slate-950/80 rounded-xl border border-rose-900/30 flex justify-between items-center">
           <div>
-            <span class="text-xs text-slate-400 block">ยอดรวมทั้งสลิป:</span>
-            <span class="text-[10px] text-slate-500">(คำนวณจากทุกรายการย่อยรวมกัน)</span>
+            <span class="text-xs text-slate-400 block">ยอดรวมทุกรายการ:</span>
+            <span class="text-[10px] text-slate-500">(จะตรวจสอบกับสลิปที่สแกน)</span>
           </div>
           <span id="fundWithdrawTotalDisplay" class="text-xl font-black text-rose-400">0 ฿</span>
         </div>
 
         <button onclick="submitFundWithdraw()" class="w-full bg-rose-600 hover:bg-rose-500 py-3 rounded-xl text-sm font-bold transition text-white flex items-center justify-center gap-1.5 shadow-lg shadow-rose-600/20">
-          <span>📤</span> แนบสลิป/ใบเสร็จเพื่อยืนยันการเบิก
+          <span>📤</span> สแกนสลิป/ใบเสร็จเพื่อยืนยันการเบิก
         </button>
       </div>
     </div>
@@ -323,7 +329,7 @@
         <!-- รายการความเคลื่อนไหว (เรียงตามเวลาที่ขึ้นในสลิปจริง) -->
         <div class="pt-1">
            <h4 class="text-xs text-slate-400 mb-2.5 flex justify-between items-center">
-             <span class="font-medium text-slate-300">📋 ความเคลื่อนไหวกองกลาง (เรียงตามเวลาในสลิป)</span>
+             <span class="font-medium text-slate-300">📋 ความเคลื่อนไหวกองกลาง (เรียงตามเวลาในสลิปจริง)</span>
              <span id="logMonthText" class="text-[10px] text-slate-500"></span>
            </h4>
            <div id="fundDepositLog" class="space-y-2 overflow-y-auto max-h-[200px] pr-1"></div>
@@ -599,7 +605,6 @@
     let chartInstance = null, donutChartInstance = null, fundDonutInstance = null;
     let activeEditingCatId = null, activeEditingFundCatId = null;
 
-    // รายการย่อยในสลิปเบิกกองกลางปัจจุบัน
     let fundWithdrawItems = [];
 
     window.cachedSlips = { house: {}, fund: {}, sharedBill: {} };
@@ -708,8 +713,36 @@
       });
     }
 
-    function askAmount(title, desc, defaultVal) {
-      return askPrompt(title, desc, defaultVal, "number");
+    // Modal ตรวจสอบและยืนยันข้อมูลที่สแกนได้จากสลิป
+    function askSlipConfirm(detectedAmount, detectedDateTime) {
+      return new Promise((resolve) => {
+        const modal = document.getElementById('slipConfirmModal');
+        const amtInput = document.getElementById('slipConfirmAmount');
+        const dtInput = document.getElementById('slipConfirmDateTime');
+        const btnOk = document.getElementById('slipConfirmOkBtn');
+        const btnCancel = document.getElementById('slipConfirmCancelBtn');
+
+        if (amtInput) amtInput.value = detectedAmount || '';
+        if (dtInput) dtInput.value = detectedDateTime || '';
+        if (modal) modal.classList.remove('hidden');
+
+        const cleanup = () => {
+          if (modal) modal.classList.add('hidden');
+          if (btnOk) btnOk.onclick = null;
+          if (btnCancel) btnCancel.onclick = null;
+        };
+
+        if (btnOk) btnOk.onclick = () => {
+          const finalAmt = Number(amtInput ? amtInput.value : 0) || 0;
+          const finalDt = dtInput ? dtInput.value : '';
+          cleanup();
+          resolve({ amount: finalAmt, dateTime: finalDt });
+        };
+        if (btnCancel) btnCancel.onclick = () => {
+          cleanup();
+          resolve(null);
+        };
+      });
     }
 
     function updateMonthDisplay() {
@@ -1126,8 +1159,189 @@
     }
 
     // ==========================================
-    // ⏰ แปลงเวลาสลิปแบบกันพลาด
+    // 🔍 ระบบสแกนสลิปอัจฉริยะ (Tesseract OCR + Regex Parser)
     // ==========================================
+    function prepareImageForOCR(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const maxDim = 1200; // ปรับขนาดภาพให้พอดีช่วยให้ OCR เร็วขึ้น 5 เท่า
+            let w = img.width;
+            let h = img.height;
+            if (w > maxDim || h > maxDim) {
+              if (w > h) {
+                h = Math.round((h * maxDim) / w);
+                w = maxDim;
+              } else {
+                w = Math.round((w * maxDim) / h);
+                h = maxDim;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', 0.85));
+          };
+          img.onerror = () => resolve(file);
+          img.src = e.target.result;
+        };
+        reader.onerror = () => resolve(file);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function extractSlipTime(text) {
+      // 1. ค้นหาเวลาที่ตามหลังหรือมีคำว่า น. (เช่น 11:46 น. หรือ 11.46น.)
+      let m = text.match(/\b([01]?\d|2[0-3])[:.]([0-5]\d)\s*(?:น\.|น)\b/i);
+      if (m) return `${m[1].padStart(2, '0')}:${m[2]}`;
+
+      // 2. ค้นหาเวลาหลังคำว่า "เวลา"
+      m = text.match(/เวลา\s*[:.]?\s*([01]?\d|2[0-3])[:.]([0-5]\d)/i);
+      if (m) return `${m[1].padStart(2, '0')}:${m[2]}`;
+
+      // 3. ค้นหาเวลาที่อยู่หลังชื่อเดือน
+      m = text.match(/(?:ต\.ค\.|พ\.ย\.|ธ\.ค\.|ม\.ค\.|ก\.พ\.|มี\.ค\.|เม\.ย\.|พ\.ค\.|มิ\.ย\.|ก\.ค\.|ส\.ค\.|ก\.ย\.|\d{4}|\d{2})\s+([01]?\d|2[0-3])[:.]([0-5]\d)/i);
+      if (m) return `${m[1].padStart(2, '0')}:${m[2]}`;
+
+      // 4. ค้นหารูปแบบ HH:mm ทั่วไป
+      m = text.match(/\b([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?\b/);
+      if (m) return `${m[1].padStart(2, '0')}:${m[2]}`;
+
+      return null;
+    }
+
+    function extractSlipDate(text) {
+      const thaiMonths = {
+        'ม.ค.': 1, 'มกราคม': 1, 'jan': 1,
+        'ก.พ.': 2, 'กุมภาพันธ์': 2, 'feb': 2,
+        'มี.ค.': 3, 'มีนาคม': 3, 'mar': 3,
+        'เม.ย.': 4, 'เมษายน': 4, 'apr': 4,
+        'พ.ค.': 5, 'พฤษภาคม': 5, 'may': 5,
+        'มิ.ย.': 6, 'มิถุนายน': 6, 'jun': 6,
+        'ก.ค.': 7, 'กรกฎาคม': 7, 'jul': 7,
+        'ส.ค.': 8, 'สิงหาคม': 8, 'aug': 8,
+        'ก.ย.': 9, 'กันยายน': 9, 'sep': 9,
+        'ต.ค.': 10, 'ตุลาคม': 10, 'oct': 10,
+        'พ.ย.': 11, 'พฤศจิกายน': 11, 'nov': 11,
+        'ธ.ค.': 12, 'ธันวาคม': 12, 'dec': 12
+      };
+
+      // รูปแบบวันที่ภาษาไทย เช่น 23 ต.ค. 69 หรือ 23 ต.ค. 2569
+      const thaiMonthRegex = /(\d{1,2})\s*(ม\.?ค\.?|ก\.?พ\.?|มี\.?ค\.?|เม\.?ย\.?|พ\.?ค\.?|มิ\.?ย\.?|ก\.?ค\.?|ส\.?ค\.?|ก\.?ย\.?|ต\.?ค\.?|พ\.?ย\.?|ธ\.?ค\.?|[A-Za-z]{3,})\s*(\d{2,4})?/i;
+      let m = text.match(thaiMonthRegex);
+      if (m) {
+        const day = m[1].padStart(2, '0');
+        let mStr = m[2].toLowerCase().replace(/\s+/g, '');
+        let monthNum = null;
+        for (const [k, v] of Object.entries(thaiMonths)) {
+          if (mStr.includes(k.replace(/\./g, '')) || mStr.startsWith(k.replace(/\./g, ''))) {
+            monthNum = v;
+            break;
+          }
+        }
+        if (monthNum) {
+          let year = new Date().getFullYear();
+          if (m[3]) {
+            let yr = parseInt(m[3], 10);
+            if (yr > 2500) yr -= 543;
+            else if (yr >= 60 && yr < 100) yr = (yr + 2500) - 543;
+            else if (yr < 100) yr += 2000;
+            year = yr;
+          }
+          return `${year}-${String(monthNum).padStart(2, '0')}-${day}`;
+        }
+      }
+
+      // รูปแบบตัวเลข 23/10/2026 หรือ 23-10-2569
+      const numDateRegex = /(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/;
+      m = text.match(numDateRegex);
+      if (m) {
+        const day = m[1].padStart(2, '0');
+        const month = m[2].padStart(2, '0');
+        let yr = parseInt(m[3], 10);
+        if (yr > 2500) yr -= 543;
+        else if (yr >= 60 && yr < 100) yr = (yr + 2500) - 543;
+        else if (yr < 100) yr += 2000;
+        return `${yr}-${month}-${day}`;
+      }
+
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    }
+
+    function extractSlipAmount(text) {
+      const clean = text.replace(/(\d)\s*\.\s*(\d{2})\b/g, '$1.$2');
+
+      // ยอดเงินที่ตามหลังคำว่า จำนวนเงิน/ยอดเงิน/Amount
+      const amountWithLabel = /(?:จำนวนเงิน|จำนวน|ยอดเงิน|amount|total)\s*[:.]?\s*([0-9,]+\.[0-9]{2})/i;
+      let m = clean.match(amountWithLabel);
+      if (m) {
+        const val = parseFloat(m[1].replace(/,/g, ''));
+        if (!isNaN(val) && val > 0) return val;
+      }
+
+      // ยอดเงินที่อยู่หน้าคำว่า บาท/THB
+      const amountBeforeBaht = /([0-9,]+\.[0-9]{2})\s*(?:บาท|thb)/gi;
+      let match;
+      let candidates = [];
+      while ((match = amountBeforeBaht.exec(clean)) !== null) {
+        const val = parseFloat(match[1].replace(/,/g, ''));
+        if (!isNaN(val) && val > 0) candidates.push(val);
+      }
+      if (candidates.length > 0) return candidates[0];
+
+      // ยอดตัวเลขทศนิยมทั่วไปในสลิป
+      const genericFloats = /\b([1-9]\d{0,2}(?:,\d{3})*\.\d{2})\b/g;
+      candidates = [];
+      while ((match = genericFloats.exec(clean)) !== null) {
+        const val = parseFloat(match[1].replace(/,/g, ''));
+        if (!isNaN(val) && val > 0) candidates.push(val);
+      }
+      if (candidates.length > 0) return candidates[0];
+
+      return null;
+    }
+
+    async function scanSlipWithTesseract(imageSource) {
+      if (typeof Tesseract === 'undefined') return { time: null, date: null, fullDateTime: null, amount: null };
+      try {
+        const res = await Tesseract.recognize(imageSource, 'tha+eng', {
+          logger: m => {
+            if (m.status === 'recognizing text') {
+              const pct = Math.round((m.progress || 0) * 100);
+              setSafeText('loadingStatusText', `🔍 กำลังสแกนสลิป... ${pct}%`);
+            } else if (m.status === 'loading tesseract core' || m.status === 'loading language traineddata') {
+              setSafeText('loadingStatusText', `⏳ กำลังโหลดระบบสแกนสลิป...`);
+            }
+          }
+        });
+
+        const rawText = res.data.text || '';
+        const time = extractSlipTime(rawText);
+        const date = extractSlipDate(rawText);
+        const amount = extractSlipAmount(rawText);
+
+        let fullDateTime = null;
+        if (date && time) {
+          fullDateTime = `${date}T${time}`;
+        } else if (date) {
+          const now = new Date();
+          const hh = String(now.getHours()).padStart(2, '0');
+          const mm = String(now.getMinutes()).padStart(2, '0');
+          fullDateTime = `${date}T${hh}:${mm}`;
+        }
+
+        return { time, date, fullDateTime, amount, rawText };
+      } catch (err) {
+        console.error("OCR Scan Error:", err);
+        return { time: null, date: null, fullDateTime: null, amount: null };
+      }
+    }
+
     function parseTimestamp(timeStr, fallbackDateStr, key) {
       if (timeStr && typeof timeStr === 'string') {
         const t = Date.parse(timeStr);
@@ -1291,7 +1505,7 @@
           </div>`;
       }
 
-      // 2. คำนวณเงินกองกลางคงเหลือสุทธิ (รองรับยอดติดลบ)
+      // 2. คำนวณเงินกองกลางคงเหลือสุทธิ
       let totalFundPaidIn = Number(settings.initialFund) || 0, totalFundOut = 0;
       Object.keys(allMonthsData).forEach(mth => {
         const mData = allMonthsData[mth];
@@ -1322,7 +1536,7 @@
         }
       }
 
-      // 3. กองกลางความเคลื่อนไหว (เรียงตามเวลาสลิป + รองรับแยกหมวดหมู่)
+      // 3. กองกลางความเคลื่อนไหว (เรียงตามเวลาสลิปจริง)
       const depLog = document.getElementById('fundDepositLog');
       const fundCats = getActiveFundCategories();
       const combinedLogs = [];
@@ -1338,7 +1552,6 @@
           const amt = Number(e.amount || 0);
           totalWithdrawInMonth += amt;
 
-          // คำนวณยอดเงินเข้าหมวดหมู่: รองรับทั้งแบบแยกรายการย่อย (items) และแบบเดี่ยว (legacy)
           if (Array.isArray(e.items) && e.items.length > 0) {
             e.items.forEach(it => {
               const cId = it.categoryId || 'fc_other';
@@ -1405,10 +1618,10 @@
               slipBtn = `<button onclick="viewSingleFundSlip('${cKey}')" class="text-blue-400 hover:underline ml-1 font-medium">ดูสลิป</button>`;
             }
 
+            const deleteBtn = `<button onclick="deleteFundLogItem('${log.type}', '${log.id}')" class="text-slate-500 hover:text-rose-400 text-xs ml-2 p-1" title="ลบรายการนี้">🗑️</button>`;
             const timeLabel = formatDisplayDateTime(log.slipTime, log.date);
 
             if (log.type === 'expense') {
-              // แจกแจงรายการย่อยในสลิป (ถ้ามีมากกว่า 1 รายการ)
               let itemizedHTML = '';
               if (Array.isArray(log.items) && log.items.length > 1) {
                 let subRows = '';
@@ -1449,7 +1662,10 @@
                       </div>
                       <div class="text-[10px] text-slate-500 mt-0.5">⏰ ${timeLabel}</div>
                     </div>
-                    <span class="text-rose-400 font-bold whitespace-nowrap text-sm">-${log.amount.toLocaleString()} ฿</span>
+                    <div class="flex items-center">
+                      <span class="text-rose-400 font-bold whitespace-nowrap text-sm">-${log.amount.toLocaleString()} ฿</span>
+                      ${deleteBtn}
+                    </div>
                   </div>
                   ${itemizedHTML}
                 </div>`;
@@ -1462,14 +1678,16 @@
                     </div>
                     <div class="text-[10px] text-slate-500 mt-0.5">⏰ ${timeLabel}</div>
                   </div>
-                  <span class="text-emerald-400 font-bold whitespace-nowrap text-sm">+${log.amount.toLocaleString()} ฿</span>
+                  <div class="flex items-center">
+                    <span class="text-emerald-400 font-bold whitespace-nowrap text-sm">+${log.amount.toLocaleString()} ฿</span>
+                    ${deleteBtn}
+                  </div>
                 </div>`;
             }
           });
         }
       }
 
-      // 4. เรนเดอร์กราฟโดนัทการเบิกกองกลาง
       renderFundWithdrawDonut(categorySpendTotals, totalWithdrawInMonth);
 
       setSafeValue('setFundRate', settings.fundRate || 0);
@@ -1497,7 +1715,17 @@
       renderDonutChartMode();
     }
 
-    // กราฟโดนัทการเบิกกองกลาง
+    // ลบรายการในประวัติกองกลาง
+    async function deleteFundLogItem(type, id) {
+      if (!(await verifyPermission('fund'))) return;
+      if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?")) return;
+
+      const path = type === 'expense' ? `bills/${currentMonth}/fundExpenses/${id}` : `bills/${currentMonth}/fundDeposits/${id}`;
+      db.ref(path).remove().then(() => {
+        customAlert("ลบรายการเรียบร้อยแล้ว!", "✅");
+      }).catch(err => customAlert("เกิดข้อผิดพลาด: " + err.message, "❌"));
+    }
+
     function renderFundWithdrawDonut(categorySpendTotals, totalSpend) {
       const canvasEl = document.getElementById('fundWithdrawDonutChart');
       const breakdownEl = document.getElementById('fundWithdrawCategoryBreakdown');
@@ -1879,71 +2107,101 @@
       if (fileInput) fileInput.click();
     }
 
+    // ฟังก์ชันจัดการเมื่อเลือกสลิป: เรียก OCR สแกนยอดและเวลาจริงในสลิป
     async function handleSlipSelected(e) {
       const file = e.target.files[0];
       if (!file || !currentUploadConfig) return;
 
-      const { expectedAmt, memberId, paymentType, note, buyer, slipTime, items } = currentUploadConfig;
-      
-      let promptTitle = "📌 ระบุยอดเงิน";
-      let promptDesc = "พิมพ์ยอดเงินตามสลิปโอน:";
-      if (paymentType === 'fundWithdraw') {
-        promptTitle = "📌 ยืนยันยอดเงินที่เบิก";
-        promptDesc = `ระบุยอดเงินที่เบิกตามสลิป/ใบเสร็จ (${buyer || ''}):`;
-      }
-
-      let finalAmountStr = await askAmount(promptTitle, promptDesc, expectedAmt > 0 ? expectedAmt : '');
-      if (finalAmountStr === null) { 
-        if (document.getElementById('slipInput')) document.getElementById('slipInput').value = ''; 
-        return; 
-      }
-
-      let finalAmount = Number(String(finalAmountStr).replace(/,/g, '')) || 0;
       const overlay = document.getElementById('loadingOverlay');
       if (overlay) overlay.classList.remove('hidden');
+      setSafeText('loadingStatusText', '🔍 กำลังเตรียมภาพเพื่อสแกน...');
+
+      const { expectedAmt, memberId, paymentType, note, buyer, items } = currentUploadConfig;
 
       try {
-        const formData = new FormData(); formData.append('image', file);
+        // 1. ปรับขนาดภาพเพื่อความรวดเร็วและแม่นยำ
+        const resizedImage = await prepareImageForOCR(file);
+
+        // 2. สแกนตัวอักษรและเวลาจากสลิป (Tesseract OCR)
+        setSafeText('loadingStatusText', '🔍 กำลังสแกนเวลาและยอดเงินในสลิป...');
+        const ocr = await scanSlipWithTesseract(resizedImage);
+
+        // 3. ปิด Overlay แล้วเปิดหน้าต่างยืนยันข้อมูลที่สแกนได้
+        if (overlay) overlay.classList.add('hidden');
+
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        const defaultDateTime = now.toISOString().slice(0, 16);
+
+        const detectedAmt = ocr.amount || expectedAmt || 0;
+        const detectedDt = ocr.fullDateTime || defaultDateTime;
+
+        const confirmed = await askSlipConfirm(detectedAmt, detectedDt);
+        if (!confirmed) {
+          if (document.getElementById('slipInput')) document.getElementById('slipInput').value = '';
+          return;
+        }
+
+        const finalAmount = confirmed.amount;
+        const finalSlipTime = confirmed.dateTime;
+
+        // 4. อัปโหลดรูปภาพไปยัง ImgBB
+        if (overlay) overlay.classList.remove('hidden');
+        setSafeText('loadingStatusText', '☁️ กำลังอัปโหลดสลิปไปยังระบบ...');
+
+        const formData = new FormData();
+        formData.append('image', file);
         const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
         const resData = await res.json();
         if (!resData.success) throw new Error("อัปโหลดรูปภาพไม่สำเร็จ");
 
+        // 5. บันทึกข้อมูลลง Firebase พร้อมเวลาจริงในสลิป
         if (paymentType === 'fundDeposit') {
           await db.ref(`bills/${currentMonth}/fundDeposits`).push({
             memberId: memberId,
             amount: finalAmount,
             note: note || 'สมทบเงินกองกลาง',
             url: resData.data.url,
-            slipTime: slipTime || new Date().toISOString(),
+            slipTime: finalSlipTime,
             date: new Date().toLocaleDateString('th-TH')
           });
           customAlert(`บันทึกสลิปนำเงินเข้ากองกลางเรียบร้อย!\nยอดเงิน: ${finalAmount.toLocaleString()} บาท`, "💎");
         } else if (paymentType === 'fundWithdraw') {
-          // บันทึกรายการเบิกแบบแยกรายการย่อย (Itemized Split)
           const itemSummary = items.map(it => it.name).filter(Boolean).join(', ') || 'เบิกเงินกองกลาง';
           const primaryCatId = items[0]?.categoryId || 'fc_other';
+
+          // ปรับยอดเงินรายการย่อยให้สัมพันธ์กับยอดรวมหากมีรายการเดียว
+          let finalItems = items;
+          if (items.length === 1 && (Number(items[0].amount) === 0 || !items[0].amount)) {
+            finalItems = [{ ...items[0], amount: finalAmount }];
+          }
 
           await db.ref(`bills/${currentMonth}/fundExpenses`).push({
             buyer: buyer || '-',
             name: itemSummary,
             amount: finalAmount,
             categoryId: primaryCatId,
-            items: items.map(it => ({
+            items: finalItems.map(it => ({
               name: it.name || '-',
               amount: Number(it.amount) || 0,
               categoryId: it.categoryId || 'fc_other'
             })),
             url: resData.data.url,
-            slipTime: slipTime || new Date().toISOString(),
+            slipTime: finalSlipTime,
             date: new Date().toLocaleDateString('th-TH')
           });
-          customAlert(`เบิกเงินและบันทึกสลิปเรียบร้อย!\nจำนวน: ${finalAmount.toLocaleString()} บาท (${items.length} รายการ)`, "💸");
+          customAlert(`เบิกเงินและบันทึกสลิปเรียบร้อย!\nจำนวน: ${finalAmount.toLocaleString()} บาท (${finalItems.length} รายการ)`, "💸");
         } else {
           const dbPath = `bills/${currentMonth}/payments/${memberId}`;
           const snap = await db.ref(dbPath).once('value');
           const d = snap.val() || { paidAmount: 0 };
           await db.ref(dbPath).update({ paidAmount: Number(d.paidAmount) + finalAmount });
-          await db.ref(`${dbPath}/slips`).push({ url: resData.data.url, amount: finalAmount, date: new Date().toLocaleDateString('th-TH') });
+          await db.ref(`${dbPath}/slips`).push({
+            url: resData.data.url,
+            amount: finalAmount,
+            slipTime: finalSlipTime,
+            date: new Date().toLocaleDateString('th-TH')
+          });
           customAlert("บันทึกสลิปและยอดเงินค่าบ้านเรียบร้อย!");
         }
       } catch (err) {
@@ -2069,11 +2327,7 @@
           if (m && m.active) sel.innerHTML += `<option value="${id}">${m.name}</option>`;
         });
       }
-      const now = new Date();
-      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-      setSafeValue('fundDepDateTime', now.toISOString().slice(0, 16));
       setSafeValue('fundDepNote', '');
-
       const modal = document.getElementById('fundDepositModal');
       if (modal) modal.classList.remove('hidden');
     }
@@ -2091,13 +2345,7 @@
         });
       }
 
-      const now = new Date();
-      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-      setSafeValue('fundWithDateTime', now.toISOString().slice(0, 16));
-
-      // เริ่มต้นรายการสินค้าในสลิป
       initFundWithdrawItems();
-
       const modal = document.getElementById('fundWithdrawModal');
       if (modal) modal.classList.remove('hidden');
     }
@@ -2108,21 +2356,18 @@
 
     function submitFundWithdraw() {
       const buyer = document.getElementById('fundWithBuyer')?.value;
-      const slipTime = document.getElementById('fundWithDateTime')?.value;
-      
       if (!buyer) return customAlert("กรุณาเลือกสมาชิกที่เบิกหรือสำรองจ่าย", "⚠️");
 
-      const validItems = fundWithdrawItems.filter(it => it.name.trim() && Number(it.amount) > 0);
+      const validItems = fundWithdrawItems.filter(it => it.name.trim() || Number(it.amount) > 0);
       if (validItems.length === 0) {
-        return customAlert("กรุณากรอกชื่อรายการและยอดเงินให้ครบถ้วนอย่างน้อย 1 รายการ", "⚠️");
+        return customAlert("กรุณากรอกข้อมูลรายการสินค้าอย่างน้อย 1 รายการ", "⚠️");
       }
 
-      const totalCalculated = validItems.reduce((sum, it) => sum + Number(it.amount), 0);
+      const totalCalculated = validItems.reduce((sum, it) => sum + Number(it.amount || 0), 0);
 
       currentUploadConfig = {
         paymentType: 'fundWithdraw',
         buyer: buyer,
-        slipTime: slipTime,
         expectedAmt: totalCalculated,
         items: validItems
       };
@@ -2135,10 +2380,9 @@
     function triggerFundSlipUpload() {
       const mId = document.getElementById('fundDepMember')?.value;
       const note = document.getElementById('fundDepNote')?.value.trim();
-      const slipTime = document.getElementById('fundDepDateTime')?.value;
 
       if (!mId) return customAlert("กรุณาเลือกสมาชิกที่เป็นเจ้าของเงิน", "⚠️");
-      currentUploadConfig = { memberId: mId, paymentType: 'fundDeposit', expectedAmt: 0, note: note, slipTime: slipTime };
+      currentUploadConfig = { memberId: mId, paymentType: 'fundDeposit', expectedAmt: 0, note: note };
       closeFundDepositModal();
       const fileInput = document.getElementById('slipInput');
       if (fileInput) fileInput.click();
@@ -2190,9 +2434,7 @@
       }
     }
 
-    // ==========================================
-    // 🚀 รันระบบทันทีที่โหลดหน้าจอ
-    // ==========================================
+    // รันระบบทันทีที่โหลดหน้าจอ
     updateMonthDisplay();
     renderBillCategoriesManager();
     renderFundCategoriesManager();
