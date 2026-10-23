@@ -146,34 +146,52 @@
     </div>
   </div>
 
-  <!-- Modal เบิกเงินกองกลาง -->
+  <!-- Modal เบิกเงินกองกลาง (ระบบแยกรายการย่อยในสลิปเดียว Itemized Split) -->
   <div id="fundWithdrawModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-rose-500/50 rounded-2xl max-w-sm w-full shadow-2xl p-4">
+    <div class="bg-slate-900 border border-rose-500/50 rounded-2xl max-w-md w-full shadow-2xl p-5">
       <div class="flex justify-between items-center mb-3">
-        <h3 class="text-sm font-bold text-rose-400">💸 เบิกเงินจากกองกลาง</h3>
-        <button onclick="closeFundWithdrawModal()" class="text-slate-400 hover:text-white">✕</button>
+        <div>
+          <h3 class="text-sm font-bold text-rose-400">💸 เบิกเงินจากกองกลาง</h3>
+          <p class="text-[10px] text-slate-400">รองรับการซื้อของหลายอย่าง/หลายหมวดในสลิปเดียว</p>
+        </div>
+        <button onclick="closeFundWithdrawModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
       </div>
+      
       <div class="space-y-3">
-        <div>
-          <label class="block text-xs text-slate-400 mb-1">ใครเป็นคนเบิก / สำรองจ่าย?</label>
-          <select id="fundWithBuyer" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm text-slate-200 border border-slate-700 outline-none"></select>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">ใครเป็นคนเบิก / สำรองจ่าย?</label>
+            <select id="fundWithBuyer" class="w-full bg-slate-800 rounded-xl p-2 text-xs text-slate-200 border border-slate-700 outline-none"></select>
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">วัน-เวลาตามสลิป/ใบเสร็จ</label>
+            <input type="datetime-local" id="fundWithDateTime" class="w-full bg-slate-800 rounded-xl p-2 text-xs text-slate-200 border border-slate-700 outline-none">
+          </div>
         </div>
-        <div>
-          <label class="block text-xs text-slate-400 mb-1">หมวดหมู่ค่าใช้จ่าย</label>
-          <select id="fundWithCategory" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm text-slate-200 border border-slate-700 outline-none"></select>
+
+        <!-- กล่องรายการสินค้าในสลิป (Itemized Split Container) -->
+        <div class="pt-2 border-t border-slate-800">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-bold text-rose-300 flex items-center gap-1">
+              <span>🛒</span> รายการสินค้าในใบเสร็จนี้
+            </span>
+            <button type="button" onclick="addFundWithdrawItemRow()" class="text-[11px] bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-lg font-medium transition shadow">
+              + เพิ่มรายการ
+            </button>
+          </div>
+          
+          <div id="fundWithdrawItemsContainer" class="space-y-2 max-h-56 overflow-y-auto pr-1"></div>
         </div>
-        <div>
-          <label class="block text-xs text-slate-400 mb-1">วันและเวลาที่จ่าย (ตามสลิป/ใบเสร็จ)</label>
-          <input type="datetime-local" id="fundWithDateTime" class="w-full bg-slate-800 rounded-lg p-2 text-sm text-slate-200 border border-slate-700 outline-none">
+
+        <!-- สรุปยอดรวมอัตโนมัติ -->
+        <div class="p-3 bg-slate-950/80 rounded-xl border border-rose-900/30 flex justify-between items-center">
+          <div>
+            <span class="text-xs text-slate-400 block">ยอดรวมทั้งสลิป:</span>
+            <span class="text-[10px] text-slate-500">(คำนวณจากทุกรายการย่อยรวมกัน)</span>
+          </div>
+          <span id="fundWithdrawTotalDisplay" class="text-xl font-black text-rose-400">0 ฿</span>
         </div>
-        <div>
-          <label class="block text-xs text-slate-400 mb-1">จำนวนเงินที่เบิก (บาท)</label>
-          <input type="number" id="fundWithAmount" placeholder="เช่น 250" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm text-slate-200 border border-slate-700 outline-none">
-        </div>
-        <div>
-          <label class="block text-xs text-slate-400 mb-1">เบิกไปซื้ออะไร / รายละเอียด</label>
-          <input type="text" id="fundWithReason" placeholder="เช่น น้ำยาล้างจาน, ถุงขยะ, หมูสับ" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm text-slate-200 border border-slate-700 outline-none">
-        </div>
+
         <button onclick="submitFundWithdraw()" class="w-full bg-rose-600 hover:bg-rose-500 py-3 rounded-xl text-sm font-bold transition text-white flex items-center justify-center gap-1.5 shadow-lg shadow-rose-600/20">
           <span>📤</span> แนบสลิป/ใบเสร็จเพื่อยืนยันการเบิก
         </button>
@@ -279,7 +297,7 @@
             <div class="text-xs font-semibold uppercase tracking-wider text-indigo-400">💎 กองกลางคงเหลือสุทธิ</div>
             <div class="text-4xl font-black mt-1" id="dashFundBalance">0 <span class="text-sm font-normal text-indigo-300">บาท</span></div>
             <div class="text-xs text-indigo-300/70 mt-1">เป้าหมายเก็บ <span id="fundPerPersonRate" class="font-bold text-indigo-200">0</span> บ./คน/เดือน</div>
-            <div id="fundNegativeNotice" class="hidden mt-2 p-2 bg-rose-950/60 border border-rose-800 text-rose-300 text-xs rounded-xl font-medium"></div>
+            <div id="fundNegativeNotice" class="hidden mt-2 p-2.5 bg-rose-950/80 border border-rose-800 text-rose-300 text-xs rounded-xl font-medium"></div>
           </div>
           <div class="flex gap-2 w-full sm:w-auto">
             <button onclick="openFundDepositModal()" class="flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-4 py-2.5 rounded-xl shadow-lg transition font-medium">+ ฝากเงินเข้ากองกลาง</button>
@@ -308,7 +326,7 @@
              <span class="font-medium text-slate-300">📋 ความเคลื่อนไหวกองกลาง (เรียงตามเวลาในสลิป)</span>
              <span id="logMonthText" class="text-[10px] text-slate-500"></span>
            </h4>
-           <div id="fundDepositLog" class="space-y-2 overflow-y-auto max-h-[170px] pr-1"></div>
+           <div id="fundDepositLog" class="space-y-2 overflow-y-auto max-h-[200px] pr-1"></div>
         </div>
 
         <div class="pt-3 border-t border-indigo-500/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
@@ -580,6 +598,9 @@
     let currentUploadConfig = null, currentGallerySlips = [], currentGalleryIndex = 0, currentGalleryConfig = null;
     let chartInstance = null, donutChartInstance = null, fundDonutInstance = null;
     let activeEditingCatId = null, activeEditingFundCatId = null;
+
+    // รายการย่อยในสลิปเบิกกองกลางปัจจุบัน
+    let fundWithdrawItems = [];
 
     window.cachedSlips = { house: {}, fund: {}, sharedBill: {} };
     window.cachedFundSlips = {};
@@ -1016,7 +1037,96 @@
     }
 
     // ==========================================
-    // ⏰ แปลงเวลาสลิปแบบกันพลาด (No NaN)
+    // 🛒 จัดการรายการสินค้าในสลิปเดียว (Itemized Split Form Logic)
+    // ==========================================
+    function initFundWithdrawItems() {
+      const cats = getActiveFundCategories();
+      const firstCatId = Object.keys(cats)[0] || 'fc_other';
+      fundWithdrawItems = [
+        { id: 'item_' + Date.now(), categoryId: firstCatId, name: '', amount: '' }
+      ];
+      renderFundWithdrawItems();
+    }
+
+    function addFundWithdrawItemRow() {
+      const cats = getActiveFundCategories();
+      const firstCatId = Object.keys(cats)[0] || 'fc_other';
+      fundWithdrawItems.push({
+        id: 'item_' + Date.now() + Math.random(),
+        categoryId: firstCatId,
+        name: '',
+        amount: ''
+      });
+      renderFundWithdrawItems();
+    }
+
+    function removeFundWithdrawItemRow(itemId) {
+      if (fundWithdrawItems.length <= 1) {
+        return customAlert("ต้องมีรายการสินค้าในสลิปอย่างน้อย 1 รายการ", "⚠️");
+      }
+      fundWithdrawItems = fundWithdrawItems.filter(it => it.id !== itemId);
+      renderFundWithdrawItems();
+    }
+
+    function updateFundItemField(itemId, field, value) {
+      const item = fundWithdrawItems.find(it => it.id === itemId);
+      if (item) {
+        item[field] = value;
+        calculateFundWithdrawTotalLive();
+      }
+    }
+
+    function calculateFundWithdrawTotalLive() {
+      const total = fundWithdrawItems.reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
+      setSafeText('fundWithdrawTotalDisplay', `${total.toLocaleString()} ฿`);
+      return total;
+    }
+
+    function renderFundWithdrawItems() {
+      const container = document.getElementById('fundWithdrawItemsContainer');
+      if (!container) return;
+      container.innerHTML = '';
+      const cats = getActiveFundCategories();
+
+      fundWithdrawItems.forEach((it, idx) => {
+        let catOptions = '';
+        Object.values(cats).forEach(c => {
+          const sel = c.id === it.categoryId ? 'selected' : '';
+          catOptions += `<option value="${c.id}" ${sel}>${c.name}</option>`;
+        });
+
+        const canDelete = fundWithdrawItems.length > 1;
+        const delBtn = canDelete ? `
+          <button type="button" onclick="removeFundWithdrawItemRow('${it.id}')" class="text-rose-400 hover:text-rose-300 p-1 text-sm font-bold" title="ลบรายการนี้">✕</button>
+        ` : '';
+
+        container.innerHTML += `
+          <div class="p-2.5 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+            <div class="flex items-center justify-between text-[11px] text-slate-400">
+              <span>รายการที่ ${idx + 1}</span>
+              ${delBtn}
+            </div>
+            <div class="grid grid-cols-12 gap-2 items-center">
+              <div class="col-span-5">
+                <select onchange="updateFundItemField('${it.id}', 'categoryId', this.value)" class="w-full bg-slate-800 rounded-lg p-2 text-xs text-slate-200 border border-slate-700 outline-none">
+                  ${catOptions}
+                </select>
+              </div>
+              <div class="col-span-4">
+                <input type="text" value="${it.name}" oninput="updateFundItemField('${it.id}', 'name', this.value)" placeholder="ชื่อของ/รายละเอียด" class="w-full bg-slate-800 rounded-lg p-2 text-xs text-slate-200 border border-slate-700 outline-none">
+              </div>
+              <div class="col-span-3">
+                <input type="number" value="${it.amount}" oninput="updateFundItemField('${it.id}', 'amount', this.value)" placeholder="ยอด (บ.)" class="w-full bg-slate-800 rounded-lg p-2 text-xs font-bold text-rose-300 text-right border border-slate-700 outline-none">
+              </div>
+            </div>
+          </div>`;
+      });
+
+      calculateFundWithdrawTotalLive();
+    }
+
+    // ==========================================
+    // ⏰ แปลงเวลาสลิปแบบกันพลาด
     // ==========================================
     function parseTimestamp(timeStr, fallbackDateStr, key) {
       if (timeStr && typeof timeStr === 'string') {
@@ -1029,12 +1139,11 @@
           const day = parseInt(parts[0], 10);
           const month = parseInt(parts[1], 10) - 1;
           let year = parseInt(parts[2], 10);
-          if (year > 2400) year -= 543; // แปลง พ.ศ. เป็น ค.ศ.
+          if (year > 2400) year -= 543;
           const d = new Date(year, month, day).getTime();
           if (!isNaN(d)) return d;
         }
       }
-      // ดึง timestamp จาก Firebase Push ID
       if (key && typeof key === 'string' && key.startsWith('-')) {
         const PUSH_CHARS = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz';
         let time = 0;
@@ -1213,7 +1322,7 @@
         }
       }
 
-      // 3. กองกลางความเคลื่อนไหว (เรียงตามเวลาสลิปจริง)
+      // 3. กองกลางความเคลื่อนไหว (เรียงตามเวลาสลิป + รองรับแยกหมวดหมู่)
       const depLog = document.getElementById('fundDepositLog');
       const fundCats = getActiveFundCategories();
       const combinedLogs = [];
@@ -1228,8 +1337,17 @@
           if (!e) return;
           const amt = Number(e.amount || 0);
           totalWithdrawInMonth += amt;
-          const catId = e.categoryId || 'fc_other';
-          categorySpendTotals[catId] = (categorySpendTotals[catId] || 0) + amt;
+
+          // คำนวณยอดเงินเข้าหมวดหมู่: รองรับทั้งแบบแยกรายการย่อย (items) และแบบเดี่ยว (legacy)
+          if (Array.isArray(e.items) && e.items.length > 0) {
+            e.items.forEach(it => {
+              const cId = it.categoryId || 'fc_other';
+              categorySpendTotals[cId] = (categorySpendTotals[cId] || 0) + (Number(it.amount) || 0);
+            });
+          } else {
+            const catId = e.categoryId || 'fc_other';
+            categorySpendTotals[catId] = (categorySpendTotals[catId] || 0) + amt;
+          }
 
           const sortTime = parseTimestamp(e.slipTime, e.date, expId);
 
@@ -1238,8 +1356,9 @@
             id: expId,
             buyer: e.buyer || '-',
             name: e.name || '-',
+            items: e.items || null,
             amount: amt,
-            categoryId: catId,
+            categoryId: e.categoryId || 'fc_other',
             url: e.url,
             slipTime: e.slipTime,
             date: e.date,
@@ -1289,30 +1408,61 @@
             const timeLabel = formatDisplayDateTime(log.slipTime, log.date);
 
             if (log.type === 'expense') {
-              const catObj = fundCats[log.categoryId] || { name: 'อื่นๆ', color: '#8b5cf6' };
-              depLog.innerHTML += `
-                <div class="flex justify-between items-center bg-rose-950/20 p-2.5 rounded-xl border border-rose-900/30 text-xs">
-                  <div>
-                    <div class="text-rose-300">
-                      <span class="inline-block w-2 h-2 rounded-full mr-1" style="background-color: ${catObj.color}"></span>
-                      📤 เบิก: <strong>${log.buyer}</strong> (${log.name}) 
-                      <span class="text-[10px] px-1.5 py-0.2 rounded-md bg-rose-900/50 text-rose-200 border border-rose-800">${catObj.name}</span>
-                      ${slipBtn}
+              // แจกแจงรายการย่อยในสลิป (ถ้ามีมากกว่า 1 รายการ)
+              let itemizedHTML = '';
+              if (Array.isArray(log.items) && log.items.length > 1) {
+                let subRows = '';
+                log.items.forEach(it => {
+                  const itCat = fundCats[it.categoryId] || { name: 'อื่นๆ', color: '#8b5cf6' };
+                  subRows += `
+                    <div class="flex justify-between items-center text-[10px] py-0.5 border-b border-slate-800 last:border-b-0">
+                      <span class="flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full" style="background-color: ${itCat.color}"></span>
+                        <span class="text-slate-300">${it.name || itCat.name}</span>
+                        <span class="text-slate-500 text-[9px]">(${itCat.name})</span>
+                      </span>
+                      <span class="font-bold text-slate-300">${Number(it.amount || 0).toLocaleString()} ฿</span>
+                    </div>`;
+                });
+
+                itemizedHTML = `
+                  <details class="mt-1 text-[11px] text-slate-300">
+                    <summary class="cursor-pointer text-indigo-400 hover:underline font-medium">
+                      📋 ดูรายการย่อยในสลิป (${log.items.length} รายการ)
+                    </summary>
+                    <div class="mt-1.5 space-y-0.5 bg-slate-950/80 p-2 rounded-xl border border-slate-800">
+                      ${subRows}
                     </div>
-                    <div class="text-[10px] text-slate-500 mt-0.5">⏰ ${timeLabel}</div>
+                  </details>`;
+              }
+
+              const catObj = fundCats[log.categoryId] || { name: 'อื่นๆ', color: '#8b5cf6' };
+
+              depLog.innerHTML += `
+                <div class="bg-rose-950/20 p-2.5 rounded-xl border border-rose-900/30 text-xs">
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <div class="text-rose-300 font-medium">
+                        <span class="inline-block w-2 h-2 rounded-full mr-1" style="background-color: ${catObj.color}"></span>
+                        📤 เบิก: <strong>${log.buyer}</strong> (${log.name}) 
+                        ${slipBtn}
+                      </div>
+                      <div class="text-[10px] text-slate-500 mt-0.5">⏰ ${timeLabel}</div>
+                    </div>
+                    <span class="text-rose-400 font-bold whitespace-nowrap text-sm">-${log.amount.toLocaleString()} ฿</span>
                   </div>
-                  <span class="text-rose-400 font-bold whitespace-nowrap">-${log.amount.toLocaleString()} ฿</span>
+                  ${itemizedHTML}
                 </div>`;
             } else {
               depLog.innerHTML += `
-                <div class="flex justify-between items-center bg-indigo-950/30 p-2.5 rounded-xl border border-indigo-900/40 text-xs">
+                <div class="bg-indigo-950/30 p-2.5 rounded-xl border border-indigo-900/40 text-xs flex justify-between items-center">
                   <div>
-                    <div class="text-indigo-300">
+                    <div class="text-indigo-300 font-medium">
                       📥 ฝาก: <strong>${log.buyer}</strong> (${log.name}) ${slipBtn}
                     </div>
                     <div class="text-[10px] text-slate-500 mt-0.5">⏰ ${timeLabel}</div>
                   </div>
-                  <span class="text-emerald-400 font-bold whitespace-nowrap">+${log.amount.toLocaleString()} ฿</span>
+                  <span class="text-emerald-400 font-bold whitespace-nowrap text-sm">+${log.amount.toLocaleString()} ฿</span>
                 </div>`;
             }
           });
@@ -1604,15 +1754,6 @@
         }
       });
       setSafeHTML('sharedBillMembersCheckboxes', sbChecks); 
-
-      const catSelect = document.getElementById('fundWithCategory');
-      if (catSelect) {
-        catSelect.innerHTML = '';
-        const cats = getActiveFundCategories();
-        Object.values(cats).forEach(c => {
-          catSelect.innerHTML += `<option value="${c.id}">${c.name}</option>`;
-        });
-      }
     }
 
     async function saveBillsFromAdmin() {
@@ -1742,7 +1883,7 @@
       const file = e.target.files[0];
       if (!file || !currentUploadConfig) return;
 
-      const { expectedAmt, memberId, paymentType, note, buyer, reason, categoryId, slipTime } = currentUploadConfig;
+      const { expectedAmt, memberId, paymentType, note, buyer, slipTime, items } = currentUploadConfig;
       
       let promptTitle = "📌 ระบุยอดเงิน";
       let promptDesc = "พิมพ์ยอดเงินตามสลิปโอน:";
@@ -1778,16 +1919,25 @@
           });
           customAlert(`บันทึกสลิปนำเงินเข้ากองกลางเรียบร้อย!\nยอดเงิน: ${finalAmount.toLocaleString()} บาท`, "💎");
         } else if (paymentType === 'fundWithdraw') {
+          // บันทึกรายการเบิกแบบแยกรายการย่อย (Itemized Split)
+          const itemSummary = items.map(it => it.name).filter(Boolean).join(', ') || 'เบิกเงินกองกลาง';
+          const primaryCatId = items[0]?.categoryId || 'fc_other';
+
           await db.ref(`bills/${currentMonth}/fundExpenses`).push({
             buyer: buyer || '-',
-            name: reason || '-',
+            name: itemSummary,
             amount: finalAmount,
-            categoryId: categoryId || 'fc_other',
+            categoryId: primaryCatId,
+            items: items.map(it => ({
+              name: it.name || '-',
+              amount: Number(it.amount) || 0,
+              categoryId: it.categoryId || 'fc_other'
+            })),
             url: resData.data.url,
             slipTime: slipTime || new Date().toISOString(),
             date: new Date().toLocaleDateString('th-TH')
           });
-          customAlert(`เบิกเงินและบันทึกสลิปเรียบร้อย!\nจำนวน: ${finalAmount.toLocaleString()} บาท`, "💸");
+          customAlert(`เบิกเงินและบันทึกสลิปเรียบร้อย!\nจำนวน: ${finalAmount.toLocaleString()} บาท (${items.length} รายการ)`, "💸");
         } else {
           const dbPath = `bills/${currentMonth}/payments/${memberId}`;
           const snap = await db.ref(dbPath).once('value');
@@ -1941,20 +2091,12 @@
         });
       }
 
-      const catSelect = document.getElementById('fundWithCategory');
-      if (catSelect) {
-        catSelect.innerHTML = '';
-        const cats = getActiveFundCategories();
-        Object.values(cats).forEach(c => {
-          catSelect.innerHTML += `<option value="${c.id}">${c.name}</option>`;
-        });
-      }
-
       const now = new Date();
       now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
       setSafeValue('fundWithDateTime', now.toISOString().slice(0, 16));
-      setSafeValue('fundWithAmount', '');
-      setSafeValue('fundWithReason', '');
+
+      // เริ่มต้นรายการสินค้าในสลิป
+      initFundWithdrawItems();
 
       const modal = document.getElementById('fundWithdrawModal');
       if (modal) modal.classList.remove('hidden');
@@ -1966,22 +2108,23 @@
 
     function submitFundWithdraw() {
       const buyer = document.getElementById('fundWithBuyer')?.value;
-      const categoryId = document.getElementById('fundWithCategory')?.value;
-      const amt = Number(document.getElementById('fundWithAmount')?.value);
-      const reason = document.getElementById('fundWithReason')?.value.trim();
       const slipTime = document.getElementById('fundWithDateTime')?.value;
       
-      if (!buyer || !amt || !reason) {
-        return customAlert("กรุณากรอกข้อมูลให้ครบถ้วนก่อนเลือกสลิป/ใบเสร็จ", "⚠️");
+      if (!buyer) return customAlert("กรุณาเลือกสมาชิกที่เบิกหรือสำรองจ่าย", "⚠️");
+
+      const validItems = fundWithdrawItems.filter(it => it.name.trim() && Number(it.amount) > 0);
+      if (validItems.length === 0) {
+        return customAlert("กรุณากรอกชื่อรายการและยอดเงินให้ครบถ้วนอย่างน้อย 1 รายการ", "⚠️");
       }
+
+      const totalCalculated = validItems.reduce((sum, it) => sum + Number(it.amount), 0);
 
       currentUploadConfig = {
         paymentType: 'fundWithdraw',
         buyer: buyer,
-        categoryId: categoryId,
-        expectedAmt: amt,
-        reason: reason,
-        slipTime: slipTime
+        slipTime: slipTime,
+        expectedAmt: totalCalculated,
+        items: validItems
       };
       
       closeFundWithdrawModal();
@@ -2048,7 +2191,7 @@
     }
 
     // ==========================================
-    // 🚀 รันระบบทันทีที่โหลดหน้าจอ (ป้องกันหน้าขาวว่างเปล่า)
+    // 🚀 รันระบบทันทีที่โหลดหน้าจอ
     // ==========================================
     updateMonthDisplay();
     renderBillCategoriesManager();
