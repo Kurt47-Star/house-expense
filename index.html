@@ -126,6 +126,19 @@
     </div>
   </div>
 
+  <!-- Custom Prompt Modal -->
+  <div id="customPromptModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-emerald-500/50 rounded-3xl max-w-sm w-full shadow-2xl p-6 relative overflow-hidden">
+      <h3 class="text-lg font-bold text-emerald-400 mb-2" id="customPromptTitle">ระบุข้อมูล</h3>
+      <p class="text-sm text-slate-300 mb-5 whitespace-pre-line" id="customPromptDesc">โปรดระบุข้อมูล</p>
+      <input type="text" id="customPromptInput" class="w-full bg-slate-950 rounded-xl p-3.5 text-xl text-emerald-400 font-bold text-center border border-slate-700 outline-none focus:border-emerald-500 mb-5 shadow-inner">
+      <div class="flex gap-3">
+        <button id="customPromptCancel" class="flex-1 bg-slate-800 hover:bg-slate-700 py-3.5 rounded-xl text-sm font-medium text-white transition border border-slate-700">ยกเลิก</button>
+        <button id="customPromptConfirm" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-3.5 rounded-xl text-sm font-bold text-white transition shadow-lg">ยืนยัน</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Custom Alert Modal -->
   <div id="customAlertModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-sm w-full shadow-2xl p-6 text-center">
@@ -296,21 +309,70 @@
         </div>
       </div>
 
-      <!-- 2. กองกลางคงเหลือสุทธิ + กราฟโดนัทแสดงการเบิก -->
+      <!-- 2. กองกลาง: แยกเงินที่มีอยู่จริง กับ ยอดติดลบ/สำรองจ่าย ออกจากกัน + โหลดบาร์คำนวณคืนเงิน -->
       <div class="bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-3xl p-6 shadow-xl relative overflow-hidden space-y-5">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-indigo-500/20 pb-4">
+        
+        <!-- หัวข้อและปุ่มฝาก/เบิก -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-indigo-500/20 pb-4">
           <div>
-            <div class="text-xs font-semibold uppercase tracking-wider text-indigo-400">💎 กองกลางคงเหลือสุทธิ</div>
-            <div class="text-4xl font-black mt-1" id="dashFundBalance">0 <span class="text-sm font-normal text-indigo-300">บาท</span></div>
-            <div class="text-xs text-indigo-300/70 mt-1">เป้าหมายเก็บ <span id="fundPerPersonRate" class="font-bold text-indigo-200">0</span> บ./คน/เดือน</div>
-            
-            <!-- ป้ายแจ้งเตือนเงินกองกลางติดลบ (ระบุชื่อคนสำรองจ่ายที่ต้องโอนคืน) -->
-            <div id="fundNegativeNotice" class="hidden mt-3 p-3 bg-rose-950/90 border border-rose-800 text-rose-300 text-xs rounded-2xl font-medium shadow-lg leading-relaxed"></div>
+            <div class="text-sm font-bold text-indigo-300 flex items-center gap-1.5">
+              <span>💎</span> สถานะเงินกองกลางบ้านพัก
+            </div>
+            <div class="text-xs text-slate-400 mt-0.5">
+              เป้าหมายเก็บ <span id="fundPerPersonRate" class="font-bold text-indigo-200">0</span> บ./คน/เดือน
+            </div>
           </div>
           <div class="flex gap-2 w-full sm:w-auto">
             <button onclick="openFundDepositModal()" class="flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-4 py-2.5 rounded-xl shadow-lg transition font-medium">+ ฝากเงินเข้ากองกลาง</button>
             <button onclick="openFundWithdrawModal()" class="flex-1 sm:flex-initial bg-rose-700/80 hover:bg-rose-600 text-rose-100 text-xs px-4 py-2.5 rounded-xl shadow-lg transition font-medium">- เบิกเงินกองกลาง</button>
           </div>
+        </div>
+
+        <!-- แยกกล่อง 1: เงินกองกลางที่มีอยู่จริง vs กล่อง 2: ยอดติดลบ/สำรองจ่ายค้างเคลียร์ -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- กล่องเงินที่มีอยู่จริง -->
+          <div class="bg-slate-950/75 border border-emerald-500/30 rounded-2xl p-4 flex flex-col justify-between shadow-inner">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-emerald-400">💵 เงินกองกลางที่มีอยู่จริง</span>
+              <span id="dashFundAvailableBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800">เงินในบัญชี</span>
+            </div>
+            <div class="text-3xl font-black text-emerald-300 mt-2" id="dashFundAvailable">0 <span class="text-sm font-normal text-emerald-400/80">บาท</span></div>
+            <div class="text-[11px] text-slate-400 mt-1" id="dashFundAvailableSub">ยอดเงินสดที่สามารถเบิกใช้ได้ทันที</div>
+          </div>
+
+          <!-- กล่องยอดติดลบ / สำรองจ่ายค้างเคลียร์ -->
+          <div id="dashFundDeficitCard" class="bg-slate-950/75 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-inner transition-all">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-rose-400">🔴 ยอดติดลบ / สำรองจ่ายรวม</span>
+              <span id="dashFundDeficitBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">ปกติ</span>
+            </div>
+            <div class="text-3xl font-black text-slate-500 mt-2" id="dashFundDeficit">0 <span class="text-sm font-normal">บาท</span></div>
+            <div class="text-[11px] text-slate-400 mt-1" id="dashFundDeficitSub">ยอดที่สมาชิกออกเงินส่วนตัวไปก่อน</div>
+          </div>
+        </div>
+
+        <!-- แผงแสดงโหลดบาร์ & คำนวณหารคืนเงินรายบุคคล (แสดงอัตโนมัติเมื่อเงินกองกลางติดลบ / มียอดสำรองจ่าย) -->
+        <div id="fundDeficitSettlementPanel" class="hidden bg-rose-950/25 border border-rose-500/40 rounded-2xl p-4 sm:p-5 space-y-4 shadow-lg">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-rose-500/20 pb-3">
+            <div>
+              <h4 class="text-sm font-bold text-rose-300 flex items-center gap-1.5">
+                <span>⚖️</span> สรุปยอดสำรองจ่าย & คำนวณเงินคืนรายบุคคล
+              </h4>
+              <p class="text-[11px] text-slate-400 mt-0.5">
+                นำยอดที่สมาชิกออกเงินส่วนตัวทั้งหมดมาหารเท่ากัน (<span id="settlementMemberCount" class="text-slate-200 font-bold">0</span> คน)
+              </p>
+            </div>
+            <div class="bg-slate-950/80 border border-rose-500/30 px-3 py-1.5 rounded-xl text-right">
+              <div class="text-[10px] text-slate-400">ส่วนแบ่งเฉลี่ยต่อคน</div>
+              <div class="text-base font-black text-amber-300" id="settlementFairShareText">0 ฿/คน</div>
+            </div>
+          </div>
+
+          <!-- แถบโหลดบาร์ของสมาชิกแต่ละคน -->
+          <div id="fundDeficitBarsList" class="space-y-3"></div>
+
+          <!-- หมายเหตุอธิบายการเคลียร์ยอด -->
+          <div id="settlementHelperNote" class="text-[11px] text-slate-300 bg-slate-950/70 border border-slate-800 p-3 rounded-xl leading-relaxed"></div>
         </div>
 
         <!-- กราฟโดนัทสรุปหมวดหมู่การเบิกกองกลาง -->
@@ -612,6 +674,11 @@
     window.cachedSlips = { house: {}, fund: {}, sharedBill: {} };
     window.cachedFundSlips = {};
 
+    function formatMoney(num) {
+      const val = Number(num) || 0;
+      return Number.isInteger(val) ? val.toLocaleString() : val.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
     function getActiveCategories() {
       if (settings.billCategories && Object.keys(settings.billCategories).length > 0) {
         return settings.billCategories;
@@ -715,7 +782,6 @@
       });
     }
 
-    // Modal ตรวจสอบและยืนยันข้อมูลที่สแกนได้จากสลิป
     function askSlipConfirm(detectedAmount, detectedDateTime) {
       return new Promise((resolve) => {
         const modal = document.getElementById('slipConfirmModal');
@@ -854,7 +920,7 @@
     }
 
     // ==========================================
-    // 🏷️ จัดการหมวดหมู่การเบิกเงินกองกลาง (Fund Categories)
+    // 🏷️ จัดการหมวดหมู่การเบิกเงินกองกลาง
     // ==========================================
     async function openFundCatModal(catId = 'new') {
       if (!(await verifyPermission('fund'))) return;
@@ -933,7 +999,7 @@
     }
 
     // ==========================================
-    // ⚙️ จัดการประเภทค่าใช้จ่ายประจำ (Bill Categories)
+    // ⚙️ จัดการประเภทค่าใช้จ่ายประจำ
     // ==========================================
     function toggleCatDefaultAmountUI() {
       const isFixed = document.getElementById('catIsFixedSelect')?.value === 'fixed';
@@ -1373,7 +1439,6 @@
       return fallbackDateStr || 'ไม่ระบุเวลา';
     }
 
-    // ลบรายการในประวัติกองกลาง
     async function deleteFundLogItem(type, id) {
       if (!(await verifyPermission('fund'))) return;
       if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?")) return;
@@ -1432,10 +1497,11 @@
     }
 
     // ==========================================
-    // 📊 คำนวณยอดเงิน + ลำดับตามเวลาสลิป + กราฟกองกลาง + ระบุชื่อคนสำรองจ่าย
+    // 📊 คำนวณยอดเงิน + แยกเงินที่มีกับเงินที่ติดลบ + โหลดบาร์คำนวณเงินคืนรายบุคคล
     // ==========================================
     function calculateAndRender() {
-      const activeCount = Object.values(members).filter(m => m && m.active).length || 1;
+      const activeEntries = Object.entries(members).filter(([_, m]) => m && m.active);
+      const activeCount = activeEntries.length || 1;
       setSafeText('overviewActiveCount', activeCount);
 
       const curData = (allMonthsData && allMonthsData[currentMonth]) || {};
@@ -1509,25 +1575,35 @@
           </div>`;
       }
 
-      // 2. คำนวณเงินกองกลางคงเหลือสุทธิ (รองรับยอดติดลบ & คำนวณผู้ที่ต้องโอนคืน)
-      let totalFundPaidIn = Number(settings.initialFund) || 0, totalFundOut = 0;
-      const allExpensesForDeficit = [];
+      // 2. แยกคำนวณ "เงินกองกลางที่มีอยู่จริง" vs "ยอดติดลบ / สำรองจ่ายค้างเคลียร์" ตามลำดับเวลาจริง
+      const allChronologicalEvents = [];
+      let totalFundPaidIn = Number(settings.initialFund) || 0;
+      let totalFundOut = 0;
 
       Object.keys(allMonthsData).forEach(mth => {
         const mData = allMonthsData[mth];
         if (!mData || typeof mData !== 'object') return;
         if (mData.fundDeposits && typeof mData.fundDeposits === 'object') {
-          Object.values(mData.fundDeposits).forEach(dep => {
-            if (dep && dep.amount) totalFundPaidIn += Number(dep.amount || 0);
+          Object.entries(mData.fundDeposits).forEach(([depId, dep]) => {
+            if (dep && dep.amount) {
+              const amt = Number(dep.amount) || 0;
+              totalFundPaidIn += amt;
+              allChronologicalEvents.push({
+                type: 'deposit',
+                amount: amt,
+                sortKey: parseTimestamp(dep.slipTime, dep.date, depId)
+              });
+            }
           });
         }
         if (mData.fundExpenses && typeof mData.fundExpenses === 'object') {
           Object.entries(mData.fundExpenses).forEach(([expId, e]) => {
             if (e && e.amount) {
-              const amt = Number(e.amount || 0);
+              const amt = Number(e.amount) || 0;
               totalFundOut += amt;
-              allExpensesForDeficit.push({
-                buyer: e.buyer || 'ไม่ระบุชื่อ',
+              allChronologicalEvents.push({
+                type: 'expense',
+                buyer: (e.buyer || 'ไม่ระบุชื่อ').trim(),
                 amount: amt,
                 sortKey: parseTimestamp(e.slipTime, e.date, expId)
               });
@@ -1535,44 +1611,165 @@
           });
         }
       });
-      
-      const netFund = totalFundPaidIn - totalFundOut;
-      const fundBalanceColor = netFund >= 0 ? 'text-indigo-200' : 'text-rose-400 animate-pulse';
-      setSafeHTML('dashFundBalance', `<span class="${fundBalanceColor}">${netFund.toLocaleString()}</span> <span class="text-sm font-normal text-indigo-300">บาท</span>`);
 
-      const noticeEl = document.getElementById('fundNegativeNotice');
-      if (noticeEl) {
-        if (netFund < 0) {
-          noticeEl.classList.remove('hidden');
-          let deficit = Math.abs(netFund);
+      // เรียงเหตุการณ์ทั้งหมดจากเก่าสุด -> ใหม่สุด เพื่อแยกเงินสดในบัญชี กับยอดควักเงินส่วนตัว
+      allChronologicalEvents.sort((a, b) => a.sortKey - b.sortKey);
 
-          // เรียงรายการเบิกจากล่าสุดไปเก่าสุด เพื่อดูว่ายอดเงินที่ติดลบนั้นใครเป็นคนออกไป
-          allExpensesForDeficit.sort((a, b) => b.sortKey - a.sortKey);
+      let availableCashInAccount = Number(settings.initialFund) || 0;
+      const memberOutOfPocket = {};
+      activeEntries.forEach(([_, m]) => {
+        if (m && m.name) memberOutOfPocket[m.name.trim()] = 0;
+      });
 
-          const creditors = {};
-          for (const exp of allExpensesForDeficit) {
-            if (deficit <= 0) break;
-            const owed = Math.min(deficit, exp.amount);
-            creditors[exp.buyer] = (creditors[exp.buyer] || 0) + owed;
-            deficit -= owed;
+      allChronologicalEvents.forEach(ev => {
+        if (ev.type === 'deposit') {
+          availableCashInAccount += ev.amount;
+        } else if (ev.type === 'expense') {
+          if (availableCashInAccount >= ev.amount) {
+            availableCashInAccount -= ev.amount;
+          } else {
+            const coveredByCash = Math.max(0, availableCashInAccount);
+            const paidOutOfPocket = ev.amount - coveredByCash;
+            availableCashInAccount = 0;
+            memberOutOfPocket[ev.buyer] = (memberOutOfPocket[ev.buyer] || 0) + paidOutOfPocket;
           }
+        }
+      });
 
-          const creditorTexts = Object.entries(creditors).map(([name, amt]) => {
-            return `<strong>${name}</strong> (${amt.toLocaleString()} ฿)`;
+      const netFund = totalFundPaidIn - totalFundOut;
+      const isNegativeFund = netFund < 0;
+      const totalOutOfPocketAll = Object.values(memberOutOfPocket).reduce((sum, v) => sum + v, 0);
+
+      // อัปเดตกล่อง 1: เงินกองกลางที่มีอยู่จริง
+      setSafeHTML('dashFundAvailable', `${formatMoney(availableCashInAccount)} <span class="text-sm font-normal text-emerald-400/80">บาท</span>`);
+      setSafeText('dashFundAvailableBadge', availableCashInAccount > 0 ? 'มีเงินในบัญชี' : 'เงินในบัญชีหมด');
+      setSafeText('dashFundAvailableSub', availableCashInAccount > 0 
+        ? 'ยอดเงินสดที่อยู่ในบัญชีกองกลางตอนนี้' 
+        : 'เงินในบัญชีกองกลางถูกใช้หมดแล้ว');
+
+      // อัปเดตกล่อง 2: ยอดติดลบ / สำรองจ่ายรวม
+      const deficitCard = document.getElementById('dashFundDeficitCard');
+      const deficitBadge = document.getElementById('dashFundDeficitBadge');
+      const deficitValueEl = document.getElementById('dashFundDeficit');
+
+      if (isNegativeFund || totalOutOfPocketAll > 0) {
+        if (deficitCard) deficitCard.className = 'bg-rose-950/30 border border-rose-500/50 rounded-2xl p-4 flex flex-col justify-between shadow-inner transition-all';
+        if (deficitBadge) {
+          deficitBadge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-rose-950 text-rose-300 border border-rose-700 font-bold';
+          deficitBadge.innerText = 'ติดลบ / ค้างเคลียร์';
+        }
+        if (deficitValueEl) {
+          deficitValueEl.className = 'text-3xl font-black text-rose-400 mt-2';
+          deficitValueEl.innerHTML = `-${formatMoney(totalOutOfPocketAll)} <span class="text-sm font-normal text-rose-300/80">บาท</span>`;
+        }
+        setSafeText('dashFundDeficitSub', 'ยอดรวมที่สมาชิกออกเงินส่วนตัวไปก่อน');
+      } else {
+        if (deficitCard) deficitCard.className = 'bg-slate-950/75 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-inner transition-all';
+        if (deficitBadge) {
+          deficitBadge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700';
+          deficitBadge.innerText = 'ปกติ';
+        }
+        if (deficitValueEl) {
+          deficitValueEl.className = 'text-3xl font-black text-slate-500 mt-2';
+          deficitValueEl.innerHTML = `0 <span class="text-sm font-normal">บาท</span>`;
+        }
+        setSafeText('dashFundDeficitSub', 'ไม่มีรายการสำรองจ่ายค้างคืน');
+      }
+
+      // 3. แผงโหลดบาร์ & คำนวณหารคืนเงินรายบุคคล (แสดงเมื่อเงินกองกลางติดลบ / มียอดสำรองจ่าย)
+      const settlementPanel = document.getElementById('fundDeficitSettlementPanel');
+      const barsListEl = document.getElementById('fundDeficitBarsList');
+      const helperNoteEl = document.getElementById('settlementHelperNote');
+
+      if (settlementPanel && barsListEl) {
+        if (isNegativeFund || totalOutOfPocketAll > 0) {
+          settlementPanel.classList.remove('hidden');
+
+          // รวมรายชื่อสมาชิกที่เปิดใช้งาน + ใครก็ตามที่เคยสำรองจ่ายไว้
+          const participantNames = new Set(activeEntries.map(([_, m]) => m.name.trim()));
+          Object.entries(memberOutOfPocket).forEach(([name, amt]) => {
+            if (amt > 0) participantNames.add(name);
           });
 
-          noticeEl.innerHTML = `
-            <div>⚠️ เงินกองกลางติดลบ <strong>${Math.abs(netFund).toLocaleString()} ฿</strong></div>
-            <div class="mt-1 text-rose-200 text-[11px]">
-              👉 <strong>ต้องโอนคืน:</strong> ${creditorTexts.join(', ')} (เป็นผู้สำรองจ่ายออกไปก่อน)
-            </div>
-          `;
+          const memberList = Array.from(participantNames);
+          const divisorCount = activeCount || memberList.length || 1;
+          const fairSharePerPerson = totalOutOfPocketAll / divisorCount;
+
+          setSafeText('settlementMemberCount', divisorCount);
+          setSafeText('settlementFairShareText', `${formatMoney(fairSharePerPerson)} ฿/คน`);
+
+          const maxPaid = Math.max(...memberList.map(n => memberOutOfPocket[n] || 0), fairSharePerPerson, 1);
+          const maxScale = maxPaid * 1.15; // เผื่อพื้นที่ด้านขวาให้เส้นเกณฑ์เฉลี่ยดูง่าย
+          const fairSharePct = Math.min(96, (fairSharePerPerson / maxScale) * 100);
+
+          // เรียงคนที่ออกเงินเยอะสุดขึ้นบน
+          memberList.sort((a, b) => (memberOutOfPocket[b] || 0) - (memberOutOfPocket[a] || 0));
+
+          barsListEl.innerHTML = '';
+          const refundList = [];
+          const payMoreList = [];
+
+          memberList.forEach(name => {
+            const paid = memberOutOfPocket[name] || 0;
+            const diff = paid - fairSharePerPerson;
+            const barPct = Math.min(100, (paid / maxScale) * 100);
+            const shareOfTotalPct = totalOutOfPocketAll > 0 ? ((paid / totalOutOfPocketAll) * 100).toFixed(1) : '0.0';
+
+            let statusBadge = '';
+            let barGradient = 'bg-slate-600';
+
+            if (diff > 0.01) {
+              statusBadge = `<span class="bg-emerald-950 text-emerald-300 border border-emerald-700/80 px-2.5 py-0.5 rounded-full text-[11px] font-bold">✅ ได้เงินคืน +${formatMoney(diff)} ฿</span>`;
+              barGradient = 'bg-gradient-to-r from-emerald-600 to-emerald-400';
+              refundList.push(`<strong>${name}</strong> (+${formatMoney(diff)} ฿)`);
+            } else if (diff < -0.01) {
+              statusBadge = `<span class="bg-amber-950 text-amber-300 border border-amber-700/80 px-2.5 py-0.5 rounded-full text-[11px] font-bold">⏳ ต้องจ่ายเพิ่ม ${formatMoney(Math.abs(diff))} ฿</span>`;
+              barGradient = paid > 0 ? 'bg-gradient-to-r from-amber-600 to-amber-400' : 'bg-slate-700';
+              payMoreList.push(`<strong>${name}</strong> (${formatMoney(Math.abs(diff))} ฿)`);
+            } else {
+              statusBadge = `<span class="bg-sky-950 text-sky-300 border border-sky-700/80 px-2.5 py-0.5 rounded-full text-[11px] font-bold">⚖️ พอดีส่วนแบ่ง (0 ฿)</span>`;
+              barGradient = 'bg-gradient-to-r from-sky-600 to-sky-400';
+            }
+
+            barsListEl.innerHTML += `
+              <div class="bg-slate-950/80 border border-slate-800/90 rounded-2xl p-3 space-y-2">
+                <div class="flex flex-wrap justify-between items-center gap-1.5">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-100">${name}</span>
+                    <span class="text-[11px] text-slate-400">ออกไปแล้ว: <strong class="text-white">${formatMoney(paid)} ฿</strong></span>
+                  </div>
+                  ${statusBadge}
+                </div>
+
+                <!-- แทบโหลดบาร์ (Progress Bar) พร้อมเส้นขีดเกณฑ์หารเฉลี่ยต่อคน -->
+                <div class="relative w-full h-3 bg-slate-800 rounded-full overflow-visible">
+                  <div class="h-full rounded-full transition-all duration-500 ${barGradient}" style="width: ${barPct}%"></div>
+                  <!-- เส้นเกณฑ์ยอดหารเฉลี่ยต่อคน -->
+                  <div class="absolute -top-1 -bottom-1 w-0.5 bg-white shadow-[0_0_6px_#fff] z-10" style="left: ${fairSharePct}%" title="เกณฑ์หารเฉลี่ย ${formatMoney(fairSharePerPerson)} ฿/คน"></div>
+                </div>
+
+                <div class="flex justify-between items-center text-[10px] text-slate-400">
+                  <span>คิดเป็น <strong class="text-slate-300">${shareOfTotalPct}%</strong> ของยอดสำรองจ่ายรวม</span>
+                  <span>เกณฑ์เฉลี่ย: <strong class="text-amber-300">${formatMoney(fairSharePerPerson)} ฿</strong></span>
+                </div>
+              </div>`;
+          });
+
+          if (helperNoteEl) {
+            let cashNote = availableCashInAccount > 0 
+              ? `<div class="mb-1.5 text-emerald-300">💵 <strong>หมายเหตุ:</strong> ตอนนี้มีเงินโอนเข้าบัญชีกองกลางอยู่ <strong>${formatMoney(availableCashInAccount)} ฿</strong> (ยอดขาดสุทธิคงเหลือ <strong>${formatMoney(Math.abs(netFund))} ฿</strong>)</div>` 
+              : '';
+            helperNoteEl.innerHTML = `
+              ${cashNote}
+              <div>📌 <strong>สรุปการเคลียร์ยอด:</strong> ให้ ${payMoreList.length > 0 ? payMoreList.join(', ') : 'สมาชิกที่จ่ายไม่ครบ'} โอนเงินสมทบเข้ากองกลาง เพื่อนำไปโอนคืนให้ ${refundList.length > 0 ? refundList.join(', ') : 'ผู้สำรองจ่าย'}</div>
+            `;
+          }
         } else {
-          noticeEl.classList.add('hidden');
+          settlementPanel.classList.add('hidden');
         }
       }
 
-      // 3. กองกลางความเคลื่อนไหว (เรียงตามเวลาสลิปจริง)
+      // 4. กองกลางความเคลื่อนไหว (เรียงตามเวลาสลิปจริง)
       const depLog = document.getElementById('fundDepositLog');
       const fundCats = getActiveFundCategories();
       const combinedLogs = [];
@@ -2007,15 +2204,6 @@
         }
       });
       setSafeHTML('sharedBillMembersCheckboxes', sbChecks); 
-
-      const catSelect = document.getElementById('fundWithCategory');
-      if (catSelect) {
-        catSelect.innerHTML = '';
-        const cats = getActiveFundCategories();
-        Object.values(cats).forEach(c => {
-          catSelect.innerHTML += `<option value="${c.id}">${c.name}</option>`;
-        });
-      }
     }
 
     async function saveBillsFromAdmin() {
@@ -2141,7 +2329,6 @@
       if (fileInput) fileInput.click();
     }
 
-    // ฟังก์ชันจัดการเมื่อเลือกสลิป: เรียก OCR สแกนยอดและเวลาจริงในสลิป
     async function handleSlipSelected(e) {
       const file = e.target.files[0];
       if (!file || !currentUploadConfig) return;
