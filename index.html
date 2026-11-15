@@ -60,6 +60,66 @@
     </div>
   </div>
 
+  <!-- Modal บันทึกการโอนเงินคืนให้ผู้สำรองจ่าย (Reimbursement Modal) -->
+  <div id="fundReimburseModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-emerald-500/50 rounded-2xl max-w-sm w-full shadow-2xl p-5">
+      <div class="flex justify-between items-center mb-3">
+        <div>
+          <h3 class="text-sm font-bold text-emerald-400">💸 โอนเงินกองกลางคืนผู้สำรองจ่าย</h3>
+          <p class="text-[10px] text-slate-400">ตัดยอดค้างโอนคืนเมื่อโอนเงินจากบัญชีกองกลางให้แล้ว</p>
+        </div>
+        <button onclick="closeFundReimburseModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">โอนคืนให้ใคร?</label>
+          <select id="reimburseToMember" onchange="onReimburseMemberChange()" class="w-full bg-slate-800 rounded-xl p-2.5 text-sm text-slate-200 border border-slate-700 outline-none"></select>
+        </div>
+        <div id="reimburseBankHint" class="hidden p-2.5 bg-slate-950/90 border border-slate-800 rounded-xl text-xs flex justify-between items-center">
+          <div class="text-slate-300" id="reimburseBankText"></div>
+          <button type="button" onclick="copyReimburseAcc()" class="text-[10px] bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-lg font-medium">คัดลอกเลข</button>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">จำนวนเงินที่โอนคืน (บาท)</label>
+          <input type="number" step="any" id="reimburseAmount" placeholder="เช่น 300" class="w-full bg-slate-800 rounded-xl p-2.5 text-sm text-emerald-300 font-bold border border-slate-700 outline-none">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">หมายเหตุ (ไม่บังคับ)</label>
+          <input type="text" id="reimburseNote" placeholder="เช่น โอนคืนค่าของใช้เข้าบ้าน" class="w-full bg-slate-800 rounded-xl p-2.5 text-sm text-slate-200 border border-slate-700 outline-none">
+        </div>
+        <button onclick="triggerReimburseSlipUpload()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl text-xs font-bold transition text-white flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20">
+          <span>📤</span> แนบสลิปโอนคืน & ยืนยันตัดยอด
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal แก้ไขข้อมูลสมาชิก & เลขบัญชีรับเงินคืน -->
+  <div id="editMemberModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-amber-500/50 rounded-3xl max-w-sm w-full shadow-2xl p-6">
+      <h3 class="text-base font-bold text-amber-400 mb-1">✏️ แก้ไขข้อมูลสมาชิก</h3>
+      <p class="text-xs text-slate-400 mb-4">ตั้งชื่อและบัญชีรับเงินโอนคืนกรณีสำรองจ่าย</p>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">ชื่อเรียกสมาชิก</label>
+          <input type="text" id="editMemberNameInput" class="w-full bg-slate-950 rounded-xl p-2.5 text-sm text-slate-200 border border-slate-700 outline-none focus:border-amber-500">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">ธนาคาร / พร้อมเพย์ (สำหรับโอนคืน)</label>
+          <input type="text" id="editMemberBankInput" placeholder="เช่น กสิกรไทย, พร้อมเพย์" class="w-full bg-slate-950 rounded-xl p-2.5 text-sm text-slate-200 border border-slate-700 outline-none focus:border-amber-500">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">เลขบัญชี / เบอร์พร้อมเพย์</label>
+          <input type="text" id="editMemberAccInput" placeholder="เช่น 081-234-5678" class="w-full bg-slate-950 rounded-xl p-2.5 text-sm text-slate-200 border border-slate-700 outline-none focus:border-amber-500">
+        </div>
+      </div>
+      <div class="flex gap-2 mt-5">
+        <button onclick="closeEditMemberModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 py-2.5 rounded-xl text-xs font-medium text-slate-300">ยกเลิก</button>
+        <button onclick="saveEditMemberSubmit()" class="flex-1 bg-amber-600 hover:bg-amber-500 py-2.5 rounded-xl text-xs font-bold text-white shadow-lg">บันทึก</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal ตรวจสอบรหัสผ่านผู้ดูแล -->
   <div id="passcodeModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[95] hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-amber-500/50 rounded-3xl max-w-sm w-full shadow-2xl p-6 text-center">
@@ -126,19 +186,6 @@
     </div>
   </div>
 
-  <!-- Custom Prompt Modal -->
-  <div id="customPromptModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-emerald-500/50 rounded-3xl max-w-sm w-full shadow-2xl p-6 relative overflow-hidden">
-      <h3 class="text-lg font-bold text-emerald-400 mb-2" id="customPromptTitle">ระบุข้อมูล</h3>
-      <p class="text-sm text-slate-300 mb-5 whitespace-pre-line" id="customPromptDesc">โปรดระบุข้อมูล</p>
-      <input type="text" id="customPromptInput" class="w-full bg-slate-950 rounded-xl p-3.5 text-xl text-emerald-400 font-bold text-center border border-slate-700 outline-none focus:border-emerald-500 mb-5 shadow-inner">
-      <div class="flex gap-3">
-        <button id="customPromptCancel" class="flex-1 bg-slate-800 hover:bg-slate-700 py-3.5 rounded-xl text-sm font-medium text-white transition border border-slate-700">ยกเลิก</button>
-        <button id="customPromptConfirm" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-3.5 rounded-xl text-sm font-bold text-white transition shadow-lg">ยืนยัน</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Custom Alert Modal -->
   <div id="customAlertModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-sm w-full shadow-2xl p-6 text-center">
@@ -162,7 +209,7 @@
         </div>
         <div>
           <label class="block text-xs text-slate-400 mb-1">วัตถุประสงค์ / หมายเหตุ</label>
-          <input type="text" id="fundDepNote" placeholder="เช่น สมทบรายเดือน" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm text-slate-200 border border-slate-700 outline-none">
+          <input type="text" id="fundDepNote" placeholder="เช่น สมทบรายเดือน, เคลียร์ยอดของใช้" class="w-full bg-slate-800 rounded-lg p-2.5 text-sm text-slate-200 border border-slate-700 outline-none">
         </div>
         <button onclick="triggerFundSlipUpload()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl text-sm font-medium transition text-white">
           📤 เลือกสลิปเพื่อสแกนและอัปโหลด
@@ -171,21 +218,30 @@
     </div>
   </div>
 
-  <!-- Modal เบิกเงินกองกลาง (ระบบแยกรายการย่อยในสลิปเดียว Itemized Split) -->
+  <!-- Modal เบิกเงินกองกลาง (ระบบแยกรายการย่อย + แยกแหล่งเงินที่จ่าย) -->
   <div id="fundWithdrawModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-rose-500/50 rounded-2xl max-w-md w-full shadow-2xl p-5">
       <div class="flex justify-between items-center mb-3">
         <div>
-          <h3 class="text-sm font-bold text-rose-400">💸 เบิกเงินจากกองกลาง</h3>
+          <h3 class="text-sm font-bold text-rose-400">💸 บันทึกซื้อของ / เบิกเงินกองกลาง</h3>
           <p class="text-[10px] text-slate-400">ระบบจะสแกนเวลาและยอดเงินจากสลิปอัตโนมัติ</p>
         </div>
         <button onclick="closeFundWithdrawModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
       </div>
       
       <div class="space-y-3">
-        <div>
-          <label class="block text-[11px] text-slate-400 mb-1">ใครเป็นคนเบิก / สำรองจ่าย?</label>
-          <select id="fundWithBuyer" class="w-full bg-slate-800 rounded-xl p-2 text-xs text-slate-200 border border-slate-700 outline-none"></select>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">ใครเป็นคนซื้อ / ทำรายการ?</label>
+            <select id="fundWithBuyer" class="w-full bg-slate-800 rounded-xl p-2 text-xs text-slate-200 border border-slate-700 outline-none"></select>
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">จ่ายเงินจากช่องทางไหน?</label>
+            <select id="fundWithPaySource" class="w-full bg-slate-800 rounded-xl p-2 text-xs text-slate-200 border border-slate-700 outline-none">
+              <option value="personal">💳 สำรองจ่ายเงินส่วนตัวก่อน (รอโอนคืน)</option>
+              <option value="fund">🏦 โอนจากบัญชีกองกลางโดยตรง</option>
+            </select>
+          </div>
         </div>
 
         <!-- กล่องรายการสินค้าในสลิป -->
@@ -199,7 +255,7 @@
             </button>
           </div>
           
-          <div id="fundWithdrawItemsContainer" class="space-y-2 max-h-56 overflow-y-auto pr-1"></div>
+          <div id="fundWithdrawItemsContainer" class="space-y-2 max-h-52 overflow-y-auto pr-1"></div>
         </div>
 
         <!-- สรุปยอดรวมอัตโนมัติ -->
@@ -212,7 +268,7 @@
         </div>
 
         <button onclick="submitFundWithdraw()" class="w-full bg-rose-600 hover:bg-rose-500 py-3 rounded-xl text-sm font-bold transition text-white flex items-center justify-center gap-1.5 shadow-lg shadow-rose-600/20">
-          <span>📤</span> สแกนสลิป/ใบเสร็จเพื่อยืนยันการเบิก
+          <span>📤</span> สแกนสลิป/ใบเสร็จเพื่อยืนยัน
         </button>
       </div>
     </div>
@@ -309,10 +365,10 @@
         </div>
       </div>
 
-      <!-- 2. กองกลาง: แยกเงินที่มีอยู่จริง กับ ยอดติดลบ/สำรองจ่าย ออกจากกัน + โหลดบาร์คำนวณคืนเงิน -->
+      <!-- 2. กองกลาง: แยกเงินสดในบัญชี / เงินกันไว้รอโอนคืน / เงินใช้ได้จริง + โหลดบาร์รายบุคคล -->
       <div class="bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-3xl p-6 shadow-xl relative overflow-hidden space-y-5">
         
-        <!-- หัวข้อและปุ่มฝาก/เบิก -->
+        <!-- หัวข้อและปุ่มฝาก/เบิก/โอนคืน -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-indigo-500/20 pb-4">
           <div>
             <div class="text-sm font-bold text-indigo-300 flex items-center gap-1.5">
@@ -322,57 +378,68 @@
               เป้าหมายเก็บ <span id="fundPerPersonRate" class="font-bold text-indigo-200">0</span> บ./คน/เดือน
             </div>
           </div>
-          <div class="flex gap-2 w-full sm:w-auto">
-            <button onclick="openFundDepositModal()" class="flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-4 py-2.5 rounded-xl shadow-lg transition font-medium">+ ฝากเงินเข้ากองกลาง</button>
-            <button onclick="openFundWithdrawModal()" class="flex-1 sm:flex-initial bg-rose-700/80 hover:bg-rose-600 text-rose-100 text-xs px-4 py-2.5 rounded-xl shadow-lg transition font-medium">- เบิกเงินกองกลาง</button>
+          <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+            <button onclick="openFundDepositModal()" class="flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3.5 py-2.5 rounded-xl shadow-lg transition font-medium">+ ฝากกองกลาง</button>
+            <button onclick="openFundWithdrawModal()" class="flex-1 sm:flex-initial bg-rose-700/80 hover:bg-rose-600 text-rose-100 text-xs px-3.5 py-2.5 rounded-xl shadow-lg transition font-medium">- ซื้อของ/เบิก</button>
+            <button onclick="openFundReimburseModal()" id="btnOpenReimburse" class="hidden flex-1 sm:flex-initial bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3.5 py-2.5 rounded-xl shadow-lg transition font-bold">💸 โอนคืนผู้สำรองจ่าย</button>
           </div>
         </div>
 
-        <!-- แยกกล่อง 1: เงินกองกลางที่มีอยู่จริง vs กล่อง 2: ยอดติดลบ/สำรองจ่ายค้างเคลียร์ -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <!-- กล่องเงินที่มีอยู่จริง -->
-          <div class="bg-slate-950/75 border border-emerald-500/30 rounded-2xl p-4 flex flex-col justify-between shadow-inner">
+        <!-- แยกกล่อง 3 ส่วน: 1) เงินในบัญชีจริง 2) ยอดค้างโอนคืนผู้สำรองจ่าย 3) เงินสุทธิที่ใช้ได้จริง -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <!-- กล่อง 1: เงินสดที่มีอยู่ในบัญชีกองกลาง -->
+          <div class="bg-slate-950/75 border border-indigo-500/30 rounded-2xl p-4 flex flex-col justify-between shadow-inner">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-emerald-400">💵 เงินกองกลางที่มีอยู่จริง</span>
-              <span id="dashFundAvailableBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800">เงินในบัญชี</span>
+              <span class="text-xs font-bold text-indigo-300">🏦 เงินในบัญชีจริง</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800">ยอดในแอป</span>
             </div>
-            <div class="text-3xl font-black text-emerald-300 mt-2" id="dashFundAvailable">0 <span class="text-sm font-normal text-emerald-400/80">บาท</span></div>
-            <div class="text-[11px] text-slate-400 mt-1" id="dashFundAvailableSub">ยอดเงินสดที่สามารถเบิกใช้ได้ทันที</div>
+            <div class="text-2xl font-black text-white mt-2" id="dashFundBankTotal">0 <span class="text-xs font-normal text-slate-400">บาท</span></div>
+            <div class="text-[10px] text-slate-400 mt-1">ยอดเงินรวมที่โอนเข้าบัญชีกองกลาง</div>
           </div>
 
-          <!-- กล่องยอดติดลบ / สำรองจ่ายค้างเคลียร์ -->
+          <!-- กล่อง 2: ยอดค้างโอนคืนผู้สำรองจ่าย (หักลบเงินที่เพื่อนโอนเข้ามาให้เห็นชัด) -->
           <div id="dashFundDeficitCard" class="bg-slate-950/75 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-inner transition-all">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-rose-400">🔴 ยอดติดลบ / สำรองจ่ายรวม</span>
+              <span class="text-xs font-bold text-rose-400">🔴 ยอดค้างโอนคืน</span>
               <span id="dashFundDeficitBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">ปกติ</span>
             </div>
-            <div class="text-3xl font-black text-slate-500 mt-2" id="dashFundDeficit">0 <span class="text-sm font-normal">บาท</span></div>
-            <div class="text-[11px] text-slate-400 mt-1" id="dashFundDeficitSub">ยอดที่สมาชิกออกเงินส่วนตัวไปก่อน</div>
+            <div class="text-2xl font-black text-slate-500 mt-2" id="dashFundDeficit">0 <span class="text-xs font-normal">บาท</span></div>
+            <div class="text-[10px] text-slate-400 mt-1" id="dashFundDeficitSub">ไม่มีรายการค้างโอนคืน</div>
+          </div>
+
+          <!-- กล่อง 3: เงินกองกลางสุทธิที่เอาไปซื้อของต่อได้จริง -->
+          <div class="bg-slate-950/75 border border-emerald-500/30 rounded-2xl p-4 flex flex-col justify-between shadow-inner">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-emerald-400">✨ เงินที่ใช้ได้จริง</span>
+              <span id="dashFundFreeBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800">พร้อมใช้</span>
+            </div>
+            <div class="text-2xl font-black text-emerald-300 mt-2" id="dashFundFreeCash">0 <span class="text-xs font-normal text-emerald-400/80">บาท</span></div>
+            <div class="text-[10px] text-slate-400 mt-1" id="dashFundFreeSub">หักเงินที่กันไว้โอนคืนออกแล้ว</div>
           </div>
         </div>
 
-        <!-- แผงแสดงโหลดบาร์ & คำนวณหารคืนเงินรายบุคคล (แสดงอัตโนมัติเมื่อเงินกองกลางติดลบ / มียอดสำรองจ่าย) -->
+        <!-- แผงโหลดบาร์ & คำนวณยอดต้องโอนคืนใครเท่าไหร่ (แสดงค้างไว้จนกว่าจะโอนคืนครบ) -->
         <div id="fundDeficitSettlementPanel" class="hidden bg-rose-950/25 border border-rose-500/40 rounded-2xl p-4 sm:p-5 space-y-4 shadow-lg">
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-rose-500/20 pb-3">
             <div>
               <h4 class="text-sm font-bold text-rose-300 flex items-center gap-1.5">
-                <span>⚖️</span> สรุปยอดสำรองจ่าย & คำนวณเงินคืนรายบุคคล
+                <span>⚖️</span> สรุปยอดออกเงินรายบุคคล & รายการค้างโอนคืน
               </h4>
               <p class="text-[11px] text-slate-400 mt-0.5">
-                นำยอดที่สมาชิกออกเงินส่วนตัวทั้งหมดมาหารเท่ากัน (<span id="settlementMemberCount" class="text-slate-200 font-bold">0</span> คน)
+                นับรวมทั้งเงินที่ซื้อของ + เงินที่โอนเข้ากองกลาง หารเฉลี่ย (<span id="settlementMemberCount" class="text-slate-200 font-bold">0</span> คน)
               </p>
             </div>
             <div class="bg-slate-950/80 border border-rose-500/30 px-3 py-1.5 rounded-xl text-right">
-              <div class="text-[10px] text-slate-400">ส่วนแบ่งเฉลี่ยต่อคน</div>
+              <div class="text-[10px] text-slate-400">เกณฑ์เฉลี่ยต่อคน</div>
               <div class="text-base font-black text-amber-300" id="settlementFairShareText">0 ฿/คน</div>
             </div>
           </div>
 
+          <!-- กล่องสรุปชัดเจน: ต้องโอนคืนใครบ้าง + หักลบจากเงินที่เพื่อนโอนเข้ามาแล้วเท่าไหร่ -->
+          <div id="reimbursementSummaryBox" class="p-3.5 bg-slate-950/90 border border-amber-500/40 rounded-2xl space-y-2"></div>
+
           <!-- แถบโหลดบาร์ของสมาชิกแต่ละคน -->
           <div id="fundDeficitBarsList" class="space-y-3"></div>
-
-          <!-- หมายเหตุอธิบายการเคลียร์ยอด -->
-          <div id="settlementHelperNote" class="text-[11px] text-slate-300 bg-slate-950/70 border border-slate-800 p-3 rounded-xl leading-relaxed"></div>
         </div>
 
         <!-- กราฟโดนัทสรุปหมวดหมู่การเบิกกองกลาง -->
@@ -382,7 +449,7 @@
             <div class="relative w-full flex justify-center items-center" style="height: 150px;">
               <canvas id="fundWithdrawDonutChart"></canvas>
             </div>
-            <div class="text-xs text-slate-400 mt-2">ยอดเบิกทั้งหมด: <span id="fundWithdrawTotalText" class="font-bold text-rose-400">0 ฿</span></div>
+            <div class="text-xs text-slate-400 mt-2">ยอดซื้อของทั้งหมด: <span id="fundWithdrawTotalText" class="font-bold text-rose-400">0 ฿</span></div>
           </div>
           <div class="md:col-span-7">
             <div class="text-[11px] font-semibold text-slate-400 mb-2">แจกแจงตามหมวดหมู่:</div>
@@ -396,7 +463,7 @@
              <span class="font-medium text-slate-300">📋 ความเคลื่อนไหวกองกลาง (เรียงตามเวลาในสลิปจริง)</span>
              <span id="logMonthText" class="text-[10px] text-slate-500"></span>
            </h4>
-           <div id="fundDepositLog" class="space-y-2 overflow-y-auto max-h-[200px] pr-1"></div>
+           <div id="fundDepositLog" class="space-y-2 overflow-y-auto max-h-[220px] pr-1"></div>
         </div>
 
         <div class="pt-3 border-t border-indigo-500/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
@@ -616,7 +683,7 @@
 
         <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
           <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-            <h2 class="text-lg font-bold text-slate-200">👥 จัดการสมาชิก</h2>
+            <h2 class="text-lg font-bold text-slate-200">👥 จัดการสมาชิก & บัญชีรับคืน</h2>
             <span id="badgeLockMembers" class="text-[10px] px-2.5 py-0.5 rounded-full font-bold"></span>
           </div>
           <div id="settingsMemberList" class="space-y-2 mb-3 max-h-60 overflow-y-auto pr-1"></div>
@@ -667,7 +734,8 @@
     let settings = { fundRate: 0, initialFund: 0, locks: {}, billCategories: null, fundCategories: null };
     let currentUploadConfig = null, currentGallerySlips = [], currentGalleryIndex = 0, currentGalleryConfig = null;
     let chartInstance = null, donutChartInstance = null, fundDonutInstance = null;
-    let activeEditingCatId = null, activeEditingFundCatId = null;
+    let activeEditingCatId = null, activeEditingFundCatId = null, activeEditingMemberId = null;
+    let latestOwedRefundMap = {};
 
     let fundWithdrawItems = [];
 
@@ -677,6 +745,19 @@
     function formatMoney(num) {
       const val = Number(num) || 0;
       return Number.isInteger(val) ? val.toLocaleString() : val.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function copyText(txt, label="เลขบัญชี") {
+      if (!txt) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(() => {
+          customAlert(`คัดลอก${label}เรียบร้อย!\n${txt}`, "📋");
+        }).catch(() => {
+          customAlert(`${label}: ${txt}`, "📋");
+        });
+      } else {
+        customAlert(`${label}: ${txt}`, "📋");
+      }
     }
 
     function getActiveCategories() {
@@ -754,32 +835,6 @@
         customAlert("รหัสผ่านไม่ถูกต้อง!", "❌");
         return false;
       }
-    }
-
-    function askPrompt(title, desc, defaultVal, inputType="text") {
-      return new Promise((resolve) => {
-        const modal = document.getElementById('customPromptModal');
-        const input = document.getElementById('customPromptInput');
-        const btnConfirm = document.getElementById('customPromptConfirm');
-        const btnCancel = document.getElementById('customPromptCancel');
-
-        setSafeText('customPromptTitle', title);
-        setSafeText('customPromptDesc', desc);
-        if (input) {
-          input.type = inputType;
-          input.value = defaultVal !== undefined && defaultVal !== null ? defaultVal : '';
-        }
-        if (modal) modal.classList.remove('hidden');
-        if (input) input.focus();
-
-        const cleanup = () => { 
-          if (modal) modal.classList.add('hidden'); 
-          if (btnConfirm) btnConfirm.onclick = null; 
-          if (btnCancel) btnCancel.onclick = null; 
-        };
-        if (btnConfirm) btnConfirm.onclick = () => { cleanup(); resolve(input ? input.value : ''); };
-        if (btnCancel) btnCancel.onclick = () => { cleanup(); resolve(null); };
-      });
     }
 
     function askSlipConfirm(detectedAmount, detectedDateTime) {
@@ -1443,7 +1498,12 @@
       if (!(await verifyPermission('fund'))) return;
       if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?")) return;
 
-      const path = type === 'expense' ? `bills/${currentMonth}/fundExpenses/${id}` : `bills/${currentMonth}/fundDeposits/${id}`;
+      let path = '';
+      if (type === 'expense') path = `bills/${currentMonth}/fundExpenses/${id}`;
+      else if (type === 'deposit') path = `bills/${currentMonth}/fundDeposits/${id}`;
+      else if (type === 'reimburse') path = `bills/${currentMonth}/fundReimbursements/${id}`;
+
+      if (!path) return;
       db.ref(path).remove().then(() => {
         customAlert("ลบรายการเรียบร้อยแล้ว!", "✅");
       }).catch(err => customAlert("เกิดข้อผิดพลาด: " + err.message, "❌"));
@@ -1497,7 +1557,7 @@
     }
 
     // ==========================================
-    // 📊 คำนวณยอดเงิน + แยกเงินที่มีกับเงินที่ติดลบ + โหลดบาร์คำนวณเงินคืนรายบุคคล
+    // 📊 คำนวณยอดเงิน + หักลบยอดโอนเข้ากับยอดรอโอนคืน + โหลดบาร์รายบุคคล
     // ==========================================
     function calculateAndRender() {
       const activeEntries = Object.entries(members).filter(([_, m]) => m && m.active);
@@ -1575,201 +1635,326 @@
           </div>`;
       }
 
-      // 2. แยกคำนวณ "เงินกองกลางที่มีอยู่จริง" vs "ยอดติดลบ / สำรองจ่ายค้างเคลียร์" ตามลำดับเวลาจริง
-      const allChronologicalEvents = [];
-      let totalFundPaidIn = Number(settings.initialFund) || 0;
-      let totalFundOut = 0;
+      // =========================================================================
+      // 2. คำนวณบัญชีเงินกองกลางแบบแยก 3 ก้อน + หักลบยอดโอนเข้ากับยอดรอโอนคืน
+      // =========================================================================
+      const allEvents = [];
+      let totalDepositsAll = 0;
+      let totalDirectFundExpenses = 0;
+      let totalReimbursedAll = 0;
+
+      const memberPersonalSpent = {};   // ยอดที่สมาชิกควักเงินส่วนตัวซื้อของ
+      const memberCashDeposited = {};   // ยอดที่สมาชิกโอนเงินสดเข้ากองกลาง
+      const memberReimbursed = {};      // ยอดที่สมาชิกได้รับเงินโอนคืนจากกองกลางแล้ว
+      const memberBankInfo = {};        // เก็บเลขบัญชีของแต่ละคน
+
+      activeEntries.forEach(([_, m]) => {
+        if (m && m.name) {
+          const n = m.name.trim();
+          memberPersonalSpent[n] = 0;
+          memberCashDeposited[n] = 0;
+          memberReimbursed[n] = 0;
+          memberBankInfo[n] = { bank: m.bank || '', accNo: m.accNo || '' };
+        }
+      });
 
       Object.keys(allMonthsData).forEach(mth => {
         const mData = allMonthsData[mth];
         if (!mData || typeof mData !== 'object') return;
+
+        // 2.1 รายการฝากเงินเข้ากองกลาง
         if (mData.fundDeposits && typeof mData.fundDeposits === 'object') {
           Object.entries(mData.fundDeposits).forEach(([depId, dep]) => {
-            if (dep && dep.amount) {
-              const amt = Number(dep.amount) || 0;
-              totalFundPaidIn += amt;
-              allChronologicalEvents.push({
-                type: 'deposit',
-                amount: amt,
-                sortKey: parseTimestamp(dep.slipTime, dep.date, depId)
-              });
-            }
+            if (!dep || !dep.amount) return;
+            const amt = Number(dep.amount) || 0;
+            const mName = ((members[dep.memberId] && members[dep.memberId].name) || 'ไม่ระบุชื่อ').trim();
+            totalDepositsAll += amt;
+            memberCashDeposited[mName] = (memberCashDeposited[mName] || 0) + amt;
+
+            allEvents.push({
+              type: 'deposit',
+              member: mName,
+              amount: amt,
+              sortKey: parseTimestamp(dep.slipTime, dep.date, depId)
+            });
           });
         }
+
+        // 2.2 รายการซื้อของ / เบิกเงินกองกลาง
         if (mData.fundExpenses && typeof mData.fundExpenses === 'object') {
           Object.entries(mData.fundExpenses).forEach(([expId, e]) => {
-            if (e && e.amount) {
-              const amt = Number(e.amount) || 0;
-              totalFundOut += amt;
-              allChronologicalEvents.push({
-                type: 'expense',
-                buyer: (e.buyer || 'ไม่ระบุชื่อ').trim(),
-                amount: amt,
-                sortKey: parseTimestamp(e.slipTime, e.date, expId)
-              });
-            }
+            if (!e || !e.amount) return;
+            const amt = Number(e.amount) || 0;
+            const buyer = (e.buyer || 'ไม่ระบุชื่อ').trim();
+            const paySource = e.paySource || 'auto';
+
+            allEvents.push({
+              type: 'expense',
+              member: buyer,
+              amount: amt,
+              paySource: paySource,
+              sortKey: parseTimestamp(e.slipTime, e.date, expId)
+            });
+          });
+        }
+
+        // 2.3 รายการโอนเงินคืนผู้สำรองจ่าย (Reimbursements)
+        if (mData.fundReimbursements && typeof mData.fundReimbursements === 'object') {
+          Object.entries(mData.fundReimbursements).forEach(([reimbId, r]) => {
+            if (!r || !r.amount) return;
+            const amt = Number(r.amount) || 0;
+            const toMember = (r.toMember || 'ไม่ระบุชื่อ').trim();
+            totalReimbursedAll += amt;
+            memberReimbursed[toMember] = (memberReimbursed[toMember] || 0) + amt;
+
+            allEvents.push({
+              type: 'reimburse',
+              member: toMember,
+              amount: amt,
+              sortKey: parseTimestamp(r.slipTime, r.date, reimbId)
+            });
           });
         }
       });
 
-      // เรียงเหตุการณ์ทั้งหมดจากเก่าสุด -> ใหม่สุด เพื่อแยกเงินสดในบัญชี กับยอดควักเงินส่วนตัว
-      allChronologicalEvents.sort((a, b) => a.sortKey - b.sortKey);
+      // เรียงเหตุการณ์ตามเวลาจริง เพื่อแยกบิลเก่าที่อาจไม่ได้ระบุ paySource
+      allEvents.sort((a, b) => a.sortKey - b.sortKey);
 
-      let availableCashInAccount = Number(settings.initialFund) || 0;
-      const memberOutOfPocket = {};
-      activeEntries.forEach(([_, m]) => {
-        if (m && m.name) memberOutOfPocket[m.name.trim()] = 0;
-      });
+      let simulatedCash = Number(settings.initialFund) || 0;
+      let totalAllExpenses = 0;
 
-      allChronologicalEvents.forEach(ev => {
+      allEvents.forEach(ev => {
         if (ev.type === 'deposit') {
-          availableCashInAccount += ev.amount;
+          simulatedCash += ev.amount;
+        } else if (ev.type === 'reimburse') {
+          simulatedCash = Math.max(0, simulatedCash - ev.amount);
         } else if (ev.type === 'expense') {
-          if (availableCashInAccount >= ev.amount) {
-            availableCashInAccount -= ev.amount;
+          totalAllExpenses += ev.amount;
+          if (ev.paySource === 'fund') {
+            // โอนจากบัญชีกองกลางโดยตรง
+            totalDirectFundExpenses += ev.amount;
+            simulatedCash = Math.max(0, simulatedCash - ev.amount);
+          } else if (ev.paySource === 'personal') {
+            // สำรองจ่ายส่วนตัว 100%
+            memberPersonalSpent[ev.member] = (memberPersonalSpent[ev.member] || 0) + ev.amount;
           } else {
-            const coveredByCash = Math.max(0, availableCashInAccount);
-            const paidOutOfPocket = ev.amount - coveredByCash;
-            availableCashInAccount = 0;
-            memberOutOfPocket[ev.buyer] = (memberOutOfPocket[ev.buyer] || 0) + paidOutOfPocket;
+            // ข้อมูลเก่า (auto): หักเงินสดในบัญชีก่อน ส่วนที่เกินถือว่าสำรองจ่ายส่วนตัว
+            if (simulatedCash >= ev.amount) {
+              simulatedCash -= ev.amount;
+              totalDirectFundExpenses += ev.amount;
+            } else {
+              const fromCash = Math.max(0, simulatedCash);
+              const fromPersonal = ev.amount - fromCash;
+              simulatedCash = 0;
+              totalDirectFundExpenses += fromCash;
+              memberPersonalSpent[ev.member] = (memberPersonalSpent[ev.member] || 0) + fromPersonal;
+            }
           }
         }
       });
 
-      const netFund = totalFundPaidIn - totalFundOut;
-      const isNegativeFund = netFund < 0;
-      const totalOutOfPocketAll = Object.values(memberOutOfPocket).reduce((sum, v) => sum + v, 0);
+      // ยอดเงินสดที่มีอยู่ในบัญชีกองกลางตอนนี้จริงๆ
+      const actualBankBalance = Math.max(0, (Number(settings.initialFund) || 0) + totalDepositsAll - totalDirectFundExpenses - totalReimbursedAll);
 
-      // อัปเดตกล่อง 1: เงินกองกลางที่มีอยู่จริง
-      setSafeHTML('dashFundAvailable', `${formatMoney(availableCashInAccount)} <span class="text-sm font-normal text-emerald-400/80">บาท</span>`);
-      setSafeText('dashFundAvailableBadge', availableCashInAccount > 0 ? 'มีเงินในบัญชี' : 'เงินในบัญชีหมด');
-      setSafeText('dashFundAvailableSub', availableCashInAccount > 0 
-        ? 'ยอดเงินสดที่อยู่ในบัญชีกองกลางตอนนี้' 
-        : 'เงินในบัญชีกองกลางถูกใช้หมดแล้ว');
+      // รวบรวมรายชื่อผู้มีส่วนร่วมทั้งหมด
+      const allMemberNamesSet = new Set([
+        ...activeEntries.map(([_, m]) => m.name.trim()),
+        ...Object.keys(memberPersonalSpent).filter(n => memberPersonalSpent[n] > 0),
+        ...Object.keys(memberCashDeposited).filter(n => memberCashDeposited[n] > 0)
+      ]);
+      const memberNamesList = Array.from(allMemberNamesSet);
+      const divisorCount = activeCount || memberNamesList.length || 1;
 
-      // อัปเดตกล่อง 2: ยอดติดลบ / สำรองจ่ายรวม
+      // ยอดรายจ่ายรวมทั้งหมดหารตามจำนวนสมาชิก
+      const fairSharePerPerson = totalAllExpenses / divisorCount;
+
+      // คำนวณยอดสุทธิของแต่ละคน: (ซื้อของส่วนตัว + โอนเข้ากองกลาง) - ส่วนแบ่งรายจ่าย - เงินที่ได้รับโอนคืนแล้ว
+      const owedRefundToMember = {};   // ยอดที่กองกลางต้องโอนคืนให้คนนี้ (ค้างอยู่)
+      const owedDepositFromMember = {}; // ยอดที่คนนี้ยังต้องโอนเข้ากองกลางเพิ่ม
+      const memberTotalContributed = {};
+
+      memberNamesList.forEach(name => {
+        const pSpent = memberPersonalSpent[name] || 0;
+        const cDep = memberCashDeposited[name] || 0;
+        const reimb = memberReimbursed[name] || 0;
+
+        memberTotalContributed[name] = pSpent + cDep;
+        const netEquity = (pSpent + cDep) - fairSharePerPerson - reimb;
+
+        if (netEquity > 0.01) {
+          owedRefundToMember[name] = netEquity;
+        } else if (netEquity < -0.01) {
+          owedDepositFromMember[name] = Math.abs(netEquity);
+        }
+      });
+
+      latestOwedRefundMap = { ...owedRefundToMember };
+
+      const totalPendingRefund = Object.values(owedRefundToMember).reduce((s, v) => s + v, 0);
+      const totalFriendShortfall = Object.values(owedDepositFromMember).reduce((s, v) => s + v, 0);
+
+      // หักลบเงินที่เพื่อนโอนเข้ามาในบัญชี กับ ยอดค้างโอนคืนผู้สำรองจ่าย
+      const cashReadyToReimburse = Math.min(actualBankBalance, totalPendingRefund);
+      const freeUsableCash = Math.max(0, actualBankBalance - totalPendingRefund);
+      const stillNeedFromFriends = Math.max(0, totalPendingRefund - actualBankBalance);
+
+      // อัปเดตกล่องแสดงสถานะเงิน 3 ส่วน
+      setSafeHTML('dashFundBankTotal', `${formatMoney(actualBankBalance)} <span class="text-xs font-normal text-slate-400">บาท</span>`);
+      setSafeHTML('dashFundFreeCash', `${formatMoney(freeUsableCash)} <span class="text-xs font-normal text-emerald-400/80">บาท</span>`);
+
       const deficitCard = document.getElementById('dashFundDeficitCard');
       const deficitBadge = document.getElementById('dashFundDeficitBadge');
-      const deficitValueEl = document.getElementById('dashFundDeficit');
+      const deficitEl = document.getElementById('dashFundDeficit');
+      const btnReimburse = document.getElementById('btnOpenReimburse');
 
-      if (isNegativeFund || totalOutOfPocketAll > 0) {
+      if (totalPendingRefund > 0.01) {
         if (deficitCard) deficitCard.className = 'bg-rose-950/30 border border-rose-500/50 rounded-2xl p-4 flex flex-col justify-between shadow-inner transition-all';
         if (deficitBadge) {
           deficitBadge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-rose-950 text-rose-300 border border-rose-700 font-bold';
-          deficitBadge.innerText = 'ติดลบ / ค้างเคลียร์';
+          deficitBadge.innerText = 'ค้างโอนคืน';
         }
-        if (deficitValueEl) {
-          deficitValueEl.className = 'text-3xl font-black text-rose-400 mt-2';
-          deficitValueEl.innerHTML = `-${formatMoney(totalOutOfPocketAll)} <span class="text-sm font-normal text-rose-300/80">บาท</span>`;
+        if (deficitEl) {
+          deficitEl.className = 'text-2xl font-black text-rose-400 mt-2';
+          deficitEl.innerHTML = `${formatMoney(totalPendingRefund)} <span class="text-xs font-normal text-rose-300/80">บาท</span>`;
         }
-        setSafeText('dashFundDeficitSub', 'ยอดรวมที่สมาชิกออกเงินส่วนตัวไปก่อน');
+        setSafeText('dashFundDeficitSub', cashReadyToReimburse > 0 
+          ? `พร้อมโอนคืนทันที ${formatMoney(cashReadyToReimburse)} ฿ (รอเพื่อนเพิ่ม ${formatMoney(stillNeedFromFriends)} ฿)` 
+          : `รอเพื่อนโอนสมทบเข้ามา ${formatMoney(stillNeedFromFriends)} ฿`);
+        
+        if (btnReimburse) btnReimburse.classList.remove('hidden');
       } else {
         if (deficitCard) deficitCard.className = 'bg-slate-950/75 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-inner transition-all';
         if (deficitBadge) {
           deficitBadge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700';
           deficitBadge.innerText = 'ปกติ';
         }
-        if (deficitValueEl) {
-          deficitValueEl.className = 'text-3xl font-black text-slate-500 mt-2';
-          deficitValueEl.innerHTML = `0 <span class="text-sm font-normal">บาท</span>`;
+        if (deficitEl) {
+          deficitEl.className = 'text-2xl font-black text-slate-500 mt-2';
+          deficitEl.innerHTML = `0 <span class="text-xs font-normal">บาท</span>`;
         }
-        setSafeText('dashFundDeficitSub', 'ไม่มีรายการสำรองจ่ายค้างคืน');
+        setSafeText('dashFundDeficitSub', 'ไม่มีรายการค้างโอนคืน');
+        if (btnReimburse) btnReimburse.classList.add('hidden');
       }
 
-      // 3. แผงโหลดบาร์ & คำนวณหารคืนเงินรายบุคคล (แสดงเมื่อเงินกองกลางติดลบ / มียอดสำรองจ่าย)
+      // 3. แสดงแผงโหลดบาร์ & สรุปยอดต้องโอนคืนใครเท่าไหร่ (ค้างไว้จนกว่าจะโอนคืนครบ)
       const settlementPanel = document.getElementById('fundDeficitSettlementPanel');
+      const summaryBoxEl = document.getElementById('reimbursementSummaryBox');
       const barsListEl = document.getElementById('fundDeficitBarsList');
-      const helperNoteEl = document.getElementById('settlementHelperNote');
 
-      if (settlementPanel && barsListEl) {
-        if (isNegativeFund || totalOutOfPocketAll > 0) {
+      if (settlementPanel && barsListEl && summaryBoxEl) {
+        if (totalPendingRefund > 0.01 || totalFriendShortfall > 0.01) {
           settlementPanel.classList.remove('hidden');
-
-          // รวมรายชื่อสมาชิกที่เปิดใช้งาน + ใครก็ตามที่เคยสำรองจ่ายไว้
-          const participantNames = new Set(activeEntries.map(([_, m]) => m.name.trim()));
-          Object.entries(memberOutOfPocket).forEach(([name, amt]) => {
-            if (amt > 0) participantNames.add(name);
-          });
-
-          const memberList = Array.from(participantNames);
-          const divisorCount = activeCount || memberList.length || 1;
-          const fairSharePerPerson = totalOutOfPocketAll / divisorCount;
-
           setSafeText('settlementMemberCount', divisorCount);
           setSafeText('settlementFairShareText', `${formatMoney(fairSharePerPerson)} ฿/คน`);
 
-          const maxPaid = Math.max(...memberList.map(n => memberOutOfPocket[n] || 0), fairSharePerPerson, 1);
-          const maxScale = maxPaid * 1.15; // เผื่อพื้นที่ด้านขวาให้เส้นเกณฑ์เฉลี่ยดูง่าย
+          // สร้างกล่องสรุปยอดต้องโอนคืน + หักลบเงินที่เพื่อนโอนเข้ามาแล้ว
+          let refundRowsHTML = '';
+          Object.entries(owedRefundToMember).forEach(([name, owedAmt]) => {
+            const bInfo = memberBankInfo[name] || {};
+            const bankStr = bInfo.bank || bInfo.accNo ? `(${bInfo.bank} ${bInfo.accNo})` : '';
+            const copyBtn = bInfo.accNo ? `<button onclick="copyText('${bInfo.accNo}', 'เลขบัญชีของ ${name}')" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-indigo-300 px-2 py-0.5 rounded-lg border border-slate-700 ml-1">📋 คัดลอกเลข</button>` : '';
+            
+            refundRowsHTML += `
+              <div class="flex flex-wrap justify-between items-center gap-1 py-1.5 border-b border-slate-800/80 last:border-b-0 text-xs">
+                <div class="text-slate-200">
+                  👉 ต้องโอนคืน: <strong class="text-emerald-300 text-sm">${name}</strong> 
+                  <span class="text-[11px] text-slate-400">${bankStr}</span>
+                  ${copyBtn}
+                </div>
+                <div class="font-black text-emerald-400 text-sm">${formatMoney(owedAmt)} ฿</div>
+              </div>`;
+          });
+
+          let offsetStatusHTML = '';
+          if (cashReadyToReimburse > 0) {
+            offsetStatusHTML = `
+              <div class="mt-2 p-2.5 bg-emerald-950/40 border border-emerald-700/50 rounded-xl text-[11px] text-emerald-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div>
+                  ✅ <strong>หักลบจากเงินที่เพื่อนโอนเข้ามาแล้ว:</strong> มีเงินสดในบัญชีพร้อมโอนคืนได้ทันที <strong>${formatMoney(cashReadyToReimburse)} ฿</strong>
+                  ${stillNeedFromFriends > 0 ? `<span class="text-amber-300 block sm:inline sm:ml-1">(ยังรอเพื่อนคนอื่นโอนเพิ่มอีก ${formatMoney(stillNeedFromFriends)} ฿)</span>` : `<span class="text-emerald-300 font-bold block sm:inline sm:ml-1">(เพื่อนโอนเข้ามาครบแล้ว กดโอนคืนได้เลย!)</span>`}
+                </div>
+                <button onclick="openFundReimburseModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-[11px] font-bold whitespace-nowrap shadow">
+                  💸 บันทึกโอนคืน
+                </button>
+              </div>`;
+          } else {
+            offsetStatusHTML = `
+              <div class="mt-2 p-2 bg-rose-950/40 border border-rose-800/50 rounded-xl text-[11px] text-rose-300">
+                ⏳ ยังไม่มีเงินสดในบัญชีกองกลาง รอเพื่อนโอนสมทบเข้ามา <strong>${formatMoney(stillNeedFromFriends)} ฿</strong> เพื่อนำไปโอนคืน
+              </div>`;
+          }
+
+          summaryBoxEl.innerHTML = `
+            <div class="text-xs font-bold text-amber-300 mb-1">📌 รายการที่ค้างโอนคืนผู้สำรองจ่าย:</div>
+            ${refundRowsHTML || '<div class="text-xs text-slate-400">ไม่มีรายการค้างโอนคืน</div>'}
+            ${offsetStatusHTML}
+          `;
+
+          // สร้างแถบโหลดบาร์ของสมาชิกแต่ละคน (นับรวมทั้งซื้อของ + โอนเข้ากองกลาง)
+          const maxContrib = Math.max(...memberNamesList.map(n => memberTotalContributed[n] || 0), fairSharePerPerson, 1);
+          const maxScale = maxContrib * 1.15;
           const fairSharePct = Math.min(96, (fairSharePerPerson / maxScale) * 100);
 
-          // เรียงคนที่ออกเงินเยอะสุดขึ้นบน
-          memberList.sort((a, b) => (memberOutOfPocket[b] || 0) - (memberOutOfPocket[a] || 0));
-
+          memberNamesList.sort((a, b) => (memberTotalContributed[b] || 0) - (memberTotalContributed[a] || 0));
           barsListEl.innerHTML = '';
-          const refundList = [];
-          const payMoreList = [];
 
-          memberList.forEach(name => {
-            const paid = memberOutOfPocket[name] || 0;
-            const diff = paid - fairSharePerPerson;
-            const barPct = Math.min(100, (paid / maxScale) * 100);
-            const shareOfTotalPct = totalOutOfPocketAll > 0 ? ((paid / totalOutOfPocketAll) * 100).toFixed(1) : '0.0';
+          memberNamesList.forEach(name => {
+            const pSpent = memberPersonalSpent[name] || 0;
+            const cDep = memberCashDeposited[name] || 0;
+            const reimb = memberReimbursed[name] || 0;
+            const totalContrib = pSpent + cDep;
+            const barPct = Math.min(100, (totalContrib / maxScale) * 100);
 
             let statusBadge = '';
             let barGradient = 'bg-slate-600';
 
-            if (diff > 0.01) {
-              statusBadge = `<span class="bg-emerald-950 text-emerald-300 border border-emerald-700/80 px-2.5 py-0.5 rounded-full text-[11px] font-bold">✅ ได้เงินคืน +${formatMoney(diff)} ฿</span>`;
+            if (owedRefundToMember[name]) {
+              statusBadge = `<span class="bg-emerald-950 text-emerald-300 border border-emerald-700/80 px-2.5 py-0.5 rounded-full text-[11px] font-bold">✅ ค้างโอนคืน +${formatMoney(owedRefundToMember[name])} ฿</span>`;
               barGradient = 'bg-gradient-to-r from-emerald-600 to-emerald-400';
-              refundList.push(`<strong>${name}</strong> (+${formatMoney(diff)} ฿)`);
-            } else if (diff < -0.01) {
-              statusBadge = `<span class="bg-amber-950 text-amber-300 border border-amber-700/80 px-2.5 py-0.5 rounded-full text-[11px] font-bold">⏳ ต้องจ่ายเพิ่ม ${formatMoney(Math.abs(diff))} ฿</span>`;
-              barGradient = paid > 0 ? 'bg-gradient-to-r from-amber-600 to-amber-400' : 'bg-slate-700';
-              payMoreList.push(`<strong>${name}</strong> (${formatMoney(Math.abs(diff))} ฿)`);
+            } else if (owedDepositFromMember[name]) {
+              statusBadge = `<span class="bg-amber-950 text-amber-300 border border-amber-700/80 px-2.5 py-0.5 rounded-full text-[11px] font-bold">⏳ ต้องโอนเพิ่ม ${formatMoney(owedDepositFromMember[name])} ฿</span>`;
+              barGradient = totalContrib > 0 ? 'bg-gradient-to-r from-amber-600 to-amber-400' : 'bg-slate-700';
             } else {
-              statusBadge = `<span class="bg-sky-950 text-sky-300 border border-sky-700/80 px-2.5 py-0.5 rounded-full text-[11px] font-bold">⚖️ พอดีส่วนแบ่ง (0 ฿)</span>`;
+              statusBadge = `<span class="bg-sky-950 text-sky-300 border border-sky-700/80 px-2.5 py-0.5 rounded-full text-[11px] font-bold">⚖️ ครบส่วนแบ่งแล้ว</span>`;
               barGradient = 'bg-gradient-to-r from-sky-600 to-sky-400';
             }
+
+            const detailParts = [];
+            if (pSpent > 0) detailParts.push(`ซื้อของ ${formatMoney(pSpent)} ฿`);
+            if (cDep > 0) detailParts.push(`โอนเข้ากองกลาง ${formatMoney(cDep)} ฿`);
+            if (reimb > 0) detailParts.push(`ได้รับคืนแล้ว ${formatMoney(reimb)} ฿`);
+            const detailStr = detailParts.length > 0 ? detailParts.join(' + ') : 'ยังไม่ได้ออกเงิน';
 
             barsListEl.innerHTML += `
               <div class="bg-slate-950/80 border border-slate-800/90 rounded-2xl p-3 space-y-2">
                 <div class="flex flex-wrap justify-between items-center gap-1.5">
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs font-bold text-slate-100">${name}</span>
-                    <span class="text-[11px] text-slate-400">ออกไปแล้ว: <strong class="text-white">${formatMoney(paid)} ฿</strong></span>
+                  <div>
+                    <span class="text-xs font-bold text-slate-100 mr-1.5">${name}</span>
+                    <span class="text-[11px] text-slate-400">ออกรวม: <strong class="text-white">${formatMoney(totalContrib)} ฿</strong></span>
                   </div>
                   ${statusBadge}
                 </div>
 
-                <!-- แทบโหลดบาร์ (Progress Bar) พร้อมเส้นขีดเกณฑ์หารเฉลี่ยต่อคน -->
+                <!-- แทบโหลดบาร์ (Progress Bar) พร้อมเส้นขีดเกณฑ์เฉลี่ยต่อคน -->
                 <div class="relative w-full h-3 bg-slate-800 rounded-full overflow-visible">
                   <div class="h-full rounded-full transition-all duration-500 ${barGradient}" style="width: ${barPct}%"></div>
-                  <!-- เส้นเกณฑ์ยอดหารเฉลี่ยต่อคน -->
-                  <div class="absolute -top-1 -bottom-1 w-0.5 bg-white shadow-[0_0_6px_#fff] z-10" style="left: ${fairSharePct}%" title="เกณฑ์หารเฉลี่ย ${formatMoney(fairSharePerPerson)} ฿/คน"></div>
+                  <div class="absolute -top-1 -bottom-1 w-0.5 bg-white shadow-[0_0_6px_#fff] z-10" style="left: ${fairSharePct}%" title="เกณฑ์เฉลี่ย ${formatMoney(fairSharePerPerson)} ฿/คน"></div>
                 </div>
 
-                <div class="flex justify-between items-center text-[10px] text-slate-400">
-                  <span>คิดเป็น <strong class="text-slate-300">${shareOfTotalPct}%</strong> ของยอดสำรองจ่ายรวม</span>
+                <div class="flex flex-wrap justify-between items-center text-[10px] text-slate-400 gap-1">
+                  <span>(${detailStr})</span>
                   <span>เกณฑ์เฉลี่ย: <strong class="text-amber-300">${formatMoney(fairSharePerPerson)} ฿</strong></span>
                 </div>
               </div>`;
           });
-
-          if (helperNoteEl) {
-            let cashNote = availableCashInAccount > 0 
-              ? `<div class="mb-1.5 text-emerald-300">💵 <strong>หมายเหตุ:</strong> ตอนนี้มีเงินโอนเข้าบัญชีกองกลางอยู่ <strong>${formatMoney(availableCashInAccount)} ฿</strong> (ยอดขาดสุทธิคงเหลือ <strong>${formatMoney(Math.abs(netFund))} ฿</strong>)</div>` 
-              : '';
-            helperNoteEl.innerHTML = `
-              ${cashNote}
-              <div>📌 <strong>สรุปการเคลียร์ยอด:</strong> ให้ ${payMoreList.length > 0 ? payMoreList.join(', ') : 'สมาชิกที่จ่ายไม่ครบ'} โอนเงินสมทบเข้ากองกลาง เพื่อนำไปโอนคืนให้ ${refundList.length > 0 ? refundList.join(', ') : 'ผู้สำรองจ่าย'}</div>
-            `;
-          }
         } else {
           settlementPanel.classList.add('hidden');
         }
       }
 
-      // 4. กองกลางความเคลื่อนไหว (เรียงตามเวลาสลิปจริง)
+      // =========================================================================
+      // 4. กองกลางความเคลื่อนไหว (เรียงตามเวลาสลิปจริง: ฝาก / ซื้อของ / โอนคืน)
+      // =========================================================================
       const depLog = document.getElementById('fundDepositLog');
       const fundCats = getActiveFundCategories();
       const combinedLogs = [];
@@ -1802,6 +1987,7 @@
             id: expId,
             buyer: e.buyer || '-',
             name: e.name || '-',
+            paySource: e.paySource || 'personal',
             items: e.items || null,
             amount: amt,
             categoryId: e.categoryId || 'fc_other',
@@ -1833,12 +2019,31 @@
         });
       }
 
+      if (curData.fundReimbursements && typeof curData.fundReimbursements === 'object') {
+        Object.entries(curData.fundReimbursements).forEach(([reimbId, r]) => {
+          if (!r) return;
+          const sortTime = parseTimestamp(r.slipTime, r.date, reimbId);
+
+          combinedLogs.push({
+            type: 'reimburse',
+            id: reimbId,
+            buyer: r.toMember || '-',
+            name: r.note || 'โอนคืนเงินสำรองจ่าย',
+            amount: Number(r.amount || 0),
+            url: r.url,
+            slipTime: r.slipTime,
+            date: r.date,
+            sortKey: sortTime
+          });
+        });
+      }
+
       combinedLogs.sort((a, b) => b.sortKey - a.sortKey);
 
       if (depLog) {
         depLog.innerHTML = '';
         if (combinedLogs.length === 0) {
-          depLog.innerHTML = `<div class="text-[11px] text-slate-500 text-center py-2">ยังไม่มีรายการฝากหรือเบิกเงินกองกลางในเดือนนี้</div>`;
+          depLog.innerHTML = `<div class="text-[11px] text-slate-500 text-center py-2">ยังไม่มีรายการฝาก เบิก หรือโอนคืนในเดือนนี้</div>`;
         } else {
           combinedLogs.forEach(log => {
             let slipBtn = '';
@@ -1846,7 +2051,7 @@
               const cKey = `${log.type}_${log.id}`;
               window.cachedFundSlips[cKey] = {
                 url: log.url,
-                title: `${log.type === 'expense' ? 'เบิก' : 'ฝาก'}: ${log.buyer} (${log.name})`
+                title: `${log.type === 'expense' ? 'ซื้อของ' : (log.type === 'reimburse' ? 'โอนคืน' : 'ฝาก')}: ${log.buyer} (${log.name})`
               };
               slipBtn = `<button onclick="viewSingleFundSlip('${cKey}')" class="text-blue-400 hover:underline ml-1 font-medium">ดูสลิป</button>`;
             }
@@ -1883,6 +2088,9 @@
               }
 
               const catObj = fundCats[log.categoryId] || { name: 'อื่นๆ', color: '#8b5cf6' };
+              const sourceTag = log.paySource === 'fund' 
+                ? `<span class="text-[9px] px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-800 ml-1">🏦 บัญชีกองกลาง</span>` 
+                : `<span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-950 text-amber-300 border border-amber-800 ml-1">💳 สำรองจ่ายส่วนตัว</span>`;
 
               depLog.innerHTML += `
                 <div class="bg-rose-950/20 p-2.5 rounded-xl border border-rose-900/30 text-xs">
@@ -1890,8 +2098,7 @@
                     <div>
                       <div class="text-rose-300 font-medium">
                         <span class="inline-block w-2 h-2 rounded-full mr-1" style="background-color: ${catObj.color}"></span>
-                        📤 เบิก: <strong>${log.buyer}</strong> (${log.name}) 
-                        ${slipBtn}
+                        🛒 ซื้อของ: <strong>${log.buyer}</strong> (${log.name}) ${sourceTag} ${slipBtn}
                       </div>
                       <div class="text-[10px] text-slate-500 mt-0.5">⏰ ${timeLabel}</div>
                     </div>
@@ -1902,12 +2109,26 @@
                   </div>
                   ${itemizedHTML}
                 </div>`;
+            } else if (log.type === 'reimburse') {
+              depLog.innerHTML += `
+                <div class="bg-emerald-950/25 p-2.5 rounded-xl border border-emerald-800/40 text-xs flex justify-between items-center">
+                  <div>
+                    <div class="text-emerald-300 font-medium">
+                      💸 โอนคืนผู้สำรองจ่าย: <strong>${log.buyer}</strong> (${log.name}) ${slipBtn}
+                    </div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">⏰ ${timeLabel}</div>
+                  </div>
+                  <div class="flex items-center">
+                    <span class="text-amber-300 font-bold whitespace-nowrap text-sm">โอนคืน ${log.amount.toLocaleString()} ฿</span>
+                    ${deleteBtn}
+                  </div>
+                </div>`;
             } else {
               depLog.innerHTML += `
                 <div class="bg-indigo-950/30 p-2.5 rounded-xl border border-indigo-900/40 text-xs flex justify-between items-center">
                   <div>
                     <div class="text-indigo-300 font-medium">
-                      📥 ฝาก: <strong>${log.buyer}</strong> (${log.name}) ${slipBtn}
+                      📥 ฝากเข้ากองกลาง: <strong>${log.buyer}</strong> (${log.name}) ${slipBtn}
                     </div>
                     <div class="text-[10px] text-slate-500 mt-0.5">⏰ ${timeLabel}</div>
                   </div>
@@ -1965,7 +2186,7 @@
 
       breakdownEl.innerHTML = '';
       if (items.length === 0) {
-        breakdownEl.innerHTML = `<div class="text-[11px] text-slate-500 col-span-2">ยังไม่มีรายการเบิกจ่ายในเดือนนี้</div>`;
+        breakdownEl.innerHTML = `<div class="text-[11px] text-slate-500 col-span-2">ยังไม่มีรายการซื้อของในเดือนนี้</div>`;
       } else {
         items.forEach(it => {
           const pct = totalSpend > 0 ? ((it.amount / totalSpend) * 100).toFixed(1) : 0;
@@ -1985,7 +2206,7 @@
       try {
         if (fundDonutInstance) fundDonutInstance.destroy();
         const ctx = canvasEl.getContext('2d');
-        const chartData = items.length > 0 ? items : [{ name: 'ไม่มีการเบิกจ่าย', amount: 1, color: '#334155' }];
+        const chartData = items.length > 0 ? items : [{ name: 'ไม่มีการซื้อของ', amount: 1, color: '#334155' }];
 
         fundDonutInstance = new Chart(ctx, {
           type: 'doughnut',
@@ -2072,7 +2293,7 @@
         color: c.color || '#10b981'
       }));
 
-      categories.push({ name: 'กองกลางที่เบิกใช้', amount: totalFundExp, color: '#a855f7' });
+      categories.push({ name: 'ของใช้ส่วนกลาง', amount: totalFundExp, color: '#a855f7' });
 
       const total = categories.reduce((sum, item) => sum + item.amount, 0);
       setSafeText('donutTotalText', total > 0 ? `${total.toLocaleString()} ฿` : '0 ฿');
@@ -2242,22 +2463,40 @@
       const input = document.getElementById('newMemberName');
       const name = input ? input.value.trim() : '';
       if (!name) return customAlert("กรุณาระบุชื่อสมาชิก", "⚠️");
-      db.ref(`members/m_${Date.now()}`).set({ name: name, active: true }).then(() => {
+      db.ref(`members/m_${Date.now()}`).set({ name: name, active: true, bank: '', accNo: '' }).then(() => {
         if (input) input.value = '';
         customAlert("เพิ่มสมาชิกสำเร็จ!");
       }).catch(err => customAlert("เกิดข้อผิดพลาด: " + err.message, "❌"));
     }
 
-    async function editMemberName(id) {
+    async function openEditMemberModal(id) {
       if (!(await verifyPermission('members'))) return;
-      const currentName = (members[id] && members[id].name) || '';
-      const newName = await askPrompt("✏️ แก้ไขชื่อสมาชิก", "พิมพ์ชื่อใหม่ที่ต้องการเปลี่ยน:", currentName, "text");
-      if (newName === null) return;
-      const trimmed = newName.trim();
-      if (!trimmed) return customAlert("ชื่อสมาชิกต้องไม่เว้นว่าง", "⚠️");
+      const m = members[id];
+      if (!m) return;
+      activeEditingMemberId = id;
+      setSafeValue('editMemberNameInput', m.name || '');
+      setSafeValue('editMemberBankInput', m.bank || '');
+      setSafeValue('editMemberAccInput', m.accNo || '');
+      const modal = document.getElementById('editMemberModal');
+      if (modal) modal.classList.remove('hidden');
+    }
 
-      db.ref(`members/${id}`).update({ name: trimmed }).then(() => {
-        customAlert("แก้ไขชื่อสมาชิกเรียบร้อย!", "✅");
+    function closeEditMemberModal() {
+      const modal = document.getElementById('editMemberModal');
+      if (modal) modal.classList.add('hidden');
+      activeEditingMemberId = null;
+    }
+
+    function saveEditMemberSubmit() {
+      if (!activeEditingMemberId) return;
+      const name = document.getElementById('editMemberNameInput')?.value.trim();
+      const bank = document.getElementById('editMemberBankInput')?.value.trim() || '';
+      const accNo = document.getElementById('editMemberAccInput')?.value.trim() || '';
+      if (!name) return customAlert("ชื่อสมาชิกต้องไม่เว้นว่าง", "⚠️");
+
+      db.ref(`members/${activeEditingMemberId}`).update({ name, bank, accNo }).then(() => {
+        closeEditMemberModal();
+        customAlert("อัปเดตข้อมูลสมาชิกเรียบร้อย!", "✅");
       }).catch(err => customAlert("เกิดข้อผิดพลาด: " + err.message, "❌"));
     }
 
@@ -2274,11 +2513,15 @@
       div.innerHTML = '';
       Object.entries(members).forEach(([id, m]) => {
         if (!m) return;
+        const accLabel = m.accNo ? `<span class="text-[10px] text-slate-400 block">${m.bank || ''} ${m.accNo}</span>` : `<span class="text-[10px] text-slate-500 block">ยังไม่ระบุบัญชีรับเงินคืน</span>`;
         div.innerHTML += `
           <div class="flex justify-between items-center p-2.5 bg-slate-800 rounded-xl text-xs">
-            <span class="font-medium text-slate-200">${m.name || 'สมาชิก'}</span>
+            <div>
+              <span class="font-bold text-slate-200">${m.name || 'สมาชิก'}</span>
+              ${accLabel}
+            </div>
             <div class="flex gap-2">
-              <button onclick="editMemberName('${id}')" class="text-amber-400 hover:underline">แก้ไข</button>
+              <button onclick="openEditMemberModal('${id}')" class="text-amber-400 hover:underline">แก้ไข</button>
               <button onclick="deleteMember('${id}')" class="text-rose-400 hover:underline">ลบ</button>
             </div>
           </div>`;
@@ -2329,6 +2572,7 @@
       if (fileInput) fileInput.click();
     }
 
+    // ฟังก์ชันจัดการเมื่อเลือกสลิป: เรียก OCR สแกนยอดและเวลาจริงในสลิป
     async function handleSlipSelected(e) {
       const file = e.target.files[0];
       if (!file || !currentUploadConfig) return;
@@ -2337,7 +2581,7 @@
       if (overlay) overlay.classList.remove('hidden');
       setSafeText('loadingStatusText', '🔍 กำลังเตรียมภาพเพื่อสแกน...');
 
-      const { expectedAmt, memberId, paymentType, note, buyer, items } = currentUploadConfig;
+      const { expectedAmt, memberId, paymentType, note, buyer, paySource, items, toMember } = currentUploadConfig;
 
       try {
         const resizedImage = await prepareImageForOCR(file);
@@ -2381,9 +2625,19 @@
             slipTime: finalSlipTime,
             date: new Date().toLocaleDateString('th-TH')
           });
-          customAlert(`บันทึกสลิปนำเงินเข้ากองกลางเรียบร้อย!\nยอดเงิน: ${finalAmount.toLocaleString()} บาท`, "💎");
+          customAlert(`บันทึกสลิปนำเงินเข้ากองกลางเรียบร้อย!\nยอดเงิน: ${formatMoney(finalAmount)} บาท\n(ระบบนำไปหักลบกับยอดรอโอนคืนให้แล้ว)`, "💎");
+        } else if (paymentType === 'fundReimburse') {
+          await db.ref(`bills/${currentMonth}/fundReimbursements`).push({
+            toMember: toMember || '-',
+            amount: finalAmount,
+            note: note || 'โอนคืนเงินสำรองจ่าย',
+            url: resData.data.url,
+            slipTime: finalSlipTime,
+            date: new Date().toLocaleDateString('th-TH')
+          });
+          customAlert(`บันทึกการโอนคืนให้ ${toMember} เรียบร้อย!\nจำนวน: ${formatMoney(finalAmount)} บาท`, "💸");
         } else if (paymentType === 'fundWithdraw') {
-          const itemSummary = items.map(it => it.name).filter(Boolean).join(', ') || 'เบิกเงินกองกลาง';
+          const itemSummary = items.map(it => it.name).filter(Boolean).join(', ') || 'ซื้อของเข้าบ้าน';
           const primaryCatId = items[0]?.categoryId || 'fc_other';
 
           let finalItems = items;
@@ -2393,6 +2647,7 @@
 
           await db.ref(`bills/${currentMonth}/fundExpenses`).push({
             buyer: buyer || '-',
+            paySource: paySource || 'personal',
             name: itemSummary,
             amount: finalAmount,
             categoryId: primaryCatId,
@@ -2405,7 +2660,7 @@
             slipTime: finalSlipTime,
             date: new Date().toLocaleDateString('th-TH')
           });
-          customAlert(`เบิกเงินและบันทึกสลิปเรียบร้อย!\nจำนวน: ${finalAmount.toLocaleString()} บาท (${finalItems.length} รายการ)`, "💸");
+          customAlert(`บันทึกรายการและสลิปเรียบร้อย!\nจำนวน: ${formatMoney(finalAmount)} บาท (${finalItems.length} รายการ)`, "🛒");
         } else {
           const dbPath = `bills/${currentMonth}/payments/${memberId}`;
           const snap = await db.ref(dbPath).once('value');
@@ -2554,7 +2809,7 @@
     function openFundWithdrawModal() {
       const sel = document.getElementById('fundWithBuyer');
       if (sel) {
-        sel.innerHTML = '<option value="">-- เลือกสมาชิกที่เบิก --</option>';
+        sel.innerHTML = '<option value="">-- เลือกสมาชิกที่ซื้อของ --</option>';
         Object.entries(members).forEach(([id, m]) => {
           if (m && m.active) sel.innerHTML += `<option value="${m.name}">${m.name}</option>`;
         });
@@ -2571,7 +2826,8 @@
 
     function submitFundWithdraw() {
       const buyer = document.getElementById('fundWithBuyer')?.value;
-      if (!buyer) return customAlert("กรุณาเลือกสมาชิกที่เบิกหรือสำรองจ่าย", "⚠️");
+      const paySource = document.getElementById('fundWithPaySource')?.value || 'personal';
+      if (!buyer) return customAlert("กรุณาเลือกสมาชิกที่ซื้อของหรือทำรายการ", "⚠️");
 
       const validItems = fundWithdrawItems.filter(it => it.name.trim() || Number(it.amount) > 0);
       if (validItems.length === 0) {
@@ -2583,11 +2839,88 @@
       currentUploadConfig = {
         paymentType: 'fundWithdraw',
         buyer: buyer,
+        paySource: paySource,
         expectedAmt: totalCalculated,
         items: validItems
       };
       
       closeFundWithdrawModal();
+      const fileInput = document.getElementById('slipInput');
+      if (fileInput) fileInput.click();
+    }
+
+    // Modal โอนเงินคืนผู้สำรองจ่าย
+    function openFundReimburseModal() {
+      const sel = document.getElementById('reimburseToMember');
+      if (sel) {
+        sel.innerHTML = '<option value="">-- เลือกผู้รับเงินโอนคืน --</option>';
+        Object.entries(latestOwedRefundMap).forEach(([name, amt]) => {
+          sel.innerHTML += `<option value="${name}">${name} (ค้างโอนคืน ${formatMoney(amt)} ฿)</option>`;
+        });
+        Object.entries(members).forEach(([id, m]) => {
+          if (m && m.active && !latestOwedRefundMap[m.name.trim()]) {
+            sel.innerHTML += `<option value="${m.name.trim()}">${m.name.trim()}</option>`;
+          }
+        });
+        // เลือกคนแรกที่มียอดค้างโอนคืนให้อัตโนมัติ
+        const firstCreditor = Object.keys(latestOwedRefundMap)[0];
+        if (firstCreditor) sel.value = firstCreditor;
+      }
+      onReimburseMemberChange();
+      setSafeValue('reimburseNote', '');
+      const modal = document.getElementById('fundReimburseModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeFundReimburseModal() {
+      const modal = document.getElementById('fundReimburseModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function onReimburseMemberChange() {
+      const name = document.getElementById('reimburseToMember')?.value;
+      const hintBox = document.getElementById('reimburseBankHint');
+      const hintText = document.getElementById('reimburseBankText');
+      if (!name) {
+        if (hintBox) hintBox.classList.add('hidden');
+        setSafeValue('reimburseAmount', '');
+        return;
+      }
+
+      const owed = latestOwedRefundMap[name] || 0;
+      setSafeValue('reimburseAmount', owed > 0 ? Math.round(owed * 100) / 100 : '');
+
+      const memberEntry = Object.values(members).find(m => m && m.name && m.name.trim() === name);
+      if (memberEntry && (memberEntry.bank || memberEntry.accNo)) {
+        if (hintBox) hintBox.classList.remove('hidden');
+        if (hintText) hintText.innerText = `${memberEntry.bank || ''} ${memberEntry.accNo || ''}`.trim();
+      } else {
+        if (hintBox) hintBox.classList.add('hidden');
+      }
+    }
+
+    function copyReimburseAcc() {
+      const name = document.getElementById('reimburseToMember')?.value;
+      const memberEntry = Object.values(members).find(m => m && m.name && m.name.trim() === name);
+      if (memberEntry && memberEntry.accNo) {
+        copyText(memberEntry.accNo, `เลขบัญชีของ ${name}`);
+      }
+    }
+
+    function triggerReimburseSlipUpload() {
+      const toMember = document.getElementById('reimburseToMember')?.value;
+      const amt = Number(document.getElementById('reimburseAmount')?.value) || 0;
+      const note = document.getElementById('reimburseNote')?.value.trim();
+      if (!toMember) return customAlert("กรุณาเลือกผู้รับเงินโอนคืน", "⚠️");
+      if (amt <= 0) return customAlert("กรุณาระบุจำนวนเงินที่โอนคืน", "⚠️");
+
+      currentUploadConfig = {
+        paymentType: 'fundReimburse',
+        toMember: toMember,
+        expectedAmt: amt,
+        note: note || `โอนคืนเงินสำรองจ่ายให้ ${toMember}`
+      };
+      closeFundReimburseModal();
       const fileInput = document.getElementById('slipInput');
       if (fileInput) fileInput.click();
     }
